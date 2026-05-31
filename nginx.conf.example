@@ -1,0 +1,37 @@
+# KASIRINAJA NGINX REVERSE PROXY CONFIGURATION
+# File ini bisa ditambahkan di dalam block HTTP nginx Anda (misalnya /etc/nginx/sites-available/kasirinaja)
+# Atau disalin langsung ke pengaturan domain di aaPanel.
+
+server {
+    listen 80;
+    server_name api.domainkamu.com;
+
+    # Ganti dengan path folder upload yang sebenarnya di VPS Anda (harus ada akses public)
+    # Ini agar foto produk dapat diakses via https://api.domainkamu.com/uploads/products/...
+    location /uploads/ {
+        alias /www/wwwroot/kasir-api/uploads/;
+        autoindex off;
+        access_log off;
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+    }
+
+    # Reverse proxy ke backend Spring Boot (berjalan di port 8080)
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+
+        # Konfigurasi Header penting untuk meneruskan IP client dan mengizinkan websockets/cors jika perlu
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Timeout settings
+        proxy_connect_timeout 60s;
+        proxy_read_timeout 60s;
+        proxy_send_timeout 60s;
+    }
+
+    # Anda disarankan memasang SSL (HTTPS) menggunakan Let's Encrypt / Certbot.
+    # Jika menggunakan aaPanel, cukup klik "Apply SSL" di menu pengaturan domain.
+}
