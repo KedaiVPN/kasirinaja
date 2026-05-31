@@ -12,8 +12,8 @@ import java.util.UUID
 @Table(name = "users")
 class User : BaseEntity() {
     var fullName: String = ""
-    var email: String? = null
-    var phone: String? = null
+    var email: String = ""
+    var phone: String = ""
     var passwordHash: String = ""
 
     @Enumerated(EnumType.STRING)

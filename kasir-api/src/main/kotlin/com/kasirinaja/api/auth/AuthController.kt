@@ -11,13 +11,31 @@ class AuthController(
 
     @PostMapping("/register-store")
     fun registerStore(@RequestBody request: RegisterStoreRequest): ResponseEntity<Any> {
-        authService.registerStore(request)
-        return ResponseEntity.ok(mapOf("message" to "Store registered. Please check email for verification."))
+        return try {
+            authService.registerStore(request)
+            ResponseEntity.ok(mapOf("message" to "Store registered. Please check email for verification."))
+        } catch (e: Exception) {
+            ResponseEntity.badRequest().body(mapOf("error" to e.message))
+        }
     }
 
     @PostMapping("/login")
     fun login(@RequestBody request: LoginRequest): ResponseEntity<Any> {
-        // Implementation for dummy login token mapped to mock data
-        return ResponseEntity.ok(AuthResponse("dummy-jwt-token", "STORE_OWNER", "store-123", "John Doe"))
+        return try {
+            val response = authService.login(request)
+            ResponseEntity.ok(response)
+        } catch (e: Exception) {
+            ResponseEntity.badRequest().body(mapOf("error" to e.message))
+        }
+    }
+
+    @GetMapping("/verify")
+    fun verifyEmail(@RequestParam token: String): ResponseEntity<Any> {
+        return try {
+            authService.verifyEmail(token)
+            ResponseEntity.ok(mapOf("message" to "Email verified successfully. You can now login."))
+        } catch (e: Exception) {
+            ResponseEntity.badRequest().body(mapOf("error" to e.message))
+        }
     }
 }
