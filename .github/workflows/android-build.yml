@@ -1,0 +1,37 @@
+name: Build Android APKs
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x kasir-android/gradlew
+
+    - name: Build with Gradle
+      run: cd kasir-android && ./gradlew assembleDebug
+
+    - name: Upload Store APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: app-store-debug
+        path: kasir-android/app-store/build/outputs/apk/debug/app-store-debug.apk
+
+    - name: Upload Admin APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: app-admin-debug
+        path: kasir-android/app-admin/build/outputs/apk/debug/app-admin-debug.apk

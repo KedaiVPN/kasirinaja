@@ -60,36 +60,30 @@ cd kasir-api
 
 ---
 
-## 2. Persiapan Aplikasi Android
+## 2. Persiapan Aplikasi Android (Tanpa PC/Laptop)
 
-### Syarat (Prerequisites)
-- Android Studio versi terbaru (Iguana / Jellyfish).
-- Emulator atau HP Android fisik dengan OS minimal Android 7.0 (API 24).
+Membangun (build) aplikasi Android biasanya memerlukan PC/Laptop dengan Android Studio. Namun, karena keterbatasan perangkat, Anda bisa membangunnya langsung dari HP menggunakan layanan **Cloud CI/CD (GitHub Actions)**.
 
-### Langkah-langkah Build Android:
-1. Buka **Android Studio**.
-2. Pilih **File -> Open**, lalu arahkan ke folder `kasir-android/`.
-3. Tunggu hingga proses *Gradle Sync* selesai.
-4. (Opsional) Buka `kasir-android/core/src/main/java/com/kasirinaja/core/network/RetrofitClient.kt`. Ubah `BASE_URL` dari `http://10.0.2.2:8080/api/` menjadi URL domain VPS Anda jika ingin mengetes versi production (misal: `https://api.domainkamu.com/api/`).
-5. Pada *toolbar* atas di Android Studio, Anda akan melihat pilihan modul.
-   - Pilih modul **app-store** untuk meng-compile Aplikasi Toko.
-   - Pilih modul **app-admin** untuk meng-compile Aplikasi Admin.
-6. Klik tombol **Run (Segitiga Hijau)**.
+### Langkah-langkah Build APK via HP (GitHub Actions):
+1. Buka repositori KASIRINAJA Anda di GitHub melalui browser HP.
+2. (Opsional) Jika Anda perlu mengubah `BASE_URL` API agar mengarah ke VPS Anda:
+   - Cari file `kasir-android/core/src/main/java/com/kasirinaja/core/network/RetrofitClient.kt`.
+   - Klik ikon **Pensil** untuk mengedit file, lalu ubah `"http://10.0.2.2:8080/api/"` menjadi `"https://api.domainkamu.com/api/"`.
+   - Simpan (*Commit changes*).
+3. Pindah ke menu **Actions** di repositori GitHub Anda.
+4. Buat atau jalankan alur kerja (workflow) untuk Build Android. GitHub akan menggunakan *Virtual Machine* mereka untuk meng-compile kode sumber Anda.
+5. Setelah *Build* selesai dan sukses (centang hijau), klik *workflow run* tersebut.
+6. Scroll ke bawah pada bagian **Artifacts**. Di sana akan ada file `app-release.apk` atau `app-debug.apk` yang bisa Anda unduh langsung ke HP Anda dan di-install.
 
-### Build APK (Untuk di-instal di HP):
-Jika Anda ingin membuat file APK:
-1. Di Android Studio, klik menu **Build -> Build Bundle(s) / APK(s) -> Build APK(s)**.
-2. File APK akan muncul di:
-   - `kasir-android/app-store/build/outputs/apk/debug/` (Aplikasi Toko)
-   - `kasir-android/app-admin/build/outputs/apk/debug/` (Aplikasi Admin)
+*(Catatan: Mengembangkan kode/menambah fitur baru tanpa PC sangat sulit dan tidak direkomendasikan, tetapi sekadar meng-compile kode yang sudah ada menjadi APK bisa dilakukan sepenuhnya lewat HP).*
 
 ---
 
 ## 3. Deployment Server VPS (Menggunakan aaPanel & Systemd)
 
-Agar API Spring Boot bisa terus berjalan di VPS walaupun terminal ditutup, gunakan `systemd`.
+Agar API Spring Boot bisa terus berjalan di VPS walaupun terminal ditutup, gunakan `systemd`. Anda bisa mengakses terminal VPS ini melalui aplikasi SSH di HP (seperti Termius atau JuiceSSH).
 
-1. Buat file service menggunakan command line editor:
+1. Buat file service menggunakan perintah `cat`:
    ```bash
    sudo sh -c 'cat << "SYSTEMD" > /etc/systemd/system/kasir-api.service
    [Unit]
