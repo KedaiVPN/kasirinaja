@@ -38,11 +38,11 @@ Setelah mendapatkan file `.jar` dari langkah 1.B, saatnya menyebarkannya (*deplo
 ### Plugin yang harus di-install di aaPanel:
 1. **Nginx** (Web Server & Reverse Proxy).
 2. **PostgreSQL** (Database).
-3. **Java / Tomcat** (Untuk menjalankan file `.jar`).
+3. **Java Manager** (Penting: Install dari menu "App Store" untuk menjalankan file `.jar`).
 4. **FTP Server** / **Pure-Ftpd** (Opsional, untuk upload dari HP).
 
-### Langkah Deploy via aaPanel (Tanpa Terminal):
-Berbeda dengan web React/Vue yang mengarahkan path ke folder `dist`, pada Java Spring Boot, kita akan menjalankan aplikasinya sebagai **Java Project**, bukan PHP/Static HTML project.
+### Langkah Deploy via Java Manager aaPanel:
+Berbeda dengan web React/Vue yang mengarahkan path ke folder `dist`, pada Java Spring Boot, kita akan menjalankan aplikasinya melalui plugin **Java Manager** yang langsung mengeksekusi file `.jar`.
 
 1. **Upload File `.jar`**:
    - Buka menu **Files** di aaPanel.
@@ -63,15 +63,20 @@ Berbeda dengan web React/Vue yang mengarahkan path ke folder `dist`, pada Java S
          username: username_postgres_anda
          password: password_postgres_anda
      ```
-4. **Jalankan Aplikasi Spring Boot**:
-   - Pergi ke menu **Website**, klik tab **Java Project**.
-   - Klik **Add Java project**.
-   - **Project jar/war path**: Klik ikon folder, lalu arahkan **langsung ke file `.jar`** yang Anda upload tadi (Contoh: `/www/wwwroot/kasir-api/kasir-api-0.0.1-SNAPSHOT.jar`).
-   - **Project port**: Isi dengan `8080`.
-   - Klik submit dan pastikan statusnya berubah menjadi "Running".
-5. **Setup Reverse Proxy Nginx & SSL**:
-   - Masih di pengaturan domain Java Project Anda (Atau di menu Website -> PHP Project), klik nama domain Anda (misal: `api.domainkamu.com`).
-   - Pergi ke menu **Reverse proxy**, tambahkan proksi ke `http://127.0.0.1:8080`.
+4. **Jalankan Aplikasi Spring Boot (Java Manager)**:
+   - Buka menu **App Store** -> cari **Java Manager** lalu klik *Setting/Buka*.
+   - Pilih tab **Project management** dan klik **Add project** (atau "Add SpringBoot project").
+   - Isi form berikut dengan hati-hati:
+     - **Project type**: Pilih *Spring_boot*.
+     - **Project path / Jar path**: Arahkan langsung ke file `.jar` Anda (Contoh: `/www/wwwroot/kasir-api/kasir-api-0.0.1-SNAPSHOT.jar`).
+     - **Project port**: Isi dengan `8080`.
+     - **Domain name**: Isi dengan domain API Anda (Misal: `api.domainkamu.com` atau masukkan IP VPS Anda jika belum punya domain). *Note: Kesalahan "Please enter the correct domain name" terjadi karena kolom ini kosong atau diisi spasi/karakter tidak valid.*
+     - **Run user**: Pilih `www` atau `root`.
+   - Klik **Submit** atau **Confirm**. Aplikasi Anda kini akan berjalan secara otomatis di *background*.
+5. **Setup Reverse Proxy Nginx & SSL (Jika belum diset otomatis oleh Java Manager)**:
+   - Jika Anda memasukkan domain di langkah ke-4, Java Manager biasanya otomatis membuatkan konfigurasi situs Nginx di menu **Website**.
+   - Pergi ke menu **Website**. Klik domain API Anda (`api.domainkamu.com`).
+   - Periksa tab **Reverse proxy**, pastikan proksinya mengarah ke `http://127.0.0.1:8080`.
    - Pergi ke menu **SSL**, dan klik "Let's Encrypt" untuk mendapatkan sertifikat HTTPS gratis.
 
 Selamat! API Anda sekarang sudah berjalan dan dapat diakses dari aplikasi Android Toko Anda.
