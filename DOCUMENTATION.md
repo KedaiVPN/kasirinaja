@@ -31,75 +31,87 @@ Untuk mendeploy *backend* Java (Spring Boot), **Anda TIDAK PERLU mengunggah selu
 
 ---
 
-## 2. Persiapan Deployment Server VPS Menggunakan aaPanel
+## 2. Deployment Server VPS (Murni via Terminal / Tanpa aaPanel)
 
-Setelah mendapatkan file `.jar` dari langkah 1.B, saatnya menyebarkannya (*deploy*) di VPS Anda.
+Mengingat aaPanel terkadang memiliki bug integrasi Java dan PostgreSQL (seperti *shared memory error*), deploy secara manual via Terminal OS Ubuntu/Debian justru lebih stabil, hemat memori, dan mudah diprediksi.
 
-### Plugin yang harus di-install di aaPanel:
-1. **Nginx** (Web Server & Reverse Proxy).
-2. **PostgreSQL** (Database).
-3. **Java Manager** (Atau instal JDK Manual via Terminal, lihat catatan di bawah).
-4. **FTP Server** / **Pure-Ftpd** (Opsional, untuk upload dari HP).
+Anda hanya perlu menggunakan aplikasi SSH di HP (seperti Termius atau JuiceSSH).
 
-### ⚠️ PERHATIAN: Masalah Java Manager Versi Lama (v2.4.1)
-Beberapa versi aaPanel (terutama yang gratis/versi lama) memiliki **Java Manager (v2.4.1) yang usang dan HANYA mentok mendukung JDK 1.8 (Java 8)**.
-Sedangkan aplikasi kita membutuhkan minimal **Java 21**. Jika Anda memaksakan file `.jar` dijalankan di Java 8 melalui Java Manager ini, aplikasi akan diam-diam *crash* ("Stopped").
-
-**Solusi Jitu:** Anda TIDAK BISA menggunakan Java Manager untuk mengeksekusi (run) file `.jar`. Anda harus meng-install Java 21 secara manual via Terminal/SSH, dan mendeploy file `.jar` menggunakan Systemd. Berikut panduan lengkapnya.
-
----
-
-## 3. Deployment Backend Menggunakan Terminal & Systemd (Alternatif Java Manager)
-
-Langkah ini dilakukan jika Java Manager di aaPanel Anda mentok di Java 8. Anda dapat menggunakan aplikasi SSH di HP (seperti Termius, JuiceSSH, atau menggunakan menu "Terminal" bawaan di dalam aaPanel).
-
-### Langkah 1: Install Java 21 (JDK 21) via Terminal
-Buka Terminal aaPanel atau aplikasi SSH Anda, jalankan perintah ini untuk mengunduh dan menginstal Java 21:
+### Langkah 1: Install Java 21 (JDK)
+Masuk ke terminal VPS Anda dan jalankan perintah:
 ```bash
 sudo apt update
 sudo apt install openjdk-21-jdk -y
 ```
-*(Catatan: Jika OS Anda CentOS/AlmaLinux, gunakan perintah `sudo yum install java-21-openjdk-devel -y`)*
-
-Cek apakah Java 21 sudah terpasang dengan benar:
+Pastikan instalasi berhasil dengan mengecek versinya:
 ```bash
 java -version
 ```
-(Pesan yang keluar harus menunjukkan "openjdk version 21...").
 
-### Langkah 2: Upload File `.jar` & Konfigurasi (Via GUI aaPanel)
-1. **Upload File `.jar`**:
-   - Buka menu **Files** di aaPanel.
-   - Buat folder `/www/wwwroot/kasir-api`.
-   - Upload file **`.jar`** ke dalam folder `/www/wwwroot/kasir-api`.
-2. **Setup Database**:
-   - Pergi ke menu **Databases -> PgSQL**.
-   - Klik *Add Database*, buat database bernama `kasirinaja`, buat user dan passwordnya.
-3. **Konfigurasi Database (application.yml)**:
-   - Di menu **Files**, buat file baru bernama `application.yml` persis di sebelah file `.jar` Anda.
-   - Isi dengan:
-     ```yaml
-     spring:
-       datasource:
-         url: jdbc:postgresql://localhost:5432/kasirinaja
-         username: username_postgres_anda
-         password: password_postgres_anda
-     ```
+### Langkah 2: Install & Setup PostgreSQL
+Mari kita install database PostgreSQL langsung di OS.
+1. Install PostgreSQL:
+   ```bash
+   sudo apt install postgresql postgresql-contrib -y
+   ```
+2. Pastikan service berjalan otomatis:
+   ```bash
+   sudo systemctl enable postgresql
+   sudo systemctl start postgresql
+   ```
+3. Masuk ke console PostgreSQL (`psql`):
+   ```bash
+   sudo -i -u postgres psql
+   ```
+4. Di dalam console PostgreSQL (ada tanda `postgres=#`), jalankan perintah SQL ini satu per satu (ganti passwordnya sesuai keinginan Anda):
+   ```sql
+   CREATE DATABASE kasirinaja;
+   CREATE USER kasirinaja WITH ENCRYPTED PASSWORD 'bendakerep123';
+   GRANT ALL PRIVILEGES ON DATABASE kasirinaja TO kasirinaja;
+   \c kasirinaja
+   GRANT ALL ON SCHEMA public TO kasirinaja;
+   \q
+   ```
+*(Perintah `\q` digunakan untuk keluar dari console).*
 
-### Langkah 3: Membuat Systemd Service (Via Terminal)
-Kembali ke Terminal. Kita akan membuat *service* agar Spring Boot otomatis berjalan di background dan otomatis *restart* jika server mati.
+### Langkah 3: Upload `.jar` dan Buat `application.yml`
+1. Buat folder untuk aplikasi Anda:
+   ```bash
+   sudo mkdir -p /var/www/kasir-api
+   sudo chown -R $USER:$USER /var/www/kasir-api
+   ```
+2. Upload file `.jar` (hasil unduhan dari GitHub Actions di Langkah 1.B) ke folder `/var/www/kasir-api/` menggunakan aplikasi SFTP/Termius.
+3. Buat konfigurasi `application.yml` di terminal:
+   ```bash
+   cat << 'EOF' > /var/www/kasir-api/application.yml
+   server:
+     port: 8080
 
-Jalankan perintah ini:
+   spring:
+     datasource:
+       url: jdbc:postgresql://localhost:5432/kasirinaja
+       username: kasirinaja
+       password: bendakerep123
+       driver-class-name: org.postgresql.Driver
+     jpa:
+       hibernate:
+         ddl-auto: validate
+   EOF
+   ```
+
+### Langkah 4: Membuat Systemd Service
+Agar aplikasi Spring Boot terus menyala meskipun terminal Anda tutup, buat sebuah daemon service:
+
 ```bash
 sudo sh -c 'cat << "SYSTEMD" > /etc/systemd/system/kasir-api.service
 [Unit]
 Description=KasirinAja Spring Boot API
-After=syslog.target network.target
+After=syslog.target network.target postgresql.service
 
 [Service]
 User=root
-WorkingDirectory=/www/wwwroot/kasir-api
-ExecStart=/usr/bin/java -jar /www/wwwroot/kasir-api/kasir-api-0.0.1-SNAPSHOT.jar
+WorkingDirectory=/var/www/kasir-api
+ExecStart=/usr/bin/java -jar /var/www/kasir-api/kasir-api-0.0.1-SNAPSHOT.jar
 SuccessExitStatus=143
 Restart=always
 RestartSec=10
@@ -108,31 +120,56 @@ RestartSec=10
 WantedBy=multi-user.target
 SYSTEMD'
 ```
-*(Penting: Ganti tulisan `kasir-api-0.0.1-SNAPSHOT.jar` dengan nama asli file `.jar` yang Anda upload).*
+*(Catatan: Sesuaikan nama `kasir-api-0.0.1-SNAPSHOT.jar` dengan nama asli file Anda jika berbeda).*
 
-### Langkah 4: Jalankan Service
-Di terminal, jalankan urutan perintah ini:
+Jalankan aplikasinya:
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable kasir-api.service
 sudo systemctl start kasir-api.service
 ```
 
-Untuk melihat apakah aplikasi berhasil berjalan (atau mengecek error), gunakan perintah ini:
+Cek log-nya untuk memastikan Spring Boot menyala dan berhasil membuat tabel di PostgreSQL:
 ```bash
 sudo journalctl -u kasir-api.service -f
 ```
 
-### Langkah 5: Setup Reverse Proxy Nginx & SSL (Via GUI aaPanel)
-Karena kita tidak memakai Java Manager, kita buat websitenya manual.
-1. Pergi ke menu **Website** -> tab **PHP Project** di aaPanel.
-2. Klik **Add site**.
-   - Isi **Domain** dengan domain API Anda (Misal: `api.domainkamu.com`).
-   - Biarkan PHP version di "Pure Static" (karena kita akan mem-bypassnya).
-3. Setelah website terbuat, klik nama domainnya.
-4. Pergi ke menu **Reverse proxy** -> **Add reverse proxy**.
-   - Target URL: `http://127.0.0.1:8080`.
-   - Simpan.
-5. Pergi ke menu **SSL**, dan klik "Let's Encrypt" untuk mendapatkan sertifikat HTTPS gratis.
+### Langkah 5: Install Nginx & Reverse Proxy
+Agar API bisa diakses publik (tanpa harus mengetik port 8080 di URL) dan mendukung HTTPS.
 
-Selesai! API Anda sudah berjalan menggunakan Java 21 murni tanpa keterbatasan Java Manager aaPanel.
+1. Install Nginx:
+   ```bash
+   sudo apt install nginx -y
+   ```
+2. Buat konfigurasi routing Nginx:
+   ```bash
+   sudo sh -c 'cat << "NGINX" > /etc/nginx/sites-available/kasirinaja
+   server {
+       listen 80;
+       server_name api.domainkamu.com;
+
+       location /uploads/ {
+           alias /var/www/kasir-api/uploads/;
+           autoindex off;
+       }
+
+       location / {
+           proxy_pass http://127.0.0.1:8080;
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto $scheme;
+       }
+   }
+   NGINX'
+   ```
+3. Aktifkan konfigurasi dan restart Nginx:
+   ```bash
+   sudo ln -s /etc/nginx/sites-available/kasirinaja /etc/nginx/sites-enabled/
+   sudo nginx -t
+   sudo systemctl restart nginx
+   ```
+
+*(Opsional: Gunakan `certbot` untuk menginstall SSL gratis dari Let's Encrypt dengan perintah: `sudo apt install certbot python3-certbot-nginx -y` lalu jalankan `sudo certbot --nginx -d api.domainkamu.com`)*.
+
+Selesai! Seluruh arsitektur backend Anda kini berjalan di lingkungan yang bersih, *native*, dan stabil.
