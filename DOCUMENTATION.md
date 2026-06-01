@@ -173,3 +173,14 @@ Agar API bisa diakses publik (tanpa harus mengetik port 8080 di URL) dan menduku
 *(Opsional: Gunakan `certbot` untuk menginstall SSL gratis dari Let's Encrypt dengan perintah: `sudo apt install certbot python3-certbot-nginx -y` lalu jalankan `sudo certbot --nginx -d api.domainkamu.com`)*.
 
 Selesai! Seluruh arsitektur backend Anda kini berjalan di lingkungan yang bersih, *native*, dan stabil.
+
+### Troubleshooting Tambahan: Reset Database jika Migration Gagal
+Jika saat pertama kali menjalankan service Anda mendapat error schema tidak cocok/migration gagal (karena perubahan skema di update kode), hapus database lama dan buat ulang:
+```bash
+sudo -i -u postgres psql
+DROP DATABASE kasirinaja;
+CREATE DATABASE kasirinaja;
+GRANT ALL PRIVILEGES ON DATABASE kasirinaja TO kasirinaja;
+\q
+sudo systemctl restart kasir-api.service
+```

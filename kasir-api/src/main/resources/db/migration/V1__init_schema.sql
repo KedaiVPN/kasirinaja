@@ -91,6 +91,9 @@ CREATE TABLE transactions (
 );
 
 CREATE TABLE transaction_items (
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     transaction_id UUID NOT NULL REFERENCES transactions(id),
     store_product_id UUID NOT NULL REFERENCES store_products(id),
@@ -104,6 +107,8 @@ CREATE TABLE transaction_items (
 );
 
 CREATE TABLE stock_movements (
+    is_active BOOLEAN DEFAULT TRUE,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     store_id UUID NOT NULL REFERENCES stores(id),
     store_product_id UUID NOT NULL REFERENCES store_products(id),
