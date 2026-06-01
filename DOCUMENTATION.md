@@ -41,9 +41,12 @@ Setelah mendapatkan file `.jar` dari langkah 1.B, saatnya menyebarkannya (*deplo
 3. **Java Manager** (Penting: Install dari menu "App Store" untuk menjalankan file `.jar`).
 4. **FTP Server** / **Pure-Ftpd** (Opsional, untuk upload dari HP).
 
-### Langkah Deploy via Java Manager aaPanel:
-Berbeda dengan web React/Vue yang mengarahkan path ke folder `dist`, pada Java Spring Boot, kita akan menjalankan aplikasinya melalui plugin **Java Manager** yang langsung mengeksekusi file `.jar`.
+### Catatan Penting Mengenai Versi Java di aaPanel (Troubleshooting):
+*   Plugin **Java Manager** versi lama/bawaan seringkali hanya mendukung Tomcat 7/8/9 yang masih menggunakan Java 8 (JDK 1.8).
+*   Sedangkan file `.jar` dari proyek Spring Boot ini di-build menggunakan **Java 21**. Jika Anda memaksakan file ini dijalankan di Java 8, Java Manager akan gagal (`Stopped` tanpa log).
+*   **Solusi:** Di menu Java Manager, pergi ke tab **Version Management**. Anda **WAJIB** menginstall JDK 21 (atau Tomcat versi terbaru yang menggunakan Java 21+). Jika tidak ada di daftar GUI, aaPanel terbaru punya tab *SpringBoot* independen di menu Website yang bisa langsung menjalankan *jar environment*.
 
+### Langkah Deploy via Java Manager aaPanel:
 1. **Upload File `.jar`**:
    - Buka menu **Files** di aaPanel.
    - Buat folder baru, misalnya `/www/wwwroot/kasir-api`.
@@ -70,6 +73,7 @@ Berbeda dengan web React/Vue yang mengarahkan path ke folder `dist`, pada Java S
      - **Project type**: Pilih *Spring_boot*.
      - **Project path / Jar path**: Arahkan langsung ke file `.jar` Anda (Contoh: `/www/wwwroot/kasir-api/kasir-api-0.0.1-SNAPSHOT.jar`).
      - **Project port**: Isi dengan `8080`.
+     - **JDK Version**: Pilih JDK 21 (Sangat penting!).
      - **Domain name**: Isi dengan domain API Anda (Misal: `api.domainkamu.com` atau masukkan IP VPS Anda jika belum punya domain). *Note: Kesalahan "Please enter the correct domain name" terjadi karena kolom ini kosong atau diisi spasi/karakter tidak valid.*
      - **Run user**: Pilih `www` atau `root`.
    - Klik **Submit** atau **Confirm**. Aplikasi Anda kini akan berjalan secara otomatis di *background*.
