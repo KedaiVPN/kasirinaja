@@ -21,35 +21,41 @@ Membangun aplikasi Android (`.apk`) maupun backend Java (`.jar`) biasanya membut
 7. Klik untuk mengunduh, lalu instal di HP Anda.
 
 ### B. Build Backend API (`.jar`):
-File `.jar` adalah aplikasi *backend* yang nantinya akan kita masukkan ke VPS agar toko bisa saling sinkron data. File `.jar` **TIDAK** otomatis terbuat saat Anda membuild `.apk`.
-1. Di menu/tab **Actions**, pilih workflow **"Build Backend JAR"**.
+Untuk mendeploy *backend* Java (Spring Boot), **Anda TIDAK PERLU mengunggah seluruh *source code* (folder `kasir-api`) ke VPS Anda**. Sama seperti React/Vue yang di-*build* menjadi folder `dist`, Spring Boot di-*build* menjadi satu buah file berekstensi `.jar`. **Hanya file `.jar` ini saja yang perlu diunggah ke VPS.**
+
+1. Di menu/tab **Actions** di GitHub, pilih workflow **"Build Backend JAR"**.
 2. Klik tombol **"Run workflow"**.
 3. Setelah selesai (centang hijau), klik hasil workflow-nya.
-4. Scroll ke bagian **Artifacts**, klik **kasir-api-jar** untuk mengunduhnya ke HP. (File ini nantinya akan Anda *upload* ke VPS / aaPanel).
+4. Scroll ke bagian **Artifacts**, klik **kasir-api-jar** untuk mengunduhnya ke HP.
+5. Ekstrak file .zip yang Anda unduh, di dalamnya akan ada file berakhiran `.jar` (misalnya: `kasir-api-0.0.1-SNAPSHOT.jar`).
 
 ---
 
 ## 2. Persiapan Deployment Server VPS Menggunakan aaPanel
 
-Setelah mendapatkan file `.jar` dari langkah 1.B, saatnya menyebarkannya (*deploy*) di VPS Anda. Berikut daftar Plugin yang **WAJIB** Anda install dari menu **App Store** di dalam aaPanel:
+Setelah mendapatkan file `.jar` dari langkah 1.B, saatnya menyebarkannya (*deploy*) di VPS Anda.
 
 ### Plugin yang harus di-install di aaPanel:
-1. **Nginx** (Versi berapa saja yang terbaru, rekomendasi Nginx 1.22+).
-   - *Fungsi:* Sebagai web server untuk meneruskan internet (Reverse Proxy) ke API dan mengurus HTTPS.
-2. **PostgreSQL** (Versi 14, 15, atau yang terbaru).
-   - *Fungsi:* Menyimpan data transaksi dan katalog produk. Setelah install, buat database baru dengan nama `kasirinaja` dan buat *username/password* melalui menu "Databases" -> "PgSQL".
-3. **Java / Tomcat** (Pilih Java 17 atau Java 21).
-   - *Fungsi:* Menjalankan aplikasi backend (file `.jar`) yang Anda unduh dari GitHub. aaPanel menyediakan menu khusus "Java Project" untuk mempermudah.
-4. **FTP Server** / **Pure-Ftpd** (Opsional).
-   - *Fungsi:* Memudahkan Anda mengirim file `.jar` dan foto produk dari memori HP ke server VPS menggunakan aplikasi seperti AndFTP di HP.
+1. **Nginx** (Web Server & Reverse Proxy).
+2. **PostgreSQL** (Database).
+3. **Java / Tomcat** (Untuk menjalankan file `.jar`).
+4. **FTP Server** / **Pure-Ftpd** (Opsional, untuk upload dari HP).
 
 ### Langkah Deploy via aaPanel (Tanpa Terminal):
-1. **Upload File `.jar`**: Buka menu **Files** di aaPanel. Buat folder baru, misalnya `/www/wwwroot/kasir-api`. Upload file JAR yang Anda dapatkan dari GitHub Actions (Langkah 1.B) ke dalam folder tersebut.
-2. **Setup Database**: Pergi ke menu **Databases -> PgSQL**. Klik *Add Database*, masukkan nama `kasirinaja`, buat user dan passwordnya.
-3. **Konfigurasi Backend**:
-   - Karena Anda tidak menggunakan editor IDE, Anda harus mengatur rahasia *database* dari aaPanel.
-   - Pergi ke menu **Files**, masuk ke folder tempat `.jar` Anda berada, lalu buat file baru bernama `application.yml` persis di sebelah file `.jar` tersebut.
-   - Edit `application.yml` dan isi dengan konfigurasi database PostgreSQL yang baru saja Anda buat:
+Berbeda dengan web React/Vue yang mengarahkan path ke folder `dist`, pada Java Spring Boot, kita akan menjalankan aplikasinya sebagai **Java Project**, bukan PHP/Static HTML project.
+
+1. **Upload File `.jar`**:
+   - Buka menu **Files** di aaPanel.
+   - Buat folder baru, misalnya `/www/wwwroot/kasir-api`.
+   - Upload file **`.jar`** (hasil ekstrak dari GitHub Actions) ke dalam folder `/www/wwwroot/kasir-api` tersebut.
+   - *(Ingat: Folder `kasir-api` dari GitHub JANGAN di-upload ke sini).*
+2. **Setup Database**:
+   - Pergi ke menu **Databases -> PgSQL**.
+   - Klik *Add Database*, masukkan nama `kasirinaja`, lalu buat user dan passwordnya.
+3. **Konfigurasi Database (application.yml)**:
+   - Pergi ke menu **Files** aaPanel, masuk ke folder `/www/wwwroot/kasir-api`.
+   - Buat file baru bernama `application.yml` persis di sebelah/satu folder dengan file `.jar` Anda.
+   - Edit `application.yml` dan isi dengan konfigurasi berikut:
      ```yaml
      spring:
        datasource:
@@ -60,13 +66,12 @@ Setelah mendapatkan file `.jar` dari langkah 1.B, saatnya menyebarkannya (*deplo
 4. **Jalankan Aplikasi Spring Boot**:
    - Pergi ke menu **Website**, klik tab **Java Project**.
    - Klik **Add Java project**.
-   - **Project jar/war path**: Pilih file `.jar` yang baru Anda upload.
+   - **Project jar/war path**: Klik ikon folder, lalu arahkan **langsung ke file `.jar`** yang Anda upload tadi (Contoh: `/www/wwwroot/kasir-api/kasir-api-0.0.1-SNAPSHOT.jar`).
    - **Project port**: Isi dengan `8080`.
-   - Centang opsi agar dia menggunakan `application.yml` eksternal jika dibutuhkan.
-   - Klik submit dan pastikan statusnya "Running".
+   - Klik submit dan pastikan statusnya berubah menjadi "Running".
 5. **Setup Reverse Proxy Nginx & SSL**:
-   - Masih di pengaturan domain Java Project Anda (Atau di menu Website -> PHP Project), klik nama domain Anda (`api.domainkamu.com`).
+   - Masih di pengaturan domain Java Project Anda (Atau di menu Website -> PHP Project), klik nama domain Anda (misal: `api.domainkamu.com`).
    - Pergi ke menu **Reverse proxy**, tambahkan proksi ke `http://127.0.0.1:8080`.
    - Pergi ke menu **SSL**, dan klik "Let's Encrypt" untuk mendapatkan sertifikat HTTPS gratis.
 
-*Anda tidak perlu masuk ke terminal/SSH dari HP untuk mengetikkan perintah apa pun secara manual, semua sudah dikelola oleh antarmuka visual (GUI) aaPanel.*
+Selamat! API Anda sekarang sudah berjalan dan dapat diakses dari aplikasi Android Toko Anda.
