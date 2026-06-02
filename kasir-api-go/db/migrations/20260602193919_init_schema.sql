@@ -1,9 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     full_name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE,
     phone VARCHAR(20) UNIQUE,
@@ -16,7 +14,7 @@ CREATE TABLE users (
 );
 
 CREATE TABLE stores (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     owner_id UUID NOT NULL REFERENCES users(id),
     store_code VARCHAR(50) UNIQUE NOT NULL,
     store_name VARCHAR(255) NOT NULL,
@@ -30,7 +28,7 @@ CREATE TABLE stores (
 ALTER TABLE users ADD CONSTRAINT fk_user_store FOREIGN KEY (store_id) REFERENCES stores(id);
 
 CREATE TABLE categories (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     slug VARCHAR(255) UNIQUE NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
@@ -39,7 +37,7 @@ CREATE TABLE categories (
 );
 
 CREATE TABLE brands (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -47,7 +45,7 @@ CREATE TABLE brands (
 );
 
 CREATE TABLE master_products (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     barcode VARCHAR(255) UNIQUE NOT NULL,
     name VARCHAR(255) NOT NULL,
     photo_url VARCHAR(500),
@@ -64,7 +62,7 @@ CREATE TABLE master_products (
 );
 
 CREATE TABLE store_products (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     store_id UUID NOT NULL REFERENCES stores(id),
     master_product_id UUID NOT NULL REFERENCES master_products(id),
     buy_price DECIMAL(15, 2) NOT NULL DEFAULT 0,
@@ -78,7 +76,7 @@ CREATE TABLE store_products (
 );
 
 CREATE TABLE transactions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     store_id UUID NOT NULL REFERENCES stores(id),
     cashier_id UUID NOT NULL REFERENCES users(id),
     invoice_number VARCHAR(100) UNIQUE NOT NULL,
@@ -95,7 +93,7 @@ CREATE TABLE transactions (
 );
 
 CREATE TABLE transaction_items (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     transaction_id UUID NOT NULL REFERENCES transactions(id),
     store_product_id UUID NOT NULL REFERENCES store_products(id),
     master_product_id UUID NOT NULL REFERENCES master_products(id),
@@ -111,7 +109,7 @@ CREATE TABLE transaction_items (
 );
 
 CREATE TABLE stock_movements (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     store_id UUID NOT NULL REFERENCES stores(id),
     store_product_id UUID NOT NULL REFERENCES store_products(id),
     movement_type VARCHAR(50) NOT NULL,

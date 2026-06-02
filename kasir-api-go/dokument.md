@@ -6,7 +6,7 @@ Dokumen ini berisi panduan langkah demi langkah untuk melakukan *deploy* dan *bu
 
 Sebelum memulai, pastikan server aaPanel Anda sudah memiliki komponen berikut:
 
-1.  **PostgreSQL** (Bisa diinstal melalui App Store aaPanel atau berjalan di Docker).
+1.  **PostgreSQL** (Bisa diinstal melalui App Store aaPanel atau berjalan di Docker). Disarankan menggunakan PostgreSQL versi 13 atau lebih baru yang sudah mendukung fungsi `gen_random_uuid()` secara bawaan.
 2.  **Nginx** (Sudah terinstal secara *default* di aaPanel).
 3.  Akses Terminal/SSH ke server Ubuntu Anda (sebagai *root* atau *user* dengan akses *sudo*).
 4.  Domain atau *subdomain* yang sudah diarahkan (A record) ke IP *server* Anda.
@@ -84,7 +84,8 @@ goose -version
 
 ## Langkah 4: Migrasi Database
 
-Jalankan migrasi menggunakan *goose* dari terminal SSH di direktori aplikasi Anda:
+Jalankan migrasi menggunakan *goose* dari terminal SSH di direktori aplikasi Anda.
+*(Catatan: Migrasi ini menggunakan fungsi `gen_random_uuid()` bawaan PostgreSQL modern, sehingga tidak memerlukan ekstensi khusus yang butuh akses Superuser)*.
 
 ```bash
 cd /www/wwwroot/api.domainanda.com
