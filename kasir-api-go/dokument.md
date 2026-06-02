@@ -1,6 +1,6 @@
-# Panduan Deployment Kasir API (Go) di aaPanel
+# Panduan Deployment Kasir API (Go) di aaPanel (Build via VPS Ubuntu)
 
-Dokumen ini berisi panduan langkah demi langkah untuk melakukan *deploy* aplikasi backend **Kasir API** yang ditulis menggunakan Go ke *server* yang menggunakan **aaPanel**.
+Dokumen ini berisi panduan langkah demi langkah untuk melakukan *deploy* dan *build* aplikasi backend **Kasir API** yang ditulis menggunakan Go langsung di *server* Ubuntu Anda yang menggunakan **aaPanel**.
 
 ## Prasyarat
 
@@ -8,12 +8,41 @@ Sebelum memulai, pastikan server aaPanel Anda sudah memiliki komponen berikut:
 
 1.  **PostgreSQL** (Bisa diinstal melalui App Store aaPanel atau berjalan di Docker).
 2.  **Nginx** (Sudah terinstal secara *default* di aaPanel).
-3.  Akses Terminal/SSH ke server (sebagai *root* atau *user* dengan akses *sudo*).
-4.  (Opsional tapi disarankan) Domain atau *subdomain* yang sudah diarahkan (A record) ke IP *server* Anda.
+3.  Akses Terminal/SSH ke server Ubuntu Anda (sebagai *root* atau *user* dengan akses *sudo*).
+4.  Domain atau *subdomain* yang sudah diarahkan (A record) ke IP *server* Anda.
 
 ---
 
-## Langkah 1: Persiapan Database di aaPanel
+## Langkah 1: Instalasi Golang & Goose di VPS Ubuntu
+
+Karena Anda akan melakukan *build* dan migrasi langsung di VPS, instal Go dan Goose terlebih dahulu melalui SSH.
+
+**1. Install Golang:**
+```bash
+# Hapus versi Go lama (jika ada) dan ekstrak versi terbaru
+wget https://go.dev/dl/go1.22.0.linux-amd64.tar.gz
+sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.22.0.linux-amd64.tar.gz
+
+# Tambahkan Go ke PATH (jalankan baris ini satu per satu)
+echo "export PATH=\$PATH:/usr/local/go/bin" >> ~/.profile
+echo "export PATH=\$PATH:\$(/usr/local/go/bin/go env GOPATH)/bin" >> ~/.profile
+source ~/.profile
+
+# Verifikasi instalasi Go
+go version
+```
+
+**2. Install Goose (Alat Migrasi):**
+```bash
+go install github.com/pressly/goose/v3/cmd/goose@latest
+
+# Verifikasi instalasi Goose
+goose -version
+```
+
+---
+
+## Langkah 2: Persiapan Database di aaPanel
 
 1.  Buka **aaPanel**.
 2.  Masuk ke menu **Databases** > **PostgreSQL** (atau Add Database jika menggunakan plugin eksternal/Docker).
@@ -21,123 +50,101 @@ Sebelum memulai, pastikan server aaPanel Anda sudah memiliki komponen berikut:
     *   **DB Name:** `kasir` (atau sesuai keinginan).
     *   **Username:** `kasir_user`
     *   **Password:** Buat *password* yang kuat.
-4.  Catat kredensial ini karena akan digunakan di *file* `.env` nanti.
+4.  Catat kredensial ini karena akan digunakan di *file* `.env` dan migrasi.
 
 ---
 
-## Langkah 2: Build Aplikasi Go
+## Langkah 3: Upload Source Code & Build Aplikasi
 
-Lebih disarankan melakukan *build* aplikasi di komputer lokal Anda (atau di CI/CD) untuk menghindari perlunya menginstal Go di server *production*.
-
-Di terminal komputer lokal Anda, jalankan perintah berikut:
-
-```bash
-# Set target OS ke Linux dan arsitektur ke amd64 (sesuaikan jika server menggunakan ARM)
-GOOS=linux GOARCH=amd64 go build -o kasir-api-app main.go
-```
-
-Perintah di atas akan menghasilkan *file* *binary* bernama `kasir-api-app`.
-
----
-
-## Langkah 3: Upload File ke Server
-
-1.  Di **aaPanel**, masuk ke menu **Files**.
-2.  Buat direktori baru untuk aplikasi Anda, misalnya di `/www/wwwroot/api.domainanda.com`.
-3.  Unggah (*upload*) *file* berikut ke dalam folder tersebut:
-    *   `kasir-api-app` (File *binary* yang baru saja di-*build*).
-    *   Folder `db/migrations` (Berisi *file* skema SQL).
-4.  Buat *file* baru bernama `.env` di dalam folder tersebut dan isi dengan konfigurasi berikut:
-
-```env
-PORT=8080
-DATABASE_URL=postgres://kasir_user:PASSWORD_ANDA@127.0.0.1:5432/kasir?sslmode=disable
-GIN_MODE=release
-```
-*(Ganti `PASSWORD_ANDA` dan nama *database* sesuai dengan yang Anda buat di Langkah 1)*.
+1. Upload *source code* (folder `kasir-api-go`) ke server aaPanel Anda. Letakkan di direktori *website*, misalnya di `/www/wwwroot/api.domainanda.com`.
+2. Buka Terminal SSH, lalu navigasi ke direktori tersebut:
+   ```bash
+   cd /www/wwwroot/api.domainanda.com
+   ```
+3. Unduh dependensi dan *build* aplikasinya:
+   ```bash
+   go mod tidy
+   go build -o kasir-api-app main.go
+   ```
+4. Pastikan file `kasir-api-app` terbentuk dan ubah hak aksesnya:
+   ```bash
+   chmod +x kasir-api-app
+   ```
+5. Buat file `.env` di folder yang sama:
+   ```bash
+   cat << 'ENVEOF' > .env
+   PORT=8080
+   DATABASE_URL=postgres://kasir_user:PASSWORD_ANDA@127.0.0.1:5432/kasir?sslmode=disable
+   GIN_MODE=release
+   ENVEOF
+   ```
+   *(Ganti `PASSWORD_ANDA` dan nama *database* sesuai yang dibuat di Langkah 2).*
 
 ---
 
-## Langkah 4: Berikan Izin Eksekusi (Execute Permission)
+## Langkah 4: Migrasi Database
 
-Agar *file binary* bisa dijalankan, berikan izin eksekusi.
-1.  Di menu **Files** aaPanel, klik kanan pada *file* `kasir-api-app`.
-2.  Pilih **Permission**.
-3.  Ubah *permission* menjadi `755` atau centang opsi *Execute* (x) untuk *Owner*.
+Jalankan migrasi menggunakan *goose* dari terminal SSH di direktori aplikasi Anda:
 
-*(Atau via SSH: `chmod +x /www/wwwroot/api.domainanda.com/kasir-api-app`)*
-
----
-
-## Langkah 5: Migrasi Database (Goose)
-
-Untuk menjalankan migrasi, Anda membutuhkan *tool* `goose`. Jika belum ada di server, Anda bisa menginstalnya atau menjalankan migrasi dari komputer lokal dengan mengarahkan `DATABASE_URL` ke server Anda.
-
-Jika menjalankan dari SSH Server:
 ```bash
 cd /www/wwwroot/api.domainanda.com
-# Pastikan goose sudah terinstal di server, lalu jalankan:
 goose -dir db/migrations postgres "postgres://kasir_user:PASSWORD_ANDA@127.0.0.1:5432/kasir?sslmode=disable" up
 ```
+*(Ganti `PASSWORD_ANDA` sesuai password database Anda)*.
 
 ---
 
-## Langkah 6: Menjalankan Aplikasi dengan Supervisor (Daemon)
+## Langkah 5: Menjalankan Aplikasi dengan Supervisor (Daemon)
 
-Aplikasi Go harus berjalan di latar belakang secara terus-menerus. Di aaPanel, cara termudah adalah menggunakan **Supervisor**.
+Agar aplikasi terus menyala meskipun SSH ditutup, gunakan Supervisor.
 
 1.  Buka menu **App Store** di aaPanel.
 2.  Cari dan instal **Supervisor** (jika belum ada).
-3.  Setelah terinstal, buka **Supervisor** dan klik **Add Daemon**.
+3.  Buka **Supervisor** dan klik **Add Daemon**.
 4.  Isi konfigurasi berikut:
     *   **Name:** `kasir-api`
     *   **Run User:** `root` (atau *user* `www`)
-    *   **Run Dir:** `/www/wwwroot/api.domainanda.com` (Pilih folder aplikasi Anda)
+    *   **Run Dir:** `/www/wwwroot/api.domainanda.com`
     *   **Start Command:** `/www/wwwroot/api.domainanda.com/kasir-api-app`
     *   **Processes:** 1
 5.  Klik **Confirm**.
-6.  Pastikan status *daemon* berubah menjadi **Running**. Anda bisa mengecek log di tombol **Log** untuk memastikan aplikasi berjalan (misalnya muncul tulisan `Server is running on port 8080`).
+6.  Klik tombol **Log** untuk memastikan aplikasi berjalan (misalnya muncul tulisan `Server is running on port 8080`).
 
 ---
 
-## Langkah 7: Konfigurasi Nginx (Reverse Proxy)
+## Langkah 6: Konfigurasi Nginx (Reverse Proxy)
 
-Sekarang aplikasi berjalan di *port* `8080`. Kita perlu mengeksposnya ke publik melalui Nginx di *port* `80` (atau `443` untuk HTTPS).
+Ekspos aplikasi ke publik melalui Nginx di *port* 80/443.
 
 1.  Di **aaPanel**, masuk ke menu **Websites**.
 2.  Klik **Add site**.
 3.  Masukkan nama domain/subdomain Anda (misal: `api.domainanda.com`).
-4.  Pada bagian **PHP version**, pilih **Static** (karena ini bukan aplikasi PHP).
-5.  Pada bagian **Site directory**, arahkan ke `/www/wwwroot/api.domainanda.com`.
+4.  Pada bagian **PHP version**, pilih **Static**.
+5.  Pada bagian **Site directory**, biarkan menunjuk ke `/www/wwwroot/api.domainanda.com`.
 6.  Klik **Submit**.
-
-Setelah situs ditambahkan:
-1.  Klik nama situs Anda (atau klik tulisan `Conf`).
-2.  Masuk ke tab **Reverse proxy**.
-3.  Klik **Add reverse proxy**.
-4.  Isi konfigurasi:
+7.  Klik nama situs Anda (atau klik `Conf`), masuk ke tab **Reverse proxy**.
+8.  Klik **Add reverse proxy**.
+9.  Isi konfigurasi:
     *   **Proxy name:** `go-api`
     *   **Target URL:** `http://127.0.0.1:8080`
     *   **Sent Domain:** `$host`
-5.  Klik **Submit**.
+10. Klik **Submit**.
 
-*(Opsional)* Anda bisa langsung mengaktifkan SSL dengan masuk ke tab **SSL**, pilih **Let's Encrypt**, centang domain Anda, dan klik **Apply**.
+*(Opsional)* Aktifkan SSL di tab **SSL**, pilih **Let's Encrypt**, centang domain Anda, dan klik **Apply**.
 
 ---
 
-## Langkah 8: Pengujian
+## Langkah 7: Pengujian
 
-Buka *browser* atau aplikasi seperti Postman/cURL, lalu akses:
+Buka *browser* atau aplikasi Postman, akses:
 
 ```text
-http(s)://api.domainanda.com/api/health
+https://api.domainanda.com/api/health
 ```
 
-Jika berhasil, Anda akan menerima respons:
+Jika berhasil, responsnya adalah:
 ```json
 {
     "status": "ok"
 }
 ```
-
-**Selesai!** Aplikasi Backend Kasir API Go Anda telah berhasil di-*deploy* dan siap digunakan di production.
