@@ -95,43 +95,23 @@ goose -dir db/migrations postgres "postgres://kasir_user:PASSWORD_ANDA@127.0.0.1
 
 ---
 
-## Langkah 5: Menjalankan Aplikasi dengan Supervisor (Daemon)
+## Langkah 5: Deployment Menggunakan Fitur Go Project di aaPanel
 
-Agar aplikasi terus menyala meskipun SSH ditutup, gunakan Supervisor.
+aaPanel memiliki fitur bawaan untuk menjalankan aplikasi Go dengan lebih mudah. Fitur ini akan otomatis menangani daemon (agar aplikasi terus berjalan) dan juga konfigurasi reverse proxy Nginx.
 
-1.  Buka menu **App Store** di aaPanel.
-2.  Cari dan instal **Supervisor** (jika belum ada).
-3.  Buka **Supervisor** dan klik **Add Daemon**.
+1.  Buka menu **Website** di aaPanel.
+2.  Klik pada tab **Go project** (terletak di bagian atas, sejajar dengan PHP project, Node project, dll).
+3.  Klik **Add Go project**.
 4.  Isi konfigurasi berikut:
-    *   **Name:** `kasir-api`
-    *   **Run User:** `root` (atau *user* `www`)
-    *   **Run Dir:** `/www/wwwroot/api.domainanda.com`
-    *   **Start Command:** `/www/wwwroot/api.domainanda.com/kasir-api-app`
-    *   **Processes:** 1
-5.  Klik **Confirm**.
-6.  Klik tombol **Log** untuk memastikan aplikasi berjalan (misalnya muncul tulisan `Server is running on port 8080`).
+    *   **Project name:** `kasir-api` (atau nama lain yang Anda inginkan)
+    *   **Project path:** Pilih folder tempat Anda menaruh *source code* (misalnya `/www/wwwroot/api.domainanda.com`)
+    *   **Executable file:** Pilih file *binary* yang sudah Anda *build* di langkah sebelumnya (misalnya `/www/wwwroot/api.domainanda.com/kasir-api-app`)
+    *   **Port:** `8080` (Pastikan port ini sama dengan yang ada di file `.env`)
+    *   **Run user:** `www`
+    *   **Domain:** Masukkan nama domain atau subdomain Anda (misal: `api.domainanda.com`)
+5.  Klik **Submit**. aaPanel akan secara otomatis membuatkan konfigurasi Nginx dan menjalankan aplikasi Go Anda di latar belakang.
 
----
-
-## Langkah 6: Konfigurasi Nginx (Reverse Proxy)
-
-Ekspos aplikasi ke publik melalui Nginx di *port* 80/443.
-
-1.  Di **aaPanel**, masuk ke menu **Websites**.
-2.  Klik **Add site**.
-3.  Masukkan nama domain/subdomain Anda (misal: `api.domainanda.com`).
-4.  Pada bagian **PHP version**, pilih **Static**.
-5.  Pada bagian **Site directory**, biarkan menunjuk ke `/www/wwwroot/api.domainanda.com`.
-6.  Klik **Submit**.
-7.  Klik nama situs Anda (atau klik `Conf`), masuk ke tab **Reverse proxy**.
-8.  Klik **Add reverse proxy**.
-9.  Isi konfigurasi:
-    *   **Proxy name:** `go-api`
-    *   **Target URL:** `http://127.0.0.1:8080`
-    *   **Sent Domain:** `$host`
-10. Klik **Submit**.
-
-*(Opsional)* Aktifkan SSL di tab **SSL**, pilih **Let's Encrypt**, centang domain Anda, dan klik **Apply**.
+*(Opsional)* Setelah project ditambahkan, Anda bisa klik tombol **SSL** di baris project tersebut pada daftar Go project untuk mengaktifkan HTTPS menggunakan Let's Encrypt.
 
 ---
 

@@ -13,6 +13,13 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 	productHandler := handlers.NewProductHandler(queries)
 	transactionHandler := handlers.NewTransactionHandler(queries, pool)
 
+	// Root route to prevent 404 on base domain
+	router.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "Kasir API is running. Access endpoints under /api",
+		})
+	})
+
 	api := router.Group("/api")
 	{
 		// Health check
