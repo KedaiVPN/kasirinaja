@@ -37,6 +37,7 @@ import androidx.compose.ui.platform.LocalContext
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddProductScreen(
+    productId: String? = null,
     onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -65,6 +66,24 @@ fun AddProductScreen(
 
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var generatedBarcodeBitmap by remember { mutableStateOf<Bitmap?>(null) }
+
+    LaunchedEffect(productId) {
+        if (productId != null) {
+            viewModel.loadProduct(productId) { product ->
+                productName = product.name
+                buyPrice = product.buyPrice
+                sellPrice = product.sellPrice
+                category = product.category
+                description = product.description ?: ""
+                barcodeValue = product.barcode ?: ""
+                stockCount = if (product.stock == -1) 0 else product.stock
+                hasStock = product.stock != -1
+                if (!product.imageUrl.isNullOrEmpty()) {
+                    imageUri = Uri.parse(product.imageUrl)
+                }
+            }
+        }
+    }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -265,6 +284,7 @@ fun AddProductScreen(
             Button(
                 onClick = {
                     viewModel.submitProduct(
+                        productId = productId,
                         name = productName,
                         buyPrice = buyPrice,
                         sellPrice = sellPrice,

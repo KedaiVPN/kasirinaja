@@ -5,9 +5,17 @@ import androidx.lifecycle.ViewModelProvider
 import com.kasirinaja.store.data.local.ProductEntity
 import com.kasirinaja.store.data.repository.ProductRepository
 import kotlinx.coroutines.flow.Flow
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 
-class StockViewModel(repository: ProductRepository) : ViewModel() {
+class StockViewModel(private val repository: ProductRepository) : ViewModel() {
     val products: Flow<List<ProductEntity>> = repository.allProducts
+
+    fun deleteProduct(id: String, isSynced: Boolean) {
+        viewModelScope.launch {
+            repository.deleteProduct(id, isSynced)
+        }
+    }
 }
 
 class StockViewModelFactory(private val repository: ProductRepository) : ViewModelProvider.Factory {

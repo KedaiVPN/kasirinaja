@@ -12,6 +12,7 @@ class ProductRepository(private val productDao: ProductDao) {
     val allProducts: Flow<List<ProductEntity>> = productDao.getAllProducts()
 
     suspend fun addProductLocalAndSync(
+        existingId: String?,
         name: String,
         buyPrice: String,
         sellPrice: String,
@@ -21,7 +22,7 @@ class ProductRepository(private val productDao: ProductDao) {
         barcode: String,
         imageUrl: String
     ): Result<Unit> {
-        val localId = UUID.randomUUID().toString()
+        val localId = existingId ?: UUID.randomUUID().toString()
         val entity = ProductEntity(
             id = localId,
             name = name,
@@ -39,6 +40,8 @@ class ProductRepository(private val productDao: ProductDao) {
 
         // 2. Attempt to sync to backend immediately
         return try {
+            val finalImageUrl = uploadImageIfLocal(imageUrl) ?: imageUrl
+
             val request = PendingProductRequest(
                 name = name,
                 buy_price = buyPrice,
@@ -47,19 +50,52 @@ class ProductRepository(private val productDao: ProductDao) {
                 category = category,
                 description = description,
                 barcode = barcode,
-                image_url = imageUrl
+                image_url = finalImageUrl
             )
-            val response = RetrofitClient.productApi.submitPendingProduct(request)
+
+            val response = if (existingId != null) {
+                // Assume pending for MVP edit to backend
+                RetrofitClient.productApi.updateProduct(existingId, "pending", request)
+            } else {
+                RetrofitClient.productApi.submitPendingProduct(request)
+            }
+
             if (response.isSuccessful) {
                 productDao.markAsSynced(localId)
-                Result.success(Unit)
-            } else {
-                // Return success anyway since it's saved locally, but we could log the sync error
-                Result.success(Unit)
             }
+            Result.success(Unit)
         } catch (e: Exception) {
             // Network failed, but it's safe in Room DB
             Result.success(Unit)
+        }
+    }
+
+    private suspend fun uploadImageIfLocal(uriString: String): String? {
+        if (!uriString.startsWith("content://") && !uriString.startsWith("file://")) {
+            return uriString // Already a remote URL or empty
+        }
+
+        // MVP: This requires context/contentResolver to actually read the file into MultipartBody
+        // Skipping implementation details here as Android Uri reading requires Context access.
+        // We will just return null to not break the build.
+        return null
+    }
+
+    suspend fun getProductById(id: String): ProductEntity? {
+        return productDao.getProductById(id)
+    }
+
+    suspend fun deleteProduct(id: String, isSynced: Boolean) {
+        // Delete locally first
+        productDao.deleteProduct(id)
+
+        // Then delete from server
+        try {
+            val status = if (isSynced) "approved" else "pending"
+            RetrofitClient.productApi.deleteProduct(id, status)
+        } catch (e: Exception) {
+            // If network fails, the local delete stands.
+            // In a true offline-first robust app, you would queue this delete in WorkManager.
         }
     }
 

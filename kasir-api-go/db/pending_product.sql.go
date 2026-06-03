@@ -69,6 +69,29 @@ func (q *Queries) DeletePendingProduct(ctx context.Context, id pgtype.UUID) erro
 	return err
 }
 
+const getPendingProduct = `-- name: GetPendingProduct :one
+SELECT id, name, buy_price, sell_price, stock, category, description, barcode, image_url, created_at, store_id FROM pending_products WHERE id = $1
+`
+
+func (q *Queries) GetPendingProduct(ctx context.Context, id pgtype.UUID) (PendingProduct, error) {
+	row := q.db.QueryRow(ctx, getPendingProduct, id)
+	var i PendingProduct
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.BuyPrice,
+		&i.SellPrice,
+		&i.Stock,
+		&i.Category,
+		&i.Description,
+		&i.Barcode,
+		&i.ImageUrl,
+		&i.CreatedAt,
+		&i.StoreID,
+	)
+	return i, err
+}
+
 const listPendingProducts = `-- name: ListPendingProducts :many
 SELECT id, name, buy_price, sell_price, stock, category, description, barcode, image_url, created_at, store_id FROM pending_products ORDER BY created_at DESC
 `
@@ -103,4 +126,37 @@ func (q *Queries) ListPendingProducts(ctx context.Context) ([]PendingProduct, er
 		return nil, err
 	}
 	return items, nil
+}
+
+const updatePendingProduct = `-- name: UpdatePendingProduct :exec
+UPDATE pending_products
+SET name = $2, buy_price = $3, sell_price = $4, stock = $5, category = $6, description = $7, barcode = $8, image_url = $9
+WHERE id = $1
+`
+
+type UpdatePendingProductParams struct {
+	ID          pgtype.UUID    `json:"id"`
+	Name        string         `json:"name"`
+	BuyPrice    pgtype.Numeric `json:"buy_price"`
+	SellPrice   pgtype.Numeric `json:"sell_price"`
+	Stock       int32          `json:"stock"`
+	Category    string         `json:"category"`
+	Description pgtype.Text    `json:"description"`
+	Barcode     pgtype.Text    `json:"barcode"`
+	ImageUrl    pgtype.Text    `json:"image_url"`
+}
+
+func (q *Queries) UpdatePendingProduct(ctx context.Context, arg UpdatePendingProductParams) error {
+	_, err := q.db.Exec(ctx, updatePendingProduct,
+		arg.ID,
+		arg.Name,
+		arg.BuyPrice,
+		arg.SellPrice,
+		arg.Stock,
+		arg.Category,
+		arg.Description,
+		arg.Barcode,
+		arg.ImageUrl,
+	)
+	return err
 }

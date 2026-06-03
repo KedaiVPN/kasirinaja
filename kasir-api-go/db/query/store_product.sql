@@ -13,3 +13,11 @@ SELECT * FROM store_products WHERE store_id = $1 ORDER BY created_at DESC;
 
 -- name: UpdateStoreProductStock :exec
 UPDATE store_products SET stock = stock + $2 WHERE id = $1;
+
+-- name: DeleteStoreProduct :exec
+DELETE FROM store_products WHERE id = $1;
+
+-- name: UpdateStoreProduct :exec
+UPDATE store_products
+SET buy_price = $2, sell_price = $3, stock = $4, local_name = $5
+WHERE id = $1;

@@ -24,7 +24,15 @@ class AddProductViewModel(private val repository: ProductRepository) : ViewModel
         _errorMessage.value = null
     }
 
+    fun loadProduct(productId: String, onLoaded: (com.kasirinaja.store.data.local.ProductEntity) -> Unit) {
+        viewModelScope.launch {
+            val product = repository.getProductById(productId)
+            product?.let { onLoaded(it) }
+        }
+    }
+
     fun submitProduct(
+        productId: String?,
         name: String,
         buyPrice: String,
         sellPrice: String,
@@ -45,7 +53,12 @@ class AddProductViewModel(private val repository: ProductRepository) : ViewModel
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
+
+            // To properly handle editing, ProductRepository should have an update method.
+            // For MVP simplicity and because `insertProduct` in ProductDao uses OnConflictStrategy.REPLACE,
+            // we can pass the productId to `addProductLocalAndSync` to overwrite the existing record.
             val result = repository.addProductLocalAndSync(
+                existingId = productId,
                 name = name,
                 buyPrice = buyPrice,
                 sellPrice = sellPrice,
