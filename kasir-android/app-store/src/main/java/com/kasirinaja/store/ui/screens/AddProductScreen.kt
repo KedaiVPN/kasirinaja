@@ -26,10 +26,22 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import com.kasirinaja.store.utils.BarcodeUtils
 import java.util.UUID
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.kasirinaja.store.ui.viewmodels.AddProductViewModel
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddProductScreen(onNavigateBack: () -> Unit) {
+fun AddProductScreen(
+    onNavigateBack: () -> Unit,
+    viewModel: AddProductViewModel = viewModel()
+) {
+    val context = LocalContext.current
+    val isLoading by viewModel.isLoading.collectAsState()
+    val isSuccess by viewModel.isSuccess.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+
     var productName by remember { mutableStateOf("") }
     var buyPrice by remember { mutableStateOf("") }
     var sellPrice by remember { mutableStateOf("") }
@@ -47,6 +59,21 @@ fun AddProductScreen(onNavigateBack: () -> Unit) {
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         imageUri = uri
+    }
+
+    LaunchedEffect(isSuccess) {
+        if (isSuccess) {
+            Toast.makeText(context, "Produk berhasil diajukan untuk verifikasi", Toast.LENGTH_SHORT).show()
+            viewModel.resetState()
+            onNavigateBack()
+        }
+    }
+
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.resetState()
+        }
     }
 
     Scaffold(
@@ -225,12 +252,29 @@ fun AddProductScreen(onNavigateBack: () -> Unit) {
             }
 
             Button(
-                onClick = { /* TODO: Implement save */ },
+                onClick = {
+                    viewModel.submitProduct(
+                        name = productName,
+                        buyPrice = buyPrice,
+                        sellPrice = sellPrice,
+                        stockCount = stockCount,
+                        hasStock = hasStock,
+                        category = category,
+                        description = description,
+                        barcode = barcodeValue,
+                        imageUrl = imageUri?.toString() ?: "" // Temporary handling
+                    )
+                },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 16.dp)
+                    .padding(vertical = 16.dp),
+                enabled = !isLoading
             ) {
-                Text("Simpan Produk")
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                } else {
+                    Text("Simpan Produk")
+                }
             }
         }
     }
