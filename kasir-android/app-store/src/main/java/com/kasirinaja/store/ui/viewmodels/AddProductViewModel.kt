@@ -1,15 +1,15 @@
 package com.kasirinaja.store.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.kasirinaja.core.network.PendingProductRequest
-import com.kasirinaja.core.network.RetrofitClient
+import com.kasirinaja.store.data.repository.ProductRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class AddProductViewModel : ViewModel() {
+class AddProductViewModel(private val repository: ProductRepository) : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -42,32 +42,36 @@ class AddProductViewModel : ViewModel() {
 
         val finalStock = if (hasStock) stockCount else -1 // -1 signifies unlimited stock per Go schema
 
-        val request = PendingProductRequest(
-            name = name,
-            buy_price = buyPrice,
-            sell_price = sellPrice,
-            stock = finalStock,
-            category = category,
-            description = description,
-            barcode = barcode,
-            image_url = imageUrl // TODO: Local image upload handling before this step
-        )
-
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
-            try {
-                val response = RetrofitClient.productApi.submitPendingProduct(request)
-                if (response.isSuccessful) {
-                    _isSuccess.value = true
-                } else {
-                    _errorMessage.value = "Gagal menyimpan produk: ${response.message()}"
-                }
-            } catch (e: Exception) {
-                _errorMessage.value = "Terjadi kesalahan koneksi: ${e.localizedMessage}"
-            } finally {
-                _isLoading.value = false
+            val result = repository.addProductLocalAndSync(
+                name = name,
+                buyPrice = buyPrice,
+                sellPrice = sellPrice,
+                stock = finalStock,
+                category = category,
+                description = description,
+                barcode = barcode,
+                imageUrl = imageUrl
+            )
+
+            if (result.isSuccess) {
+                _isSuccess.value = true
+            } else {
+                _errorMessage.value = "Gagal menyimpan produk."
             }
+            _isLoading.value = false
         }
+    }
+}
+
+class AddProductViewModelFactory(private val repository: ProductRepository) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(AddProductViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return AddProductViewModel(repository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

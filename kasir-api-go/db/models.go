@@ -53,6 +53,7 @@ type PendingProduct struct {
 	Barcode     pgtype.Text        `json:"barcode"`
 	ImageUrl    pgtype.Text        `json:"image_url"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	StoreID     pgtype.UUID        `json:"store_id"`
 }
 
 type StockMovement struct {
@@ -91,6 +92,7 @@ type StoreProduct struct {
 	IsActive        pgtype.Bool      `json:"is_active"`
 	CreatedAt       pgtype.Timestamp `json:"created_at"`
 	UpdatedAt       pgtype.Timestamp `json:"updated_at"`
+	LocalName       pgtype.Text      `json:"local_name"`
 }
 
 type Transaction struct {
