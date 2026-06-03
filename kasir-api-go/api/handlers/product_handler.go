@@ -113,6 +113,7 @@ type CreateStoreProductRequest struct {
 	SellPrice       string `json:"sell_price" binding:"required"`
 	Stock           int32  `json:"stock"`
 	MinStock        int32  `json:"min_stock"`
+	LocalName       string `json:"local_name"`
 }
 
 func (h *ProductHandler) CreateStoreProduct(c *gin.Context) {
@@ -146,6 +147,7 @@ func (h *ProductHandler) CreateStoreProduct(c *gin.Context) {
 		SellPrice:       sellPrice,
 		Stock:           req.Stock,
 		MinStock:        req.MinStock,
+		LocalName:       pgtype.Text{String: req.LocalName, Valid: req.LocalName != ""},
 	}
 
 	product, err := h.queries.CreateStoreProduct(c.Request.Context(), arg)
@@ -205,6 +207,7 @@ type SubmitPendingProductRequest struct {
 	Description string `json:"description"`
 	Barcode     string `json:"barcode"`
 	ImageURL    string `json:"image_url"`
+	StoreID     string `json:"store_id"`
 }
 
 func (h *ProductHandler) SubmitPendingProduct(c *gin.Context) {
@@ -229,6 +232,13 @@ func (h *ProductHandler) SubmitPendingProduct(c *gin.Context) {
 		Description: pgtype.Text{String: req.Description, Valid: req.Description != ""},
 		Barcode:     pgtype.Text{String: req.Barcode, Valid: req.Barcode != ""},
 		ImageUrl:    pgtype.Text{String: req.ImageURL, Valid: req.ImageURL != ""},
+	}
+
+	if req.StoreID != "" {
+		uid, err := uuid.Parse(req.StoreID)
+		if err == nil {
+			arg.StoreID = pgtype.UUID{Bytes: uid, Valid: true}
+		}
 	}
 
 	pendingProduct, err := h.queries.CreatePendingProduct(c.Request.Context(), arg)

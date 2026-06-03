@@ -28,6 +28,7 @@ type Querier interface {
 	ListPendingProducts(ctx context.Context) ([]PendingProduct, error)
 	ListStoreProductsByStore(ctx context.Context, storeID pgtype.UUID) ([]StoreProduct, error)
 	ListUsers(ctx context.Context) ([]User, error)
+	UpdateStoreProductStock(ctx context.Context, arg UpdateStoreProductStockParams) error
 }
 
 var _ Querier = (*Queries)(nil)

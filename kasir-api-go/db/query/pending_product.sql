@@ -1,9 +1,8 @@
-
 -- name: CreatePendingProduct :one
 INSERT INTO pending_products (
-  name, buy_price, sell_price, stock, category, description, barcode, image_url
+  name, buy_price, sell_price, stock, category, description, barcode, image_url, store_id
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8
+  $1, $2, $3, $4, $5, $6, $7, $8, $9
 ) RETURNING *;
 
 -- name: ListPendingProducts :many

@@ -13,11 +13,10 @@ import (
 
 const createStoreProduct = `-- name: CreateStoreProduct :one
 INSERT INTO store_products (
-  store_id, master_product_id, buy_price, sell_price, stock, min_stock
+  store_id, master_product_id, buy_price, sell_price, stock, min_stock, local_name
 ) VALUES (
-  $1, $2, $3, $4, $5, $6
-)
-RETURNING id, store_id, master_product_id, buy_price, sell_price, stock, min_stock, is_active, created_at, updated_at
+  $1, $2, $3, $4, $5, $6, $7
+) RETURNING id, store_id, master_product_id, buy_price, sell_price, stock, min_stock, is_active, created_at, updated_at, local_name
 `
 
 type CreateStoreProductParams struct {
@@ -27,6 +26,7 @@ type CreateStoreProductParams struct {
 	SellPrice       pgtype.Numeric `json:"sell_price"`
 	Stock           int32          `json:"stock"`
 	MinStock        int32          `json:"min_stock"`
+	LocalName       pgtype.Text    `json:"local_name"`
 }
 
 func (q *Queries) CreateStoreProduct(ctx context.Context, arg CreateStoreProductParams) (StoreProduct, error) {
@@ -37,6 +37,7 @@ func (q *Queries) CreateStoreProduct(ctx context.Context, arg CreateStoreProduct
 		arg.SellPrice,
 		arg.Stock,
 		arg.MinStock,
+		arg.LocalName,
 	)
 	var i StoreProduct
 	err := row.Scan(
@@ -50,13 +51,13 @@ func (q *Queries) CreateStoreProduct(ctx context.Context, arg CreateStoreProduct
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LocalName,
 	)
 	return i, err
 }
 
 const getStoreProduct = `-- name: GetStoreProduct :one
-SELECT id, store_id, master_product_id, buy_price, sell_price, stock, min_stock, is_active, created_at, updated_at FROM store_products
-WHERE id = $1 LIMIT 1
+SELECT id, store_id, master_product_id, buy_price, sell_price, stock, min_stock, is_active, created_at, updated_at, local_name FROM store_products WHERE id = $1
 `
 
 func (q *Queries) GetStoreProduct(ctx context.Context, id pgtype.UUID) (StoreProduct, error) {
@@ -73,14 +74,13 @@ func (q *Queries) GetStoreProduct(ctx context.Context, id pgtype.UUID) (StorePro
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LocalName,
 	)
 	return i, err
 }
 
 const listStoreProductsByStore = `-- name: ListStoreProductsByStore :many
-SELECT id, store_id, master_product_id, buy_price, sell_price, stock, min_stock, is_active, created_at, updated_at FROM store_products
-WHERE store_id = $1
-ORDER BY id
+SELECT id, store_id, master_product_id, buy_price, sell_price, stock, min_stock, is_active, created_at, updated_at, local_name FROM store_products WHERE store_id = $1 ORDER BY created_at DESC
 `
 
 func (q *Queries) ListStoreProductsByStore(ctx context.Context, storeID pgtype.UUID) ([]StoreProduct, error) {
@@ -103,6 +103,7 @@ func (q *Queries) ListStoreProductsByStore(ctx context.Context, storeID pgtype.U
 			&i.IsActive,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.LocalName,
 		); err != nil {
 			return nil, err
 		}
@@ -112,4 +113,18 @@ func (q *Queries) ListStoreProductsByStore(ctx context.Context, storeID pgtype.U
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateStoreProductStock = `-- name: UpdateStoreProductStock :exec
+UPDATE store_products SET stock = stock + $2 WHERE id = $1
+`
+
+type UpdateStoreProductStockParams struct {
+	ID    pgtype.UUID `json:"id"`
+	Stock int32       `json:"stock"`
+}
+
+func (q *Queries) UpdateStoreProductStock(ctx context.Context, arg UpdateStoreProductStockParams) error {
+	_, err := q.db.Exec(ctx, updateStoreProductStock, arg.ID, arg.Stock)
+	return err
 }

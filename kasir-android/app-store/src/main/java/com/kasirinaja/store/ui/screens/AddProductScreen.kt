@@ -28,16 +28,27 @@ import com.kasirinaja.store.utils.BarcodeUtils
 import java.util.UUID
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kasirinaja.store.ui.viewmodels.AddProductViewModel
+import com.kasirinaja.store.ui.viewmodels.AddProductViewModelFactory
+import com.kasirinaja.store.data.local.AppDatabase
+import com.kasirinaja.store.data.repository.ProductRepository
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddProductScreen(
-    onNavigateBack: () -> Unit,
-    viewModel: AddProductViewModel = viewModel()
+    onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
+
+    // Using remember so it's only instantiated once per composable lifecycle
+    val repository = remember {
+        val database = AppDatabase.getDatabase(context)
+        ProductRepository(database.productDao())
+    }
+
+    val viewModel: AddProductViewModel = viewModel(factory = AddProductViewModelFactory(repository))
+
     val isLoading by viewModel.isLoading.collectAsState()
     val isSuccess by viewModel.isSuccess.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
@@ -63,7 +74,7 @@ fun AddProductScreen(
 
     LaunchedEffect(isSuccess) {
         if (isSuccess) {
-            Toast.makeText(context, "Produk berhasil diajukan untuk verifikasi", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Sukses menambahkan produk", Toast.LENGTH_SHORT).show()
             viewModel.resetState()
             onNavigateBack()
         }

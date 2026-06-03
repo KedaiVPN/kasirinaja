@@ -13,10 +13,10 @@ import (
 
 const createPendingProduct = `-- name: CreatePendingProduct :one
 INSERT INTO pending_products (
-  name, buy_price, sell_price, stock, category, description, barcode, image_url
+  name, buy_price, sell_price, stock, category, description, barcode, image_url, store_id
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8
-) RETURNING id, name, buy_price, sell_price, stock, category, description, barcode, image_url, created_at
+  $1, $2, $3, $4, $5, $6, $7, $8, $9
+) RETURNING id, name, buy_price, sell_price, stock, category, description, barcode, image_url, created_at, store_id
 `
 
 type CreatePendingProductParams struct {
@@ -28,6 +28,7 @@ type CreatePendingProductParams struct {
 	Description pgtype.Text    `json:"description"`
 	Barcode     pgtype.Text    `json:"barcode"`
 	ImageUrl    pgtype.Text    `json:"image_url"`
+	StoreID     pgtype.UUID    `json:"store_id"`
 }
 
 func (q *Queries) CreatePendingProduct(ctx context.Context, arg CreatePendingProductParams) (PendingProduct, error) {
@@ -40,6 +41,7 @@ func (q *Queries) CreatePendingProduct(ctx context.Context, arg CreatePendingPro
 		arg.Description,
 		arg.Barcode,
 		arg.ImageUrl,
+		arg.StoreID,
 	)
 	var i PendingProduct
 	err := row.Scan(
@@ -53,6 +55,7 @@ func (q *Queries) CreatePendingProduct(ctx context.Context, arg CreatePendingPro
 		&i.Barcode,
 		&i.ImageUrl,
 		&i.CreatedAt,
+		&i.StoreID,
 	)
 	return i, err
 }
@@ -67,7 +70,7 @@ func (q *Queries) DeletePendingProduct(ctx context.Context, id pgtype.UUID) erro
 }
 
 const listPendingProducts = `-- name: ListPendingProducts :many
-SELECT id, name, buy_price, sell_price, stock, category, description, barcode, image_url, created_at FROM pending_products ORDER BY created_at DESC
+SELECT id, name, buy_price, sell_price, stock, category, description, barcode, image_url, created_at, store_id FROM pending_products ORDER BY created_at DESC
 `
 
 func (q *Queries) ListPendingProducts(ctx context.Context) ([]PendingProduct, error) {
@@ -90,6 +93,7 @@ func (q *Queries) ListPendingProducts(ctx context.Context) ([]PendingProduct, er
 			&i.Barcode,
 			&i.ImageUrl,
 			&i.CreatedAt,
+			&i.StoreID,
 		); err != nil {
 			return nil, err
 		}
