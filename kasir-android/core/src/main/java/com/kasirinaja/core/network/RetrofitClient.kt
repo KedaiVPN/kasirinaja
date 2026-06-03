@@ -7,7 +7,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
-    private const val BASE_URL = "http://10.0.2.2:8080/api/"
+    private const val BASE_URL = "https://api-go-v1.free-account.my.id/api/"
 
     private var tokenProvider: (() -> String?)? = null
 
@@ -41,4 +41,5 @@ object RetrofitClient {
     val authApi: AuthApi = retrofit.create(AuthApi::class.java)
     val catalogApi: CatalogApi = retrofit.create(CatalogApi::class.java)
     val storeProductApi: StoreProductApi = retrofit.create(StoreProductApi::class.java)
+    val productApi: ProductApi = retrofit.create(ProductApi::class.java)
 }
