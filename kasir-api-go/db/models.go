@@ -42,6 +42,19 @@ type MasterProduct struct {
 	UpdatedAt          pgtype.Timestamp `json:"updated_at"`
 }
 
+type PendingProduct struct {
+	ID          pgtype.UUID        `json:"id"`
+	Name        string             `json:"name"`
+	BuyPrice    pgtype.Numeric     `json:"buy_price"`
+	SellPrice   pgtype.Numeric     `json:"sell_price"`
+	Stock       int32              `json:"stock"`
+	Category    string             `json:"category"`
+	Description pgtype.Text        `json:"description"`
+	Barcode     pgtype.Text        `json:"barcode"`
+	ImageUrl    pgtype.Text        `json:"image_url"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
 type StockMovement struct {
 	ID             pgtype.UUID      `json:"id"`
 	StoreID        pgtype.UUID      `json:"store_id"`

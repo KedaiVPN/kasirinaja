@@ -16,6 +16,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.kasirinaja.store.ui.navigation.Screen
+import com.kasirinaja.store.ui.screens.AddProductScreen
 import com.kasirinaja.store.ui.screens.DashboardScreen
 import com.kasirinaja.store.ui.screens.MasterScreen
 import com.kasirinaja.store.ui.screens.ScanScreen
@@ -26,7 +27,7 @@ import com.kasirinaja.store.ui.screens.StockScreen
 fun MainScreen() {
     val navController = rememberNavController()
 
-    val screens = listOf(
+    val bottomBarScreens = listOf(
         Screen.Dashboard,
         Screen.Stock,
         Screen.Scan,
@@ -39,28 +40,26 @@ fun MainScreen() {
             NavigationBar {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentDestination = navBackStackEntry?.destination
+                val currentRoute = currentDestination?.route
 
-                screens.forEach { screen ->
-                    NavigationBarItem(
-                        icon = { Icon(screen.icon, contentDescription = screen.title) },
-                        label = { Text(screen.title) },
-                        selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
-                        onClick = {
-                            navController.navigate(screen.route) {
-                                // Pop up to the start destination of the graph to
-                                // avoid building up a large stack of destinations
-                                // on the back stack as users select items
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
+                // Only show bottom bar on main screens
+                if (bottomBarScreens.any { it.route == currentRoute }) {
+                    bottomBarScreens.forEach { screen ->
+                        NavigationBarItem(
+                            icon = { Icon(screen.icon, contentDescription = screen.title) },
+                            label = { Text(screen.title) },
+                            selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                            onClick = {
+                                navController.navigate(screen.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                                // Avoid multiple copies of the same destination when
-                                // reselecting the same item
-                                launchSingleTop = true
-                                // Restore state when reselecting a previously selected item
-                                restoreState = true
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
@@ -71,10 +70,23 @@ fun MainScreen() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Dashboard.route) { DashboardScreen() }
-            composable(Screen.Stock.route) { StockScreen() }
+            composable(Screen.Stock.route) {
+                StockScreen(
+                    onNavigateToAddProduct = {
+                        navController.navigate(Screen.AddProduct.route)
+                    }
+                )
+            }
             composable(Screen.Scan.route) { ScanScreen() }
             composable(Screen.Master.route) { MasterScreen() }
             composable(Screen.Settings.route) { SettingsScreen() }
+            composable(Screen.AddProduct.route) {
+                AddProductScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
+            }
         }
     }
 }

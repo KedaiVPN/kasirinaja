@@ -11,10 +11,14 @@ import (
 
 type ProductHandler struct {
 	queries *db.Queries
+	wsManager *WebSocketManager
 }
 
-func NewProductHandler(queries *db.Queries) *ProductHandler {
-	return &ProductHandler{queries: queries}
+func NewProductHandler(queries *db.Queries, wsManager *WebSocketManager) *ProductHandler {
+	return &ProductHandler{
+		queries: queries,
+		wsManager: wsManager,
+	}
 }
 
 type CreateMasterProductRequest struct {
@@ -184,6 +188,64 @@ func (h *ProductHandler) ListStoreProducts(c *gin.Context) {
 	}
 
 	products, err := h.queries.ListStoreProductsByStore(c.Request.Context(), pgtype.UUID{Bytes: storeID, Valid: true})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, products)
+}
+
+type SubmitPendingProductRequest struct {
+	Name        string `json:"name" binding:"required"`
+	BuyPrice    string `json:"buy_price" binding:"required"`
+	SellPrice   string `json:"sell_price" binding:"required"`
+	Stock       int32  `json:"stock"`
+	Category    string `json:"category" binding:"required"`
+	Description string `json:"description"`
+	Barcode     string `json:"barcode"`
+	ImageURL    string `json:"image_url"`
+}
+
+func (h *ProductHandler) SubmitPendingProduct(c *gin.Context) {
+	var req SubmitPendingProductRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var buyPrice pgtype.Numeric
+	buyPrice.Scan(req.BuyPrice)
+
+	var sellPrice pgtype.Numeric
+	sellPrice.Scan(req.SellPrice)
+
+	arg := db.CreatePendingProductParams{
+		Name:        req.Name,
+		BuyPrice:    buyPrice,
+		SellPrice:   sellPrice,
+		Stock:       req.Stock,
+		Category:    req.Category,
+		Description: pgtype.Text{String: req.Description, Valid: req.Description != ""},
+		Barcode:     pgtype.Text{String: req.Barcode, Valid: req.Barcode != ""},
+		ImageUrl:    pgtype.Text{String: req.ImageURL, Valid: req.ImageURL != ""},
+	}
+
+	pendingProduct, err := h.queries.CreatePendingProduct(c.Request.Context(), arg)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if h.wsManager != nil {
+		h.wsManager.BroadcastNewPendingProduct(pendingProduct)
+	}
+
+	c.JSON(http.StatusCreated, pendingProduct)
+}
+
+func (h *ProductHandler) ListPendingProducts(c *gin.Context) {
+	products, err := h.queries.ListPendingProducts(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
