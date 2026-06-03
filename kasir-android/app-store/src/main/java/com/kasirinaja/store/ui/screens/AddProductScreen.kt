@@ -7,6 +7,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,7 +42,11 @@ import coil.compose.AsyncImage
 @Composable
 fun AddProductScreen(
     productId: String? = null,
-    onNavigateBack: () -> Unit
+    capturedImageUri: String? = null,
+    scannedBarcode: String? = null,
+    onNavigateBack: () -> Unit,
+    onNavigateToCamera: () -> Unit,
+    onNavigateToScanner: () -> Unit
 ) {
     val context = LocalContext.current
 
@@ -67,6 +74,18 @@ fun AddProductScreen(
 
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var generatedBarcodeBitmap by remember { mutableStateOf<Bitmap?>(null) }
+
+    LaunchedEffect(capturedImageUri) {
+        if (capturedImageUri != null) {
+            imageUri = Uri.parse(capturedImageUri)
+        }
+    }
+
+    LaunchedEffect(scannedBarcode) {
+        if (scannedBarcode != null) {
+            barcodeValue = scannedBarcode
+        }
+    }
 
     LaunchedEffect(productId) {
         if (productId != null) {
@@ -128,26 +147,47 @@ fun AddProductScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Image Picker Section
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable { imagePickerLauncher.launch("image/*") }
-                    .padding(4.dp),
-                contentAlignment = Alignment.Center
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
-                if (imageUri != null) {
-                    AsyncImage(
-                        model = imageUri,
-                        contentDescription = "Foto Produk",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Filled.Add, contentDescription = "Pilih Foto")
-                        Text("Pilih Foto Produk")
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(text = "Foto Produk", style = MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    if (imageUri != null) {
+                        AsyncImage(
+                            model = imageUri,
+                            contentDescription = "Foto Produk",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = { imagePickerLauncher.launch("image/*") },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Filled.PhotoLibrary, contentDescription = "Galeri", modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Galeri")
+                        }
+                        Button(
+                            onClick = onNavigateToCamera,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Filled.CameraAlt, contentDescription = "Kamera", modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Kamera")
+                        }
                     }
                 }
             }
@@ -256,6 +296,9 @@ fun AddProductScreen(
                             label = { Text("Kode Barcode") },
                             modifier = Modifier.weight(1f)
                         )
+                        IconButton(onClick = onNavigateToScanner) {
+                            Icon(Icons.Filled.QrCodeScanner, contentDescription = "Scan Barcode")
+                        }
                         Button(
                             onClick = {
                                 barcodeValue = UUID.randomUUID().toString().substring(0, 12).uppercase()
@@ -277,7 +320,14 @@ fun AddProductScreen(
                             contentScale = ContentScale.Fit
                         )
                         TextButton(
-                            onClick = { /* TODO: Save bitmap to local storage */ },
+                            onClick = {
+                                val uri = BarcodeUtils.saveBarcodeToGallery(context, generatedBarcodeBitmap!!, barcodeValue)
+                                if (uri != null) {
+                                    Toast.makeText(context, "Barcode disimpan di galeri", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(context, "Gagal menyimpan barcode", Toast.LENGTH_SHORT).show()
+                                }
+                            },
                             modifier = Modifier.align(Alignment.CenterHorizontally)
                         ) {
                             Text("Simpan Barcode ke HP")

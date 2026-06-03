@@ -19,6 +19,8 @@ import com.kasirinaja.store.ui.navigation.Screen
 import com.kasirinaja.store.ui.screens.AddProductScreen
 import com.kasirinaja.store.ui.screens.DashboardScreen
 import com.kasirinaja.store.ui.screens.MasterScreen
+import com.kasirinaja.store.ui.screens.CameraCaptureScreen
+import com.kasirinaja.store.ui.screens.BarcodeScannerFormScreen
 import com.kasirinaja.store.ui.screens.ScanScreen
 import com.kasirinaja.store.ui.screens.SettingsScreen
 import com.kasirinaja.store.ui.screens.StockScreen
@@ -91,9 +93,39 @@ fun MainScreen() {
                 })
             ) { backStackEntry ->
                 val productId = backStackEntry.arguments?.getString("productId")
+
+                // Read results from Camera/Scanner screens
+                val savedStateHandle = backStackEntry.savedStateHandle
+                val capturedImageUri = savedStateHandle.get<String>("captured_image_uri")
+                val scannedBarcode = savedStateHandle.get<String>("scanned_barcode")
+
+                // Clear state handles after reading to prevent re-triggering
+                if (capturedImageUri != null) savedStateHandle.remove<String>("captured_image_uri")
+                if (scannedBarcode != null) savedStateHandle.remove<String>("scanned_barcode")
+
                 AddProductScreen(
                     productId = productId,
-                    onNavigateBack = {
+                    capturedImageUri = capturedImageUri,
+                    scannedBarcode = scannedBarcode,
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToCamera = { navController.navigate(Screen.CameraCapture.route) },
+                    onNavigateToScanner = { navController.navigate(Screen.BarcodeScannerForm.route) }
+                )
+            }
+
+            composable(Screen.CameraCapture.route) {
+                CameraCaptureScreen(
+                    onImageCaptured = { uriString ->
+                        navController.previousBackStackEntry?.savedStateHandle?.set("captured_image_uri", uriString)
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            composable(Screen.BarcodeScannerForm.route) {
+                BarcodeScannerFormScreen(
+                    onBarcodeScanned = { barcode ->
+                        navController.previousBackStackEntry?.savedStateHandle?.set("scanned_barcode", barcode)
                         navController.popBackStack()
                     }
                 )
