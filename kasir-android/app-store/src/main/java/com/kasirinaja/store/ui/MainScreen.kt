@@ -74,14 +74,25 @@ fun MainScreen() {
                 StockScreen(
                     onNavigateToAddProduct = {
                         navController.navigate(Screen.AddProduct.route)
+                    },
+                    onNavigateToEditProduct = { productId ->
+                        navController.navigate("${Screen.AddProduct.route}?productId=$productId")
                     }
                 )
             }
             composable(Screen.Scan.route) { ScanScreen() }
             composable(Screen.Master.route) { MasterScreen() }
             composable(Screen.Settings.route) { SettingsScreen() }
-            composable(Screen.AddProduct.route) {
+            composable(
+                route = "${Screen.AddProduct.route}?productId={productId}",
+                arguments = listOf(androidx.navigation.navArgument("productId") {
+                    type = androidx.navigation.NavType.StringType
+                    nullable = true
+                })
+            ) { backStackEntry ->
+                val productId = backStackEntry.arguments?.getString("productId")
                 AddProductScreen(
+                    productId = productId,
                     onNavigateBack = {
                         navController.popBackStack()
                     }

@@ -16,4 +16,10 @@ interface ProductDao {
 
     @Query("UPDATE local_products SET pendingSync = 0 WHERE id = :productId")
     suspend fun markAsSynced(productId: String)
+
+    @Query("DELETE FROM local_products WHERE id = :productId")
+    suspend fun deleteProduct(productId: String)
+
+    @Query("SELECT * FROM local_products WHERE id = :productId LIMIT 1")
+    suspend fun getProductById(productId: String): ProductEntity?
 }

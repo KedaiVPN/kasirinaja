@@ -19,7 +19,9 @@ type Querier interface {
 	CreateTransactionItem(ctx context.Context, arg CreateTransactionItemParams) (TransactionItem, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeletePendingProduct(ctx context.Context, id pgtype.UUID) error
+	DeleteStoreProduct(ctx context.Context, id pgtype.UUID) error
 	GetMasterProduct(ctx context.Context, id pgtype.UUID) (MasterProduct, error)
+	GetPendingProduct(ctx context.Context, id pgtype.UUID) (PendingProduct, error)
 	GetStore(ctx context.Context, id pgtype.UUID) (Store, error)
 	GetStoreProduct(ctx context.Context, id pgtype.UUID) (StoreProduct, error)
 	GetUser(ctx context.Context, id pgtype.UUID) (User, error)
@@ -28,6 +30,8 @@ type Querier interface {
 	ListPendingProducts(ctx context.Context) ([]PendingProduct, error)
 	ListStoreProductsByStore(ctx context.Context, storeID pgtype.UUID) ([]StoreProduct, error)
 	ListUsers(ctx context.Context) ([]User, error)
+	UpdatePendingProduct(ctx context.Context, arg UpdatePendingProductParams) error
+	UpdateStoreProduct(ctx context.Context, arg UpdateStoreProductParams) error
 	UpdateStoreProductStock(ctx context.Context, arg UpdateStoreProductStockParams) error
 }
 

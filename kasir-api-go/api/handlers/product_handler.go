@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -262,4 +264,114 @@ func (h *ProductHandler) ListPendingProducts(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, products)
+}
+
+func (h *ProductHandler) DeleteProduct(c *gin.Context) {
+	idParam := c.Param("id")
+	status := c.Query("status") // "pending" or "approved"
+
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid product id"})
+		return
+	}
+
+	if status == "pending" {
+		// Get pending product first to delete the image from disk
+		product, err := h.queries.GetPendingProduct(c.Request.Context(), pgtype.UUID{Bytes: id, Valid: true})
+		if err == nil && product.ImageUrl.Valid && product.ImageUrl.String != "" {
+			// Basic security check: ensure we don't delete system files by accident
+			filename := filepath.Base(product.ImageUrl.String)
+			fullPath := filepath.Join("uploads", filename)
+			_ = os.Remove(fullPath) // Ignore err if file doesn't exist
+		}
+
+		err = h.queries.DeletePendingProduct(c.Request.Context(), pgtype.UUID{Bytes: id, Valid: true})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	} else if status == "approved" {
+		err = h.queries.DeleteStoreProduct(c.Request.Context(), pgtype.UUID{Bytes: id, Valid: true})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "status query param must be 'pending' or 'approved'"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "product deleted successfully"})
+}
+
+type UpdateProductRequest struct {
+	Name        string `json:"name"`
+	BuyPrice    string `json:"buy_price"`
+	SellPrice   string `json:"sell_price"`
+	Stock       int32  `json:"stock"`
+	Category    string `json:"category"`
+	Description string `json:"description"`
+	Barcode     string `json:"barcode"`
+	ImageURL    string `json:"image_url"`
+}
+
+func (h *ProductHandler) UpdateProduct(c *gin.Context) {
+	idParam := c.Param("id")
+	status := c.Query("status") // "pending" or "approved"
+
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid product id"})
+		return
+	}
+
+	var req UpdateProductRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var buyPrice pgtype.Numeric
+	buyPrice.Scan(req.BuyPrice)
+
+	var sellPrice pgtype.Numeric
+	sellPrice.Scan(req.SellPrice)
+
+	if status == "pending" {
+		arg := db.UpdatePendingProductParams{
+			ID:          pgtype.UUID{Bytes: id, Valid: true},
+			Name:        req.Name,
+			BuyPrice:    buyPrice,
+			SellPrice:   sellPrice,
+			Stock:       req.Stock,
+			Category:    req.Category,
+			Description: pgtype.Text{String: req.Description, Valid: req.Description != ""},
+			Barcode:     pgtype.Text{String: req.Barcode, Valid: req.Barcode != ""},
+			ImageUrl:    pgtype.Text{String: req.ImageURL, Valid: req.ImageURL != ""},
+		}
+		err = h.queries.UpdatePendingProduct(c.Request.Context(), arg)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	} else if status == "approved" {
+		arg := db.UpdateStoreProductParams{
+			ID:        pgtype.UUID{Bytes: id, Valid: true},
+			BuyPrice:  buyPrice,
+			SellPrice: sellPrice,
+			Stock:     req.Stock,
+			LocalName: pgtype.Text{String: req.Name, Valid: req.Name != ""}, // Name mapped to local_name
+		}
+		err = h.queries.UpdateStoreProduct(c.Request.Context(), arg)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "status query param must be 'pending' or 'approved'"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "product updated successfully"})
 }

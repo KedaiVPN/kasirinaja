@@ -56,6 +56,15 @@ func (q *Queries) CreateStoreProduct(ctx context.Context, arg CreateStoreProduct
 	return i, err
 }
 
+const deleteStoreProduct = `-- name: DeleteStoreProduct :exec
+DELETE FROM store_products WHERE id = $1
+`
+
+func (q *Queries) DeleteStoreProduct(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteStoreProduct, id)
+	return err
+}
+
 const getStoreProduct = `-- name: GetStoreProduct :one
 SELECT id, store_id, master_product_id, buy_price, sell_price, stock, min_stock, is_active, created_at, updated_at, local_name FROM store_products WHERE id = $1
 `
@@ -113,6 +122,31 @@ func (q *Queries) ListStoreProductsByStore(ctx context.Context, storeID pgtype.U
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateStoreProduct = `-- name: UpdateStoreProduct :exec
+UPDATE store_products
+SET buy_price = $2, sell_price = $3, stock = $4, local_name = $5
+WHERE id = $1
+`
+
+type UpdateStoreProductParams struct {
+	ID        pgtype.UUID    `json:"id"`
+	BuyPrice  pgtype.Numeric `json:"buy_price"`
+	SellPrice pgtype.Numeric `json:"sell_price"`
+	Stock     int32          `json:"stock"`
+	LocalName pgtype.Text    `json:"local_name"`
+}
+
+func (q *Queries) UpdateStoreProduct(ctx context.Context, arg UpdateStoreProductParams) error {
+	_, err := q.db.Exec(ctx, updateStoreProduct,
+		arg.ID,
+		arg.BuyPrice,
+		arg.SellPrice,
+		arg.Stock,
+		arg.LocalName,
+	)
+	return err
 }
 
 const updateStoreProductStock = `-- name: UpdateStoreProductStock :exec
