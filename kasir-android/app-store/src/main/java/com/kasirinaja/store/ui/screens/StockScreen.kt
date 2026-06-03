@@ -55,7 +55,7 @@ fun StockScreen(
 
     val repository = remember {
         val database = AppDatabase.getDatabase(context)
-        ProductRepository(database.productDao())
+        ProductRepository(database.productDao(), context.applicationContext)
     }
 
     val viewModel: StockViewModel = viewModel(factory = StockViewModelFactory(repository))
@@ -108,7 +108,11 @@ fun StockScreen(
                                 )
                             } else {
                                 AsyncImage(
-                                    model = "https://api-go-v1.free-account.my.id${product.imageUrl}",
+                                    model = if (product.imageUrl.startsWith("content://") || product.imageUrl.startsWith("file://")) {
+                                        product.imageUrl
+                                    } else {
+                                        "https://api-go-v1.free-account.my.id${product.imageUrl}"
+                                    },
                                     contentDescription = product.name,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier.size(64.dp)

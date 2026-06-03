@@ -33,6 +33,7 @@ import com.kasirinaja.store.data.local.AppDatabase
 import com.kasirinaja.store.data.repository.ProductRepository
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
+import coil.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,7 +46,7 @@ fun AddProductScreen(
     // Using remember so it's only instantiated once per composable lifecycle
     val repository = remember {
         val database = AppDatabase.getDatabase(context)
-        ProductRepository(database.productDao())
+        ProductRepository(database.productDao(), context.applicationContext)
     }
 
     val viewModel: AddProductViewModel = viewModel(factory = AddProductViewModelFactory(repository))
@@ -130,15 +131,19 @@ fun AddProductScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(150.dp)
+                    .height(200.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .clickable { imagePickerLauncher.launch("image/*") }
                     .padding(4.dp),
                 contentAlignment = Alignment.Center
             ) {
                 if (imageUri != null) {
-                    Text("Foto dipilih: ${imageUri?.lastPathSegment}", color = MaterialTheme.colorScheme.primary)
-                    // TODO: Replace with coil-compose AsyncImage for actual rendering
+                    AsyncImage(
+                        model = imageUri,
+                        contentDescription = "Foto Produk",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
                 } else {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Filled.Add, contentDescription = "Pilih Foto")

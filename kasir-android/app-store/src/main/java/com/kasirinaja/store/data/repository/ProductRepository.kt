@@ -1,13 +1,22 @@
 package com.kasirinaja.store.data.repository
 
+import android.content.Context
+import android.net.Uri
 import com.kasirinaja.core.network.PendingProductRequest
 import com.kasirinaja.core.network.RetrofitClient
+import com.kasirinaja.store.utils.ImageCompressor
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import com.kasirinaja.store.data.local.ProductDao
 import com.kasirinaja.store.data.local.ProductEntity
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
-class ProductRepository(private val productDao: ProductDao) {
+class ProductRepository(
+    private val productDao: ProductDao,
+    private val context: Context
+) {
 
     val allProducts: Flow<List<ProductEntity>> = productDao.getAllProducts()
 
@@ -23,6 +32,12 @@ class ProductRepository(private val productDao: ProductDao) {
         imageUrl: String
     ): Result<Unit> {
         val localId = existingId ?: UUID.randomUUID().toString()
+
+        // Preserve existing sync state if editing
+        val existingProduct = if (existingId != null) getProductById(existingId) else null
+        val isCurrentlySynced = existingProduct?.isSynced ?: false
+        val statusParam = if (isCurrentlySynced) "approved" else "pending"
+
         val entity = ProductEntity(
             id = localId,
             name = name,
@@ -32,7 +47,9 @@ class ProductRepository(private val productDao: ProductDao) {
             category = category,
             description = description,
             barcode = barcode,
-            imageUrl = imageUrl
+            imageUrl = imageUrl,
+            isSynced = isCurrentlySynced,
+            pendingSync = true // Always needs sync after edit
         )
 
         // 1. Save to local Room Database first (Offline-First approach)
@@ -54,8 +71,7 @@ class ProductRepository(private val productDao: ProductDao) {
             )
 
             val response = if (existingId != null) {
-                // Assume pending for MVP edit to backend
-                RetrofitClient.productApi.updateProduct(existingId, "pending", request)
+                RetrofitClient.productApi.updateProduct(existingId, statusParam, request)
             } else {
                 RetrofitClient.productApi.submitPendingProduct(request)
             }
@@ -75,10 +91,25 @@ class ProductRepository(private val productDao: ProductDao) {
             return uriString // Already a remote URL or empty
         }
 
-        // MVP: This requires context/contentResolver to actually read the file into MultipartBody
-        // Skipping implementation details here as Android Uri reading requires Context access.
-        // We will just return null to not break the build.
-        return null
+        return try {
+            val uri = Uri.parse(uriString)
+            val compressedFile = ImageCompressor.compressImageFromUri(context, uri)
+                ?: return null
+
+            val requestFile = compressedFile.asRequestBody("image/jpeg".toMediaTypeOrNull())
+            val body = MultipartBody.Part.createFormData("image", compressedFile.name, requestFile)
+
+            val response = RetrofitClient.productApi.uploadImage(body)
+            if (response.isSuccessful) {
+                val data = response.body()
+                data?.get("image_url") as? String
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
     }
 
     suspend fun getProductById(id: String): ProductEntity? {
