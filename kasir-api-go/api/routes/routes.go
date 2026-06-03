@@ -9,8 +9,9 @@ import (
 
 func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 	// Initialize handlers
+	wsManager := handlers.NewWebSocketManager()
 	userHandler := handlers.NewUserHandler(queries)
-	productHandler := handlers.NewProductHandler(queries)
+	productHandler := handlers.NewProductHandler(queries, wsManager)
 	transactionHandler := handlers.NewTransactionHandler(queries, pool)
 
 	// Root route to prevent 404 on base domain
@@ -45,6 +46,9 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 			products.POST("/store", productHandler.CreateStoreProduct)
 			products.GET("/store/:id", productHandler.GetStoreProduct)
 			products.GET("/store", productHandler.ListStoreProducts)
+
+			products.POST("/pending", productHandler.SubmitPendingProduct)
+			products.GET("/pending", productHandler.ListPendingProducts)
 		}
 
 		// Transaction routes
@@ -52,5 +56,8 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 		{
 			transactions.POST("/", transactionHandler.CreateTransaction)
 		}
+
+		// WebSocket routes
+		api.GET("/ws", wsManager.HandleConnections)
 	}
 }

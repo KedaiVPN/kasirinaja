@@ -12,17 +12,20 @@ import (
 
 type Querier interface {
 	CreateMasterProduct(ctx context.Context, arg CreateMasterProductParams) (MasterProduct, error)
+	CreatePendingProduct(ctx context.Context, arg CreatePendingProductParams) (PendingProduct, error)
 	CreateStore(ctx context.Context, arg CreateStoreParams) (Store, error)
 	CreateStoreProduct(ctx context.Context, arg CreateStoreProductParams) (StoreProduct, error)
 	CreateTransaction(ctx context.Context, arg CreateTransactionParams) (Transaction, error)
 	CreateTransactionItem(ctx context.Context, arg CreateTransactionItemParams) (TransactionItem, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeletePendingProduct(ctx context.Context, id pgtype.UUID) error
 	GetMasterProduct(ctx context.Context, id pgtype.UUID) (MasterProduct, error)
 	GetStore(ctx context.Context, id pgtype.UUID) (Store, error)
 	GetStoreProduct(ctx context.Context, id pgtype.UUID) (StoreProduct, error)
 	GetUser(ctx context.Context, id pgtype.UUID) (User, error)
 	GetUserByEmail(ctx context.Context, email pgtype.Text) (User, error)
 	ListMasterProducts(ctx context.Context) ([]MasterProduct, error)
+	ListPendingProducts(ctx context.Context) ([]PendingProduct, error)
 	ListStoreProductsByStore(ctx context.Context, storeID pgtype.UUID) ([]StoreProduct, error)
 	ListUsers(ctx context.Context) ([]User, error)
 }
