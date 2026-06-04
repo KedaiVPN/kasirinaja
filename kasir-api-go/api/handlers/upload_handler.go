@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -19,6 +20,13 @@ func UploadImage(c *gin.Context) {
 	// Generate a unique filename using timestamp and original extension
 	extension := filepath.Ext(file.Filename)
 	filename := fmt.Sprintf("%d%s", time.Now().UnixNano(), extension)
+
+	// Ensure uploads directory exists
+	if err := os.MkdirAll("uploads", os.ModePerm); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create upload directory"})
+		return
+	}
+
 	uploadPath := filepath.Join("uploads", filename)
 
 	if err := c.SaveUploadedFile(file, uploadPath); err != nil {
