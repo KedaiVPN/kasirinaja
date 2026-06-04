@@ -61,54 +61,34 @@ fun AddProductScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val isSuccess by viewModel.isSuccess.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val formState by viewModel.formState.collectAsState()
 
-    var productName by remember { mutableStateOf("") }
-    var buyPrice by remember { mutableStateOf("") }
-    var sellPrice by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var barcodeValue by remember { mutableStateOf("") }
-
-    var hasStock by remember { mutableStateOf(false) }
-    var stockCount by remember { mutableStateOf(0) }
-
-    var imageUri by remember { mutableStateOf<Uri?>(null) }
     var generatedBarcodeBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
     LaunchedEffect(capturedImageUri) {
         if (capturedImageUri != null) {
-            imageUri = Uri.parse(capturedImageUri)
+            viewModel.updateFormState { it.copy(imageUri = capturedImageUri) }
         }
     }
 
     LaunchedEffect(scannedBarcode) {
         if (scannedBarcode != null) {
-            barcodeValue = scannedBarcode
+            viewModel.updateFormState { it.copy(barcode = scannedBarcode) }
         }
     }
 
     LaunchedEffect(productId) {
         if (productId != null) {
-            viewModel.loadProduct(productId) { product ->
-                productName = product.name
-                buyPrice = product.buyPrice
-                sellPrice = product.sellPrice
-                category = product.category
-                description = product.description ?: ""
-                barcodeValue = product.barcode ?: ""
-                stockCount = if (product.stock == -1) 0 else product.stock
-                hasStock = product.stock != -1
-                if (!product.imageUrl.isNullOrEmpty()) {
-                    imageUri = Uri.parse(product.imageUrl)
-                }
-            }
+            viewModel.loadProduct(productId)
         }
     }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        imageUri = uri
+        if (uri != null) {
+            viewModel.updateFormState { it.copy(imageUri = uri.toString()) }
+        }
     }
 
     LaunchedEffect(isSuccess) {
@@ -155,9 +135,9 @@ fun AddProductScreen(
                     Text(text = "Foto Produk", style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    if (imageUri != null) {
+                    if (formState.imageUri != null) {
                         AsyncImage(
-                            model = imageUri,
+                            model = Uri.parse(formState.imageUri),
                             contentDescription = "Foto Produk",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
@@ -193,23 +173,23 @@ fun AddProductScreen(
             }
 
             OutlinedTextField(
-                value = productName,
-                onValueChange = { productName = it },
+                value = formState.name,
+                onValueChange = { v -> viewModel.updateFormState { it.copy(name = v) } },
                 label = { Text("Nama Produk") },
                 modifier = Modifier.fillMaxWidth()
             )
 
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 OutlinedTextField(
-                    value = buyPrice,
-                    onValueChange = { buyPrice = it },
+                    value = formState.buyPrice,
+                    onValueChange = { v -> viewModel.updateFormState { it.copy(buyPrice = v) } },
                     label = { Text("Harga Beli") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f)
                 )
                 OutlinedTextField(
-                    value = sellPrice,
-                    onValueChange = { sellPrice = it },
+                    value = formState.sellPrice,
+                    onValueChange = { v -> viewModel.updateFormState { it.copy(sellPrice = v) } },
                     label = { Text("Harga Jual") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f)
@@ -217,8 +197,8 @@ fun AddProductScreen(
             }
 
             OutlinedTextField(
-                value = category,
-                onValueChange = { category = it },
+                value = formState.category,
+                onValueChange = { v -> viewModel.updateFormState { it.copy(category = v) } },
                 label = { Text("Kategori Produk") },
                 modifier = Modifier.fillMaxWidth()
             )
@@ -235,25 +215,28 @@ fun AddProductScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(text = "Kelola Stok", style = MaterialTheme.typography.titleMedium)
-                        Switch(checked = hasStock, onCheckedChange = { hasStock = it })
+                        Switch(
+                            checked = formState.hasStock,
+                            onCheckedChange = { v -> viewModel.updateFormState { it.copy(hasStock = v) } }
+                        )
                     }
 
-                    if (hasStock) {
+                    if (formState.hasStock) {
                         Spacer(modifier = Modifier.height(16.dp))
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            Button(onClick = { if (stockCount > 0) stockCount-- }) {
+                            Button(onClick = { if (formState.stockCount > 0) viewModel.updateFormState { it.copy(stockCount = it.stockCount - 1) } }) {
                                 Text("-")
                             }
                             OutlinedTextField(
-                                value = stockCount.toString(),
-                                onValueChange = { stockCount = it.toIntOrNull() ?: 0 },
+                                value = formState.stockCount.toString(),
+                                onValueChange = { v -> viewModel.updateFormState { it.copy(stockCount = v.toIntOrNull() ?: 0) } },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 modifier = Modifier.weight(1f)
                             )
-                            Button(onClick = { stockCount++ }) {
+                            Button(onClick = { viewModel.updateFormState { it.copy(stockCount = it.stockCount + 1) } }) {
                                 Text("+")
                             }
                         }
@@ -269,8 +252,8 @@ fun AddProductScreen(
             }
 
             OutlinedTextField(
-                value = description,
-                onValueChange = { description = it },
+                value = formState.description,
+                onValueChange = { v -> viewModel.updateFormState { it.copy(description = v) } },
                 label = { Text("Deskripsi (Opsional)") },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3
@@ -291,8 +274,8 @@ fun AddProductScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         OutlinedTextField(
-                            value = barcodeValue,
-                            onValueChange = { barcodeValue = it },
+                            value = formState.barcode,
+                            onValueChange = { v -> viewModel.updateFormState { it.copy(barcode = v) } },
                             label = { Text("Kode Barcode") },
                             modifier = Modifier.weight(1f)
                         )
@@ -301,8 +284,9 @@ fun AddProductScreen(
                         }
                         Button(
                             onClick = {
-                                barcodeValue = UUID.randomUUID().toString().substring(0, 12).uppercase()
-                                generatedBarcodeBitmap = BarcodeUtils.generateBarcode(barcodeValue, 400, 150)
+                                val generatedCode = UUID.randomUUID().toString().substring(0, 12).uppercase()
+                                viewModel.updateFormState { it.copy(barcode = generatedCode) }
+                                generatedBarcodeBitmap = BarcodeUtils.generateBarcode(generatedCode, 400, 150)
                             }
                         ) {
                             Text("Generate")
@@ -321,7 +305,7 @@ fun AddProductScreen(
                         )
                         TextButton(
                             onClick = {
-                                val uri = BarcodeUtils.saveBarcodeToGallery(context, generatedBarcodeBitmap!!, barcodeValue)
+                                val uri = BarcodeUtils.saveBarcodeToGallery(context, generatedBarcodeBitmap!!, formState.barcode)
                                 if (uri != null) {
                                     Toast.makeText(context, "Barcode disimpan di galeri", Toast.LENGTH_SHORT).show()
                                 } else {
@@ -338,18 +322,7 @@ fun AddProductScreen(
 
             Button(
                 onClick = {
-                    viewModel.submitProduct(
-                        productId = productId,
-                        name = productName,
-                        buyPrice = buyPrice,
-                        sellPrice = sellPrice,
-                        stockCount = stockCount,
-                        hasStock = hasStock,
-                        category = category,
-                        description = description,
-                        barcode = barcodeValue,
-                        imageUrl = imageUri?.toString() ?: "" // Temporary handling
-                    )
+                    viewModel.submitProduct(productId = productId)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
