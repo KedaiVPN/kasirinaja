@@ -18,8 +18,8 @@ object ImageCompressor {
 
             if (bitmap == null) return null
 
-            // Scale down if image is too large (max 1024x1024)
-            val maxSize = 1024
+            // Scale down if image is too large (max 512x512)
+            val maxSize = 512
             var width = bitmap.width
             var height = bitmap.height
 
@@ -36,10 +36,10 @@ object ImageCompressor {
 
             val scaledBitmap = Bitmap.createScaledBitmap(bitmap, width, height, true)
 
-            // Compress to JPEG 80%
+            // Compress to JPEG 60%
             val file = File(context.cacheDir, "compressed_${System.currentTimeMillis()}.jpg")
             val outputStream = FileOutputStream(file)
-            scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+            scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 60, outputStream)
             outputStream.flush()
             outputStream.close()
 
