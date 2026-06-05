@@ -18,7 +18,8 @@ data class PendingProductRequest(
     val category: String,
     val description: String,
     val barcode: String,
-    val image_url: String
+    val image_url: String,
+    val store_id: String? = null
 )
 
 interface ProductApi {
