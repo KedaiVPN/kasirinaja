@@ -57,7 +57,7 @@ class ProductRepository(
 
         // 2. Attempt to sync to backend immediately
         return try {
-            val finalImageUrl = uploadImageIfLocal(imageUrl) ?: imageUrl
+            val finalImageUrl = uploadImageIfLocal(imageUrl)
 
             val request = PendingProductRequest(
                 name = name,
@@ -67,7 +67,8 @@ class ProductRepository(
                 category = category,
                 description = description,
                 barcode = barcode,
-                image_url = finalImageUrl
+                image_url = finalImageUrl,
+                store_id = null // Can be populated if store context is available
             )
 
             val response = if (existingId != null) {
@@ -78,37 +79,34 @@ class ProductRepository(
 
             if (response.isSuccessful) {
                 productDao.markAsSynced(localId)
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Gagal melakukan sinkronisasi dengan server."))
             }
-            Result.success(Unit)
         } catch (e: Exception) {
-            // Network failed, but it's safe in Room DB
-            Result.success(Unit)
+            // Return failure instead of success so UI can show error message
+            Result.failure(e)
         }
     }
 
-    private suspend fun uploadImageIfLocal(uriString: String): String? {
+    private suspend fun uploadImageIfLocal(uriString: String): String {
         if (!uriString.startsWith("content://") && !uriString.startsWith("file://")) {
             return uriString // Already a remote URL or empty
         }
 
-        return try {
-            val uri = Uri.parse(uriString)
-            val compressedFile = ImageCompressor.compressImageFromUri(context, uri)
-                ?: return null
+        val uri = Uri.parse(uriString)
+        val compressedFile = ImageCompressor.compressImageFromUri(context, uri)
+            ?: throw Exception("Gagal mengkompresi gambar")
 
-            val requestFile = compressedFile.asRequestBody("image/jpeg".toMediaTypeOrNull())
-            val body = MultipartBody.Part.createFormData("image", compressedFile.name, requestFile)
+        val requestFile = compressedFile.asRequestBody("image/jpeg".toMediaTypeOrNull())
+        val body = MultipartBody.Part.createFormData("image", compressedFile.name, requestFile)
 
-            val response = RetrofitClient.productApi.uploadImage(body)
-            if (response.isSuccessful) {
-                val data = response.body()
-                data?.get("image_url") as? String
-            } else {
-                null
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
+        val response = RetrofitClient.productApi.uploadImage(body)
+        if (response.isSuccessful) {
+            val data = response.body()
+            return data?.get("image_url") as? String ?: throw Exception("URL gambar tidak ditemukan dalam respons")
+        } else {
+            throw Exception("Gagal mengupload gambar: ${response.code()}")
         }
     }
 

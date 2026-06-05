@@ -98,7 +98,7 @@ class AddProductViewModel(private val repository: ProductRepository) : ViewModel
             if (result.isSuccess) {
                 _isSuccess.value = true
             } else {
-                _errorMessage.value = "Gagal menyimpan produk."
+                _errorMessage.value = result.exceptionOrNull()?.message ?: "Gagal menyimpan produk."
             }
             _isLoading.value = false
         }
