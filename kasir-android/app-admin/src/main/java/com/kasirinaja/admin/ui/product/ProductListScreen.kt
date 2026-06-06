@@ -79,7 +79,7 @@ fun ProductItem(product: JsonObject) {
     } else ""
 
     val baseUrl = "https://api-go-v1.free-account.my.id"
-    val fullImageUrl = if (photoUrl.startsWith("/")) "\$baseUrl\$photoUrl" else photoUrl
+    val fullImageUrl = if (photoUrl.startsWith("/")) "$baseUrl$photoUrl" else photoUrl
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -105,7 +105,7 @@ fun ProductItem(product: JsonObject) {
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Barcode: \$barcode",
+                    text = "Barcode: $barcode",
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
