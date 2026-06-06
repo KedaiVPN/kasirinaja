@@ -28,6 +28,10 @@ fun RequestProductScreen(viewModel: RequestProductViewModel = viewModel()) {
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.loadPendingProducts()
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         Text(
             text = "Request Produk (Pending)",
@@ -55,11 +59,31 @@ fun RequestProductScreen(viewModel: RequestProductViewModel = viewModel()) {
                     ) {
                         items(products.size) { index ->
                             val product = products[index]
+                            var showEditDialog by remember { mutableStateOf(false) }
                             PendingProductItem(
                                 product = product,
                                 onApprove = { id -> viewModel.approveProduct(id) },
-                                onReject = { id -> viewModel.rejectProduct(id) }
+                                onReject = { id -> viewModel.rejectProduct(id) },
+                                onEdit = { showEditDialog = true }
                             )
+
+                            if (showEditDialog) {
+                                com.kasirinaja.admin.ui.product.EditProductDialog(
+                                    product = product,
+                                    onDismiss = { showEditDialog = false },
+                                    onSave = { name, category, barcode ->
+                                        val id = product.get("id")?.asString ?: return@EditProductDialog
+                                        val buyPrice = if (product.has("buy_price") && !product.get("buy_price").isJsonNull) product.get("buy_price").asString else "0"
+                                        val sellPrice = if (product.has("sell_price") && !product.get("sell_price").isJsonNull) product.get("sell_price").asString else "0"
+                                        val stock = if (product.has("stock") && !product.get("stock").isJsonNull) product.get("stock").asInt else 0
+                                        val desc = if (product.has("description") && !product.get("description").isJsonNull) product.get("description").asString else ""
+                                        val imgUrl = if (product.has("image_url") && !product.get("image_url").isJsonNull) product.get("image_url").asString else ""
+
+                                        viewModel.updateProduct(id, name, category, barcode, buyPrice, sellPrice, stock, desc, imgUrl)
+                                        showEditDialog = false
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -86,7 +110,8 @@ fun RequestProductScreen(viewModel: RequestProductViewModel = viewModel()) {
 fun PendingProductItem(
     product: JsonObject,
     onApprove: (String) -> Unit,
-    onReject: (String) -> Unit
+    onReject: (String) -> Unit,
+    onEdit: () -> Unit
 ) {
     val id = product.get("id")?.asString ?: ""
     val name = product.get("name")?.asString ?: "Unknown"
@@ -131,17 +156,25 @@ fun PendingProductItem(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                OutlinedButton(
-                    onClick = { onReject(id) },
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text("Reject")
+                OutlinedButton(onClick = onEdit) {
+                    Text("Edit")
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(onClick = { onApprove(id) }) {
-                    Text("Approve")
+                Row(
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    OutlinedButton(
+                        onClick = { onReject(id) },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Reject")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(onClick = { onApprove(id) }) {
+                        Text("Approve")
+                    }
                 }
             }
         }

@@ -13,6 +13,7 @@ import (
 type Querier interface {
 	CountMasterProducts(ctx context.Context) (int64, error)
 	CountPendingProducts(ctx context.Context) (int64, error)
+	CreateCategory(ctx context.Context, arg CreateCategoryParams) (Category, error)
 	CreateMasterProduct(ctx context.Context, arg CreateMasterProductParams) (MasterProduct, error)
 	CreatePendingProduct(ctx context.Context, arg CreatePendingProductParams) (PendingProduct, error)
 	CreateStore(ctx context.Context, arg CreateStoreParams) (Store, error)
@@ -22,6 +23,7 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeletePendingProduct(ctx context.Context, id pgtype.UUID) error
 	DeleteStoreProduct(ctx context.Context, id pgtype.UUID) error
+	GetCategoryByName(ctx context.Context, name string) (Category, error)
 	GetMasterProduct(ctx context.Context, id pgtype.UUID) (MasterProduct, error)
 	GetPendingProduct(ctx context.Context, id pgtype.UUID) (PendingProduct, error)
 	GetStore(ctx context.Context, id pgtype.UUID) (Store, error)

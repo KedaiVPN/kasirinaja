@@ -5,8 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -15,10 +14,25 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.google.gson.JsonObject
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun ProductListScreen(viewModel: ProductListViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsState()
+    val actionState by viewModel.actionState.collectAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(actionState) {
+        actionState?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.clearActionState()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.loadProducts()
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Text(
@@ -47,7 +61,30 @@ fun ProductListScreen(viewModel: ProductListViewModel = viewModel()) {
                     ) {
                         items(products.size) { index ->
                             val product = products[index]
-                            ProductItem(product)
+                            var showEditDialog by remember { mutableStateOf(false) }
+
+                            ProductItem(
+                                product = product,
+                                onEdit = { showEditDialog = true }
+                            )
+
+                            if (showEditDialog) {
+                                EditProductDialog(
+                                    product = product,
+                                    onDismiss = { showEditDialog = false },
+                                    onSave = { name, category, barcode ->
+                                        val id = product.get("id")?.asString ?: return@EditProductDialog
+                                        val buyPrice = if (product.has("buy_price") && !product.get("buy_price").isJsonNull) product.get("buy_price").asString else "0"
+                                        val sellPrice = if (product.has("sell_price") && !product.get("sell_price").isJsonNull) product.get("sell_price").asString else "0"
+                                        val stock = if (product.has("stock") && !product.get("stock").isJsonNull) product.get("stock").asInt else 0
+                                        val desc = if (product.has("description") && !product.get("description").isJsonNull) product.get("description").asString else ""
+                                        val imgUrl = if (product.has("photo_url") && !product.get("photo_url").isJsonNull) product.get("photo_url").asString else ""
+
+                                        viewModel.updateProduct(id, name, category, barcode, buyPrice, sellPrice, stock, desc, imgUrl)
+                                        showEditDialog = false
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -71,7 +108,7 @@ fun ProductListScreen(viewModel: ProductListViewModel = viewModel()) {
 }
 
 @Composable
-fun ProductItem(product: JsonObject) {
+fun ProductItem(product: JsonObject, onEdit: () -> Unit) {
     val name = product.get("name")?.asString ?: "Unknown"
     val barcode = product.get("barcode")?.asString ?: "-"
     val photoUrl = if (product.has("photo_url") && !product.get("photo_url").isJsonNull) {
@@ -98,7 +135,7 @@ fun ProductItem(product: JsonObject) {
                 contentScale = ContentScale.Crop
             )
             Spacer(modifier = Modifier.width(16.dp))
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = name,
                     style = MaterialTheme.typography.titleMedium,
@@ -108,6 +145,9 @@ fun ProductItem(product: JsonObject) {
                     text = "Barcode: $barcode",
                     style = MaterialTheme.typography.bodyMedium
                 )
+            }
+            OutlinedButton(onClick = onEdit) {
+                Text("Edit")
             }
         }
     }
