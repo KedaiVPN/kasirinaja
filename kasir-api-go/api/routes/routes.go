@@ -13,6 +13,8 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 	userHandler := handlers.NewUserHandler(queries)
 	productHandler := handlers.NewProductHandler(queries, wsManager)
 	transactionHandler := handlers.NewTransactionHandler(queries, pool)
+	authHandler := handlers.NewAuthHandler(queries)
+	adminHandler := handlers.NewAdminHandler(queries)
 
 	// Root route to prevent 404 on base domain
 	router.GET("/", func(c *gin.Context) {
@@ -62,6 +64,18 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 
 		// WebSocket routes
 		api.GET("/ws", wsManager.HandleConnections)
+
+		// Auth
+		api.POST("/login", authHandler.Login)
+
+		// Admin routes
+		adminRoutes := api.Group("/admin")
+		adminRoutes.Use(handlers.AuthMiddleware())
+		{
+			adminRoutes.GET("/dashboard", adminHandler.GetDashboardStats)
+			adminRoutes.POST("/products/:id/approve", adminHandler.ApproveProduct)
+			adminRoutes.POST("/products/:id/reject", adminHandler.RejectProduct)
+		}
 
 		// Upload route
 		api.POST("/upload", handlers.UploadImage)

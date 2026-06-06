@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"kasir-api-go/api/handlers"
 	"kasir-api-go/api/routes"
 	"kasir-api-go/db"
 
@@ -34,6 +35,9 @@ func main() {
 
 	// Initialize sqlc queries
 	queries := db.New(pool)
+
+	// Initialize Admin User from .env
+	handlers.InitAdminUser(queries)
 
 	// Setup Gin router
 	router := gin.Default()
