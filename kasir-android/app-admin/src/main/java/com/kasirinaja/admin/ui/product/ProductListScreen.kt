@@ -75,8 +75,7 @@ fun ProductItem(product: JsonObject) {
     val name = product.get("name")?.asString ?: "Unknown"
     val barcode = product.get("barcode")?.asString ?: "-"
     val photoUrl = if (product.has("photo_url") && !product.get("photo_url").isJsonNull) {
-        val urlObj = product.getAsJsonObject("photo_url")
-        if (urlObj.has("String")) urlObj.get("String").asString else ""
+        product.get("photo_url").asString
     } else ""
 
     val baseUrl = "https://api-go-v1.free-account.my.id"
