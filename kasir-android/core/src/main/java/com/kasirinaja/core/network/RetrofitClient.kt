@@ -18,7 +18,7 @@ object RetrofitClient {
     private val authInterceptor = Interceptor { chain ->
         val requestBuilder = chain.request().newBuilder()
         tokenProvider?.invoke()?.let { token ->
-            requestBuilder.addHeader("Authorization", "Bearer \$token")
+            requestBuilder.addHeader("Authorization", "Bearer $token")
         }
         chain.proceed(requestBuilder.build())
     }

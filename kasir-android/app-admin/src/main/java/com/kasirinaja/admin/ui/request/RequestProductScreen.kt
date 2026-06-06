@@ -92,8 +92,7 @@ fun PendingProductItem(
     val name = product.get("name")?.asString ?: "Unknown"
     val barcode = product.get("barcode")?.asString ?: "-"
     val photoUrl = if (product.has("image_url") && !product.get("image_url").isJsonNull) {
-        val urlObj = product.getAsJsonObject("image_url")
-        if (urlObj.has("String")) urlObj.get("String").asString else ""
+        product.get("image_url").asString
     } else ""
 
     val baseUrl = "https://api-go-v1.free-account.my.id"
