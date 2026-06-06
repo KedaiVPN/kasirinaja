@@ -76,13 +76,37 @@ func (h *AdminHandler) ApproveProduct(c *gin.Context) {
 		}
 	}
 
+	// Process category
+	var categoryID pgtype.UUID
+	categoryName := pendingProduct.Category
+	if categoryName != "" {
+		category, err := h.queries.GetCategoryByName(c.Request.Context(), categoryName)
+		if err != nil {
+			// Category doesn't exist, create it
+			slug := strings.ToLower(strings.ReplaceAll(categoryName, " ", "-"))
+			newCategory, err := h.queries.CreateCategory(c.Request.Context(), db.CreateCategoryParams{
+				Name: categoryName,
+				Slug: slug,
+			})
+			if err == nil {
+				categoryID = newCategory.ID
+			} else {
+				categoryID = pgtype.UUID{Valid: false}
+			}
+		} else {
+			categoryID = category.ID
+		}
+	} else {
+		categoryID = pgtype.UUID{Valid: false}
+	}
+
 	// Create master product
 	arg := db.CreateMasterProductParams{
 		Barcode:            pendingProduct.Barcode.String,
 		Name:               pendingProduct.Name,
 		PhotoUrl:           pendingProduct.ImageUrl,
 		PhotoPath:          pgtype.Text{Valid: false}, // We could derive this from URL, but keeping simple
-		CategoryID:         pgtype.UUID{Valid: false},
+		CategoryID:         categoryID,
 		BrandID:            pgtype.UUID{Valid: false},
 		Unit:               pgtype.Text{String: "pcs", Valid: true}, // Default unit
 		Source:             pgtype.Text{String: "store_request", Valid: true},

@@ -23,6 +23,9 @@ class ProductListViewModel : ViewModel() {
         loadProducts()
     }
 
+    private val _actionState = MutableStateFlow<String?>(null)
+    val actionState: StateFlow<String?> = _actionState.asStateFlow()
+
     fun loadProducts() {
         viewModelScope.launch {
             _uiState.value = ProductListState.Loading
@@ -38,5 +41,35 @@ class ProductListViewModel : ViewModel() {
                 _uiState.value = ProductListState.Error(e.message ?: "Failed to load products")
             }
         }
+    }
+
+    fun updateProduct(id: String, name: String, category: String, barcode: String, buyPrice: String, sellPrice: String, stock: Int, description: String, imageUrl: String) {
+        viewModelScope.launch {
+            try {
+                val request = com.kasirinaja.core.network.PendingProductRequest(
+                    name = name,
+                    category = category,
+                    barcode = barcode,
+                    buy_price = buyPrice,
+                    sell_price = sellPrice,
+                    stock = stock,
+                    description = description,
+                    image_url = imageUrl
+                )
+                val response = RetrofitClient.productApi.updateProduct(id, "approved", request)
+                if (response.isSuccessful) {
+                    _actionState.value = "Produk berhasil diupdate"
+                    loadProducts()
+                } else {
+                    _actionState.value = "Gagal update produk: ${response.code()}"
+                }
+            } catch (e: Exception) {
+                _actionState.value = "Gagal update produk: ${e.message}"
+            }
+        }
+    }
+
+    fun clearActionState() {
+        _actionState.value = null
     }
 }
