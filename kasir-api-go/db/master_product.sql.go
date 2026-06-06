@@ -77,6 +77,24 @@ func (q *Queries) CreateMasterProduct(ctx context.Context, arg CreateMasterProdu
 	return i, err
 }
 
+const deleteMasterProduct = `-- name: DeleteMasterProduct :exec
+DELETE FROM master_products WHERE id = $1
+`
+
+func (q *Queries) DeleteMasterProduct(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteMasterProduct, id)
+	return err
+}
+
+const deleteTransactionItemsByMasterProduct = `-- name: DeleteTransactionItemsByMasterProduct :exec
+DELETE FROM transaction_items WHERE master_product_id = $1
+`
+
+func (q *Queries) DeleteTransactionItemsByMasterProduct(ctx context.Context, masterProductID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteTransactionItemsByMasterProduct, masterProductID)
+	return err
+}
+
 const getMasterProduct = `-- name: GetMasterProduct :one
 SELECT id, barcode, name, photo_url, photo_path, category_id, brand_id, unit, source, is_generated_barcode, is_active, created_by, created_at, updated_at FROM master_products
 WHERE id = $1 LIMIT 1

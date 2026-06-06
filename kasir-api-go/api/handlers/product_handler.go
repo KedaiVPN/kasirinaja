@@ -292,7 +292,14 @@ func (h *ProductHandler) DeleteProduct(c *gin.Context) {
 			return
 		}
 	} else if status == "approved" {
-		err = h.queries.DeleteStoreProduct(c.Request.Context(), pgtype.UUID{Bytes: id, Valid: true})
+		uuidParam := pgtype.UUID{Bytes: id, Valid: true}
+		// First delete associated transaction items and stock movements
+		// Then delete store products, then the master product itself.
+		// Note: The UI currently passes master product ID for deletion.
+		_ = h.queries.DeleteTransactionItemsByMasterProduct(c.Request.Context(), uuidParam)
+		_ = h.queries.DeleteStoreProductsByMasterID(c.Request.Context(), uuidParam)
+		err = h.queries.DeleteMasterProduct(c.Request.Context(), uuidParam)
+
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return

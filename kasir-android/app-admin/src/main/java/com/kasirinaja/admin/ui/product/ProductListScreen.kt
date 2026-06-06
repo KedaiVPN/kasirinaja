@@ -65,7 +65,11 @@ fun ProductListScreen(viewModel: ProductListViewModel = viewModel()) {
 
                             ProductItem(
                                 product = product,
-                                onEdit = { showEditDialog = true }
+                                onEdit = { showEditDialog = true },
+                                onDelete = {
+                                    val id = product.get("id")?.asString ?: return@ProductItem
+                                    viewModel.deleteProduct(id)
+                                }
                             )
 
                             if (showEditDialog) {
@@ -108,7 +112,7 @@ fun ProductListScreen(viewModel: ProductListViewModel = viewModel()) {
 }
 
 @Composable
-fun ProductItem(product: JsonObject, onEdit: () -> Unit) {
+fun ProductItem(product: JsonObject, onEdit: () -> Unit, onDelete: () -> Unit) {
     val name = product.get("name")?.asString ?: "Unknown"
     val barcode = product.get("barcode")?.asString ?: "-"
     val photoUrl = if (product.has("photo_url") && !product.get("photo_url").isJsonNull) {
@@ -146,8 +150,17 @@ fun ProductItem(product: JsonObject, onEdit: () -> Unit) {
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
-            OutlinedButton(onClick = onEdit) {
-                Text("Edit")
+            Column {
+                OutlinedButton(onClick = onEdit) {
+                    Text("Edit")
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                OutlinedButton(
+                    onClick = onDelete,
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Hapus")
+                }
             }
         }
     }

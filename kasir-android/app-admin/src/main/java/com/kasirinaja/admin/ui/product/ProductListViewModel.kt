@@ -72,4 +72,21 @@ class ProductListViewModel : ViewModel() {
     fun clearActionState() {
         _actionState.value = null
     }
+
+
+    fun deleteProduct(id: String) {
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.productApi.deleteProduct(id, "approved")
+                if (response.isSuccessful) {
+                    _actionState.value = "Produk berhasil dihapus"
+                    loadProducts()
+                } else {
+                    _actionState.value = "Gagal hapus produk: ${response.code()}"
+                }
+            } catch (e: Exception) {
+                _actionState.value = "Gagal hapus produk: ${e.message}"
+            }
+        }
+    }
 }
