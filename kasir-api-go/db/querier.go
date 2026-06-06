@@ -11,6 +11,8 @@ import (
 )
 
 type Querier interface {
+	CountMasterProducts(ctx context.Context) (int64, error)
+	CountPendingProducts(ctx context.Context) (int64, error)
 	CreateMasterProduct(ctx context.Context, arg CreateMasterProductParams) (MasterProduct, error)
 	CreatePendingProduct(ctx context.Context, arg CreatePendingProductParams) (PendingProduct, error)
 	CreateStore(ctx context.Context, arg CreateStoreParams) (Store, error)

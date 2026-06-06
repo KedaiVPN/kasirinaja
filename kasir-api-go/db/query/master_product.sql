@@ -13,3 +13,6 @@ WHERE id = $1 LIMIT 1;
 -- name: ListMasterProducts :many
 SELECT * FROM master_products
 ORDER BY id;
+
+-- name: CountMasterProducts :one
+SELECT COUNT(*) FROM master_products;

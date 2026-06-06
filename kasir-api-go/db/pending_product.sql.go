@@ -11,6 +11,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countPendingProducts = `-- name: CountPendingProducts :one
+SELECT COUNT(*) FROM pending_products
+`
+
+func (q *Queries) CountPendingProducts(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countPendingProducts)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createPendingProduct = `-- name: CreatePendingProduct :one
 INSERT INTO pending_products (
   name, buy_price, sell_price, stock, category, description, barcode, image_url, store_id

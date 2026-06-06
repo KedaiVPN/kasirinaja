@@ -18,3 +18,6 @@ SELECT * FROM pending_products WHERE id = $1;
 UPDATE pending_products
 SET name = $2, buy_price = $3, sell_price = $4, stock = $5, category = $6, description = $7, barcode = $8, image_url = $9
 WHERE id = $1;
+
+-- name: CountPendingProducts :one
+SELECT COUNT(*) FROM pending_products;

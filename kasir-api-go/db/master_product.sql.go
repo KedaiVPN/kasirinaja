@@ -11,6 +11,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countMasterProducts = `-- name: CountMasterProducts :one
+SELECT COUNT(*) FROM master_products
+`
+
+func (q *Queries) CountMasterProducts(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countMasterProducts)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createMasterProduct = `-- name: CreateMasterProduct :one
 INSERT INTO master_products (
   barcode, name, photo_url, photo_path, category_id, brand_id, unit, source, is_generated_barcode, created_by
