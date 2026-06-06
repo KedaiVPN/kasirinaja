@@ -21,3 +21,6 @@ DELETE FROM store_products WHERE id = $1;
 UPDATE store_products
 SET buy_price = $2, sell_price = $3, stock = $4, local_name = $5
 WHERE id = $1;
+
+-- name: DeleteStoreProductsByMasterID :exec
+DELETE FROM store_products WHERE master_product_id = $1;

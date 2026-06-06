@@ -16,3 +16,9 @@ ORDER BY id;
 
 -- name: CountMasterProducts :one
 SELECT COUNT(*) FROM master_products;
+
+-- name: DeleteMasterProduct :exec
+DELETE FROM master_products WHERE id = $1;
+
+-- name: DeleteTransactionItemsByMasterProduct :exec
+DELETE FROM transaction_items WHERE master_product_id = $1;

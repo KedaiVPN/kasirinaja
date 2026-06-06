@@ -65,6 +65,15 @@ func (q *Queries) DeleteStoreProduct(ctx context.Context, id pgtype.UUID) error 
 	return err
 }
 
+const deleteStoreProductsByMasterID = `-- name: DeleteStoreProductsByMasterID :exec
+DELETE FROM store_products WHERE master_product_id = $1
+`
+
+func (q *Queries) DeleteStoreProductsByMasterID(ctx context.Context, masterProductID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteStoreProductsByMasterID, masterProductID)
+	return err
+}
+
 const getStoreProduct = `-- name: GetStoreProduct :one
 SELECT id, store_id, master_product_id, buy_price, sell_price, stock, min_stock, is_active, created_at, updated_at, local_name FROM store_products WHERE id = $1
 `
