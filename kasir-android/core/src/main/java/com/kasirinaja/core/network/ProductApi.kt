@@ -44,8 +44,8 @@ interface ProductApi {
     ): Response<Map<String, Any>>
 
     @retrofit2.http.GET("products/master")
-    suspend fun getMasterProducts(): com.google.gson.JsonArray
+    suspend fun getMasterProducts(): Response<List<com.google.gson.JsonObject>>
 
     @retrofit2.http.GET("products/pending")
-    suspend fun getPendingProducts(): com.google.gson.JsonArray
+    suspend fun getPendingProducts(): Response<List<com.google.gson.JsonObject>>
 }

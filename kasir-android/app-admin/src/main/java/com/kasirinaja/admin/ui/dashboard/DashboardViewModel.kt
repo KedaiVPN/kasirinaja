@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.google.gson.JsonObject
 
 data class DashboardStats(
     val approvedCount: Int = 0,
@@ -32,9 +33,14 @@ class DashboardViewModel : ViewModel() {
             _uiState.value = DashboardState.Loading
             try {
                 val response = RetrofitClient.adminApi.getDashboardStats()
-                val approved = response.get("approved_count")?.asInt ?: 0
-                val pending = response.get("pending_count")?.asInt ?: 0
-                _uiState.value = DashboardState.Success(DashboardStats(approved, pending))
+                if (response.isSuccessful) {
+                    val body = response.body()
+                    val approved = body?.get("approved_count")?.asInt ?: 0
+                    val pending = body?.get("pending_count")?.asInt ?: 0
+                    _uiState.value = DashboardState.Success(DashboardStats(approved, pending))
+                } else {
+                    _uiState.value = DashboardState.Error("HTTP Error: ${response.code()}")
+                }
             } catch (e: Exception) {
                 _uiState.value = DashboardState.Error(e.message ?: "Failed to load stats")
             }

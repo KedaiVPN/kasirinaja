@@ -2,9 +2,9 @@ package com.kasirinaja.admin.ui.main
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.PendingActions
+import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -20,9 +20,9 @@ import com.kasirinaja.admin.ui.product.ProductListScreen
 import com.kasirinaja.admin.ui.request.RequestProductScreen
 
 sealed class BottomNavItem(val route: String, val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    object Dashboard : BottomNavItem("dashboard", "Dashboard", Icons.Default.Dashboard)
+    object Dashboard : BottomNavItem("dashboard", "Dashboard", Icons.Default.Home)
     object ProductList : BottomNavItem("products", "List Produk", Icons.Default.List)
-    object RequestProduct : BottomNavItem("requests", "Request Produk", Icons.Default.PendingActions)
+    object RequestProduct : BottomNavItem("requests", "Request Produk", Icons.Default.Assignment)
 }
 
 @Composable
