@@ -7,11 +7,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 
 sealed class ProductListState {
     object Loading : ProductListState()
-    data class Success(val products: JsonArray) : ProductListState()
+    data class Success(val products: List<JsonObject>) : ProductListState()
     data class Error(val message: String) : ProductListState()
 }
 
@@ -28,7 +28,12 @@ class ProductListViewModel : ViewModel() {
             _uiState.value = ProductListState.Loading
             try {
                 val response = RetrofitClient.productApi.getMasterProducts()
-                _uiState.value = ProductListState.Success(response)
+                if (response.isSuccessful) {
+                    val products = response.body() ?: emptyList()
+                    _uiState.value = ProductListState.Success(products)
+                } else {
+                    _uiState.value = ProductListState.Error("Error: ${response.code()}")
+                }
             } catch (e: Exception) {
                 _uiState.value = ProductListState.Error(e.message ?: "Failed to load products")
             }

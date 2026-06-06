@@ -8,11 +8,11 @@ import retrofit2.http.Path
 
 interface AdminApi {
     @GET("admin/dashboard")
-    suspend fun getDashboardStats(): JsonObject
+    suspend fun getDashboardStats(): Response<JsonObject>
 
     @POST("admin/products/{id}/approve")
-    suspend fun approveProduct(@Path("id") id: String): JsonObject
+    suspend fun approveProduct(@Path("id") id: String): Response<JsonObject>
 
     @POST("admin/products/{id}/reject")
-    suspend fun rejectProduct(@Path("id") id: String): JsonObject
+    suspend fun rejectProduct(@Path("id") id: String): Response<JsonObject>
 }

@@ -36,7 +36,7 @@ fun ProductListScreen(viewModel: ProductListViewModel = viewModel()) {
             }
             is ProductListState.Success -> {
                 val products = (uiState as ProductListState.Success).products
-                if (products.size() == 0) {
+                if (products.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text("Belum ada produk approved.")
                     }
@@ -45,8 +45,8 @@ fun ProductListScreen(viewModel: ProductListViewModel = viewModel()) {
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(products.size()) { index ->
-                            val product = products[index].asJsonObject
+                        items(products.size) { index ->
+                            val product = products[index]
                             ProductItem(product)
                         }
                     }

@@ -44,7 +44,7 @@ fun RequestProductScreen(viewModel: RequestProductViewModel = viewModel()) {
             }
             is RequestProductState.Success -> {
                 val products = (uiState as RequestProductState.Success).products
-                if (products.size() == 0) {
+                if (products.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text("Tidak ada request produk saat ini.")
                     }
@@ -53,8 +53,8 @@ fun RequestProductScreen(viewModel: RequestProductViewModel = viewModel()) {
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(products.size()) { index ->
-                            val product = products[index].asJsonObject
+                        items(products.size) { index ->
+                            val product = products[index]
                             PendingProductItem(
                                 product = product,
                                 onApprove = { id -> viewModel.approveProduct(id) },

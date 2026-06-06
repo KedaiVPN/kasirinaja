@@ -7,11 +7,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 
 sealed class RequestProductState {
     object Loading : RequestProductState()
-    data class Success(val products: JsonArray) : RequestProductState()
+    data class Success(val products: List<JsonObject>) : RequestProductState()
     data class Error(val message: String) : RequestProductState()
 }
 
@@ -31,7 +31,12 @@ class RequestProductViewModel : ViewModel() {
             _uiState.value = RequestProductState.Loading
             try {
                 val response = RetrofitClient.productApi.getPendingProducts()
-                _uiState.value = RequestProductState.Success(response)
+                if (response.isSuccessful) {
+                    val products = response.body() ?: emptyList()
+                    _uiState.value = RequestProductState.Success(products)
+                } else {
+                    _uiState.value = RequestProductState.Error("Error: ${response.code()}")
+                }
             } catch (e: Exception) {
                 _uiState.value = RequestProductState.Error(e.message ?: "Failed to load pending products")
             }
@@ -41,9 +46,13 @@ class RequestProductViewModel : ViewModel() {
     fun approveProduct(id: String) {
         viewModelScope.launch {
             try {
-                RetrofitClient.adminApi.approveProduct(id)
-                _actionState.value = "Produk berhasil di-approve"
-                loadPendingProducts()
+                val response = RetrofitClient.adminApi.approveProduct(id)
+                if (response.isSuccessful) {
+                    _actionState.value = "Produk berhasil di-approve"
+                    loadPendingProducts()
+                } else {
+                    _actionState.value = "Gagal approve produk: ${response.code()}"
+                }
             } catch (e: Exception) {
                 _actionState.value = "Gagal approve produk: \${e.message}"
             }
@@ -53,9 +62,13 @@ class RequestProductViewModel : ViewModel() {
     fun rejectProduct(id: String) {
         viewModelScope.launch {
             try {
-                RetrofitClient.adminApi.rejectProduct(id)
-                _actionState.value = "Produk berhasil di-reject"
-                loadPendingProducts()
+                val response = RetrofitClient.adminApi.rejectProduct(id)
+                if (response.isSuccessful) {
+                    _actionState.value = "Produk berhasil di-reject"
+                    loadPendingProducts()
+                } else {
+                    _actionState.value = "Gagal reject produk: ${response.code()}"
+                }
             } catch (e: Exception) {
                 _actionState.value = "Gagal reject produk: \${e.message}"
             }
