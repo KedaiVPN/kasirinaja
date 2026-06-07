@@ -293,6 +293,10 @@ func (h *ProductHandler) DeleteProduct(c *gin.Context) {
 		}
 	} else if status == "approved" {
 		uuidParam := pgtype.UUID{Bytes: id, Valid: true}
+
+		// First get the master product to delete the image from disk later
+		product, errGet := h.queries.GetMasterProduct(c.Request.Context(), uuidParam)
+
 		// First delete associated transaction items and stock movements
 		// Then delete store products, then the master product itself.
 		// Note: The UI currently passes master product ID for deletion.
@@ -303,6 +307,13 @@ func (h *ProductHandler) DeleteProduct(c *gin.Context) {
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
+		}
+
+		// Safe to delete image file now
+		if errGet == nil && product.PhotoUrl.Valid && product.PhotoUrl.String != "" {
+			filename := filepath.Base(product.PhotoUrl.String)
+			fullPath := filepath.Join("uploads", filename)
+			_ = os.Remove(fullPath)
 		}
 	} else {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "status query param must be 'pending' or 'approved'"})

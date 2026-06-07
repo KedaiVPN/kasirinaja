@@ -57,7 +57,7 @@ fun RequestProductScreen(viewModel: RequestProductViewModel = viewModel()) {
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(products.size) { index ->
+                        items(products.size, key = { products[it].get("id")?.asString ?: it }) { index ->
                             val product = products[index]
                             var showEditDialog by remember { mutableStateOf(false) }
                             PendingProductItem(
