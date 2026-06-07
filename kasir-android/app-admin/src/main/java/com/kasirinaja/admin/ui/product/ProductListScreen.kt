@@ -59,18 +59,38 @@ fun ProductListScreen(viewModel: ProductListViewModel = viewModel()) {
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(products.size) { index ->
+                        items(products.size, key = { products[it].get("id")?.asString ?: it }) { index ->
                             val product = products[index]
                             var showEditDialog by remember { mutableStateOf(false) }
+                            var showDeleteConfirmDialog by remember { mutableStateOf(false) }
 
                             ProductItem(
                                 product = product,
                                 onEdit = { showEditDialog = true },
-                                onDelete = {
-                                    val id = product.get("id")?.asString ?: return@ProductItem
-                                    viewModel.deleteProduct(id)
-                                }
+                                onDelete = { showDeleteConfirmDialog = true }
                             )
+
+                            if (showDeleteConfirmDialog) {
+                                AlertDialog(
+                                    onDismissRequest = { showDeleteConfirmDialog = false },
+                                    title = { Text("Konfirmasi Hapus") },
+                                    text = { Text("Apakah Anda yakin ingin menghapus produk ini?") },
+                                    confirmButton = {
+                                        Button(onClick = {
+                                            val id = product.get("id")?.asString ?: return@Button
+                                            viewModel.deleteProduct(id)
+                                            showDeleteConfirmDialog = false
+                                        }) {
+                                            Text("Hapus")
+                                        }
+                                    },
+                                    dismissButton = {
+                                        OutlinedButton(onClick = { showDeleteConfirmDialog = false }) {
+                                            Text("Batal")
+                                        }
+                                    }
+                                )
+                            }
 
                             if (showEditDialog) {
                                 EditProductDialog(
