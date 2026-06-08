@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -54,10 +55,31 @@ func (h *ProductHandler) CreateMasterProduct(c *gin.Context) {
 	}
 
 	if req.CategoryID != "" {
+		// Category might be a UUID or a name, let's process it like in ApproveProduct
+		var categoryID pgtype.UUID
 		uid, err := uuid.Parse(req.CategoryID)
 		if err == nil {
-			arg.CategoryID = pgtype.UUID{Bytes: uid, Valid: true}
+			categoryID = pgtype.UUID{Bytes: uid, Valid: true}
+		} else {
+			// It's a name, look it up or create it
+			categoryName := req.CategoryID
+			category, err := h.queries.GetCategoryByName(c.Request.Context(), categoryName)
+			if err != nil {
+				slug := strings.ToLower(strings.ReplaceAll(categoryName, " ", "-"))
+				newCategory, err := h.queries.CreateCategory(c.Request.Context(), db.CreateCategoryParams{
+					Name: categoryName,
+					Slug: slug,
+				})
+				if err == nil {
+					categoryID = newCategory.ID
+				} else {
+					categoryID = pgtype.UUID{Valid: false}
+				}
+			} else {
+				categoryID = category.ID
+			}
 		}
+		arg.CategoryID = categoryID
 	}
 	if req.BrandID != "" {
 		uid, err := uuid.Parse(req.BrandID)
@@ -300,12 +322,27 @@ func (h *ProductHandler) DeleteProduct(c *gin.Context) {
 		// First delete associated transaction items and stock movements
 		// Then delete store products, then the master product itself.
 		// Note: The UI currently passes master product ID for deletion.
-		_ = h.queries.DeleteTransactionItemsByMasterProduct(c.Request.Context(), uuidParam)
-		_ = h.queries.DeleteStoreProductsByMasterID(c.Request.Context(), uuidParam)
-		err = h.queries.DeleteMasterProduct(c.Request.Context(), uuidParam)
-
+		err = h.queries.DeleteTransactionItemsByMasterProduct(c.Request.Context(), uuidParam)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete transaction items: " + err.Error()})
+			return
+		}
+
+		err = h.queries.DeleteStockMovementsByMasterProduct(c.Request.Context(), uuidParam)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete stock movements: " + err.Error()})
+			return
+		}
+
+		err = h.queries.DeleteStoreProductsByMasterID(c.Request.Context(), uuidParam)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete store products: " + err.Error()})
+			return
+		}
+
+		err = h.queries.DeleteMasterProduct(c.Request.Context(), uuidParam)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete master product: " + err.Error()})
 			return
 		}
 
