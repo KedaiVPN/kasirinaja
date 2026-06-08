@@ -23,6 +23,7 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteMasterProduct(ctx context.Context, id pgtype.UUID) error
 	DeletePendingProduct(ctx context.Context, id pgtype.UUID) error
+	DeleteStockMovementsByMasterProduct(ctx context.Context, masterProductID pgtype.UUID) error
 	DeleteStoreProduct(ctx context.Context, id pgtype.UUID) error
 	DeleteStoreProductsByMasterID(ctx context.Context, masterProductID pgtype.UUID) error
 	DeleteTransactionItemsByMasterProduct(ctx context.Context, masterProductID pgtype.UUID) error

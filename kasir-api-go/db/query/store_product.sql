@@ -24,3 +24,6 @@ WHERE id = $1;
 
 -- name: DeleteStoreProductsByMasterID :exec
 DELETE FROM store_products WHERE master_product_id = $1;
+
+-- name: DeleteStockMovementsByMasterProduct :exec
+DELETE FROM stock_movements WHERE store_product_id IN (SELECT id FROM store_products WHERE master_product_id = $1);

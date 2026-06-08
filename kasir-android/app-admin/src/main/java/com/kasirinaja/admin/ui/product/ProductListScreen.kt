@@ -34,13 +34,33 @@ fun ProductListScreen(viewModel: ProductListViewModel = viewModel()) {
         viewModel.loadProducts()
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Text(
-            text = "List Produk Approved",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(16.dp)
+    var showAddDialog by remember { mutableStateOf(false) }
+
+    if (showAddDialog) {
+        AddProductDialog(
+            onDismiss = { showAddDialog = false },
+            onSave = { name, category, barcode, photoUrl, isGeneratedBarcode ->
+                viewModel.addProduct(context, name, category, barcode, photoUrl, isGeneratedBarcode)
+                showAddDialog = false
+            }
         )
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "List Produk Approved",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Button(onClick = { showAddDialog = true }) {
+                Text("Tambah Produk")
+            }
+        }
 
         when (uiState) {
             is ProductListState.Loading -> {

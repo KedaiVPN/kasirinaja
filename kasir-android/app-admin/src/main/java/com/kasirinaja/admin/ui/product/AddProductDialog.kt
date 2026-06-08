@@ -19,19 +19,31 @@ import androidx.compose.ui.platform.LocalContext
 import com.kasirinaja.admin.utils.BarcodeUtils
 import androidx.compose.foundation.Image
 import java.util.UUID
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import coil.compose.AsyncImage
 
 @Composable
-fun EditProductDialog(
-    product: JsonObject,
+fun AddProductDialog(
     onDismiss: () -> Unit,
-    onSave: (String, String, String) -> Unit
+    onSave: (String, String, String, String, Boolean) -> Unit
 ) {
     val context = LocalContext.current
-    var name by remember { mutableStateOf(if (product.has("name") && !product.get("name").isJsonNull) product.get("name").asString else "") }
-    var category by remember { mutableStateOf(if (product.has("category") && !product.get("category").isJsonNull) product.get("category").asString else "") }
-    var barcode by remember { mutableStateOf(if (product.has("barcode") && !product.get("barcode").isJsonNull) product.get("barcode").asString else "") }
+    var name by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("") }
+    var barcode by remember { mutableStateOf("") }
+    var photoUrl by remember { mutableStateOf("") }
     var showScanner by remember { mutableStateOf(false) }
     var generatedBarcodeBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var isGeneratedBarcode by remember { mutableStateOf(false) }
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            photoUrl = uri.toString()
+        }
+    }
 
     if (showScanner) {
         Dialog(
@@ -58,9 +70,19 @@ fun EditProductDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit Produk") },
+        title = { Text("Tambah Produk") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (photoUrl.isNotEmpty()) {
+                    AsyncImage(
+                        model = photoUrl,
+                        contentDescription = "Selected Image",
+                        modifier = Modifier.fillMaxWidth().height(150.dp)
+                    )
+                }
+                Button(onClick = { imagePickerLauncher.launch("image/*") }) {
+                    Text(if (photoUrl.isEmpty()) "Pilih Foto Produk" else "Ganti Foto Produk")
+                }
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
@@ -92,6 +114,7 @@ fun EditProductDialog(
                     Button(onClick = {
                         val generatedCode = UUID.randomUUID().toString().replace("-", "").take(12).uppercase()
                         barcode = generatedCode
+                        isGeneratedBarcode = true
                         generatedBarcodeBitmap = BarcodeUtils.generateBarcode(generatedCode, 400, 150)
                     }) {
                         Text("Generate Barcode")
@@ -123,7 +146,7 @@ fun EditProductDialog(
             }
         },
         confirmButton = {
-            Button(onClick = { onSave(name, category, barcode) }) {
+            Button(onClick = { onSave(name, category, barcode, photoUrl, isGeneratedBarcode) }) {
                 Text("Simpan")
             }
         },
