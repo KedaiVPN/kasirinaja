@@ -9,10 +9,10 @@ class AuthRepository(
     private val authApi: AuthApi,
     private val tokenManager: TokenManager
 ) {
-    suspend fun login(email: String, passwordHash: String): Result<String> {
+    suspend fun login(email: String, password: String): Result<String> {
         return withContext(Dispatchers.IO) {
             try {
-                val request = mapOf("email" to email, "passwordHash" to passwordHash)
+                val request = mapOf("email" to email, "password" to password)
                 val response = authApi.login(request)
                 val token = response["token"]
                 if (token != null) {
