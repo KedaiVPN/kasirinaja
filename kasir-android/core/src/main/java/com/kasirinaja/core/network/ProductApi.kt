@@ -52,4 +52,7 @@ interface ProductApi {
 
     @POST("products/master")
     suspend fun submitMasterProduct(@Body request: MasterProductRequest): Response<Map<String, Any>>
+
+    @POST("products/store")
+    suspend fun addStoreProduct(@Body request: Map<String, @JvmSuppressWildcards Any>): Response<Map<String, Any>>
 }

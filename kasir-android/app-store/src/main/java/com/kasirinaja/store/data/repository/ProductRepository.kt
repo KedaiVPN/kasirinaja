@@ -12,6 +12,7 @@ import com.kasirinaja.store.data.local.ProductDao
 import com.kasirinaja.store.data.local.ProductEntity
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
+import com.google.gson.JsonObject
 
 class ProductRepository(
     private val productDao: ProductDao,
@@ -19,6 +20,38 @@ class ProductRepository(
 ) {
 
     val allProducts: Flow<List<ProductEntity>> = productDao.getAllProducts()
+
+    suspend fun getMasterProducts(): List<JsonObject> {
+        val response = RetrofitClient.productApi.getMasterProducts()
+        if (response.isSuccessful) {
+            return response.body() ?: emptyList()
+        } else {
+            throw Exception("Failed to fetch master products: ${response.message()}")
+        }
+    }
+
+    suspend fun addStoreProductFromMaster(
+        storeId: String,
+        masterProductId: String,
+        buyPrice: String,
+        sellPrice: String,
+        stock: Int,
+        minStock: Int,
+        localName: String,
+        localCategory: String
+    ) {
+        val request = mapOf(
+            "store_id" to storeId,
+            "master_product_id" to masterProductId,
+            "buy_price" to buyPrice,
+            "sell_price" to sellPrice,
+            "stock" to stock,
+            "min_stock" to minStock,
+            "local_name" to localName,
+            "local_category" to localCategory
+        )
+        RetrofitClient.productApi.addStoreProduct(request)
+    }
 
     suspend fun addProductLocalAndSync(
         existingId: String?,
