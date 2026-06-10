@@ -69,6 +69,7 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 		api.POST("/login", authHandler.Login)
 		api.POST("/auth/register-store", authHandler.RegisterStore)
 		api.POST("/auth/verify-otp", authHandler.VerifyOTP)
+		api.POST("/auth/resend-otp", authHandler.ResendOTP)
 
 		// Admin routes
 		adminRoutes := api.Group("/admin")

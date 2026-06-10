@@ -6,6 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 
 @Composable
 fun VerifyOtpScreen(
@@ -14,7 +15,15 @@ fun VerifyOtpScreen(
     onNavigateToLogin: () -> Unit
 ) {
     var otp by remember { mutableStateOf("") }
+    var timeLeft by remember { mutableStateOf(300) } // 5 minutes in seconds
     val authState by viewModel.authState.collectAsState()
+
+    LaunchedEffect(timeLeft) {
+        if (timeLeft > 0) {
+            delay(1000L)
+            timeLeft--
+        }
+    }
 
     LaunchedEffect(authState) {
         if (authState is AuthState.Success) {
@@ -62,6 +71,26 @@ fun VerifyOtpScreen(
                 CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
             } else {
                 Text("Kirim OTP")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        val minutes = timeLeft / 60
+        val seconds = timeLeft % 60
+        val timeString = String.format("%02d:%02d", minutes, seconds)
+
+        if (timeLeft > 0) {
+            Text(text = "Kirim ulang OTP dalam $timeString")
+        } else {
+            TextButton(
+                onClick = {
+                    viewModel.resendOtp(email)
+                    timeLeft = 300 // Reset timer
+                },
+                enabled = authState !is AuthState.Loading
+            ) {
+                Text("Kirim Ulang OTP")
             }
         }
     }

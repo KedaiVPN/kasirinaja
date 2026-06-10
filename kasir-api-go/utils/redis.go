@@ -49,8 +49,8 @@ func SaveRegistrationData(ctx context.Context, email string, data RegistrationDa
 	if err != nil {
 		return err
 	}
-	// Save for 5 minutes
-	return RedisClient.Set(ctx, "registration:"+email, jsonData, 5*time.Minute).Err()
+	// Save for 15 minutes to allow resend logic
+	return RedisClient.Set(ctx, "registration:"+email, jsonData, 15*time.Minute).Err()
 }
 
 func GetRegistrationData(ctx context.Context, email string) (*RegistrationData, error) {

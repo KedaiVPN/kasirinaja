@@ -56,6 +56,20 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
         }
     }
 
+    fun resendOtp(email: String) {
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            val result = repository.resendOtp(email)
+            if (result.isSuccess) {
+                _authState.value = AuthState.Success("OTP resent successfully")
+                // Kembalikan ke state idle agar tidak langsung pindah ke layar login (karena tidak diverifikasi)
+                _authState.value = AuthState.Idle
+            } else {
+                _authState.value = AuthState.Error(result.exceptionOrNull()?.message ?: "Unknown error")
+            }
+        }
+    }
+
     fun resetState() {
         _authState.value = AuthState.Idle
     }
