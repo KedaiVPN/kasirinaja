@@ -9,6 +9,7 @@ import (
 	"kasir-api-go/api/handlers"
 	"kasir-api-go/api/routes"
 	"kasir-api-go/db"
+	"kasir-api-go/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -43,6 +44,9 @@ func main() {
 	router := gin.Default()
 
 	// Setup Routes
+	// Initialize Redis
+	utils.InitRedis()
+
 	routes.SetupRoutes(router, queries, pool)
 
 	port := os.Getenv("PORT")
