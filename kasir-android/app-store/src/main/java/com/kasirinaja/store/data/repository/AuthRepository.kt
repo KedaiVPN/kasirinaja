@@ -14,7 +14,7 @@ class AuthRepository(
             try {
                 val request = mapOf("email" to email, "password" to password)
                 val response = authApi.login(request)
-                val token = response["token"]
+                val token = response["token"]?.toString()
                 if (token != null) {
                     tokenManager.saveToken(token)
                     Result.success(token)
