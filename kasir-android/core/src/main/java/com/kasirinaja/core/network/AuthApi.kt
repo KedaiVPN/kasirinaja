@@ -15,4 +15,7 @@ interface AuthApi {
 
     @POST("auth/verify-otp")
     suspend fun verifyOtp(@Body request: Map<String, String>): Map<String, Any>
+
+    @POST("auth/resend-otp")
+    suspend fun resendOtp(@Body request: Map<String, String>): Map<String, Any>
 }

@@ -40,6 +40,10 @@ type VerifyOTPRequest struct {
 	OTP   string `json:"otp" binding:"required"`
 }
 
+type ResendOTPRequest struct {
+	Email string `json:"email" binding:"required,email"`
+}
+
 type LoginRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
@@ -178,6 +182,39 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 			"store_id":  store.ID,
 		},
 	})
+}
+
+func (h *AuthHandler) ResendOTP(c *gin.Context) {
+	var req ResendOTPRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request parameters"})
+		return
+	}
+
+	regData, err := utils.GetRegistrationData(c.Request.Context(), req.Email)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Session expired, please register again"})
+		return
+	}
+
+	// Generate new OTP
+	newOtp := utils.GenerateOTP()
+	regData.OTP = newOtp
+
+	if err := utils.SaveRegistrationData(c.Request.Context(), req.Email, *regData); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update registration data"})
+		return
+	}
+
+	// Send Email
+	go func() {
+		err := utils.SendOTPEmail(req.Email, newOtp)
+		if err != nil {
+			log.Printf("Failed to resend OTP email to %s: %v", req.Email, err)
+		}
+	}()
+
+	c.JSON(http.StatusOK, gin.H{"message": "OTP resent to email"})
 }
 
 func (h *AuthHandler) Login(c *gin.Context) {

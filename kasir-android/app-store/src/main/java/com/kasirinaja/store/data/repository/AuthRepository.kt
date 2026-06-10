@@ -63,6 +63,19 @@ class AuthRepository(
         }
     }
 
+    suspend fun resendOtp(email: String): Result<String> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val request = mapOf("email" to email)
+                val response = authApi.resendOtp(request)
+                val message = response["message"]?.toString() ?: "Success"
+                Result.success(message)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
     fun logout() {
         tokenManager.clearToken()
     }
