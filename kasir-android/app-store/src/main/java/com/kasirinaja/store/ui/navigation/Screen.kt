@@ -18,4 +18,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object AddProduct : Screen("add_product", "Tambah Produk", Icons.Filled.Add)
     object CameraCapture : Screen("camera_capture", "Kamera", Icons.Filled.Add) // Not in bottom bar
     object BarcodeScannerForm : Screen("barcode_scanner_form", "Scan Barcode", Icons.Filled.Add) // Not in bottom bar
+    object Login : Screen("login", "Login", Icons.Filled.Home) // Not in bottom bar
+    object Register : Screen("register", "Register", Icons.Filled.Home) // Not in bottom bar
+    object VerifyOtp : Screen("verify_otp", "Verify OTP", Icons.Filled.Home) // Not in bottom bar
 }

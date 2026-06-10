@@ -17,3 +17,5 @@ RETURNING *;
 -- name: ListUsers :many
 SELECT * FROM users
 ORDER BY id;
+-- name: UpdateUserStoreID :exec
+UPDATE users SET store_id = $2 WHERE id = $1;

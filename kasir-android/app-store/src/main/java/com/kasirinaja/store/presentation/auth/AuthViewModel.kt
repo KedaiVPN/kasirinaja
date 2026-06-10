@@ -12,6 +12,7 @@ sealed class AuthState {
     object Idle : AuthState()
     object Loading : AuthState()
     data class Success(val message: String) : AuthState()
+    data class OtpSent(val message: String, val email: String) : AuthState()
     data class Error(val message: String) : AuthState()
 }
 
@@ -36,11 +37,27 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
             _authState.value = AuthState.Loading
             val result = repository.registerStore(fullName, email, phone, passwordHash, storeName, address)
             if (result.isSuccess) {
-                _authState.value = AuthState.Success(result.getOrDefault("Registered successfully"))
+                _authState.value = AuthState.OtpSent(result.getOrDefault("OTP Sent"), email)
             } else {
                 _authState.value = AuthState.Error(result.exceptionOrNull()?.message ?: "Unknown error")
             }
         }
+    }
+
+    fun verifyOtp(email: String, otp: String) {
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            val result = repository.verifyOtp(email, otp)
+            if (result.isSuccess) {
+                _authState.value = AuthState.Success("Verification successful")
+            } else {
+                _authState.value = AuthState.Error(result.exceptionOrNull()?.message ?: "Unknown error")
+            }
+        }
+    }
+
+    fun resetState() {
+        _authState.value = AuthState.Idle
     }
 }
 

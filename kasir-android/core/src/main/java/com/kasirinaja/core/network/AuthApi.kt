@@ -12,4 +12,7 @@ interface AuthApi {
 
     @POST("auth/register-store")
     suspend fun registerStore(@Body request: Map<String, String>): Map<String, String>
+
+    @POST("auth/verify-otp")
+    suspend fun verifyOtp(@Body request: Map<String, String>): Map<String, Any>
 }

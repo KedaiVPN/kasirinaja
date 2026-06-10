@@ -29,7 +29,7 @@ class AuthRepository(
 
     suspend fun registerStore(
         fullName: String, email: String, phone: String,
-        passwordHash: String, storeName: String, address: String
+        password: String, storeName: String, address: String
     ): Result<String> {
         return withContext(Dispatchers.IO) {
             try {
@@ -37,12 +37,25 @@ class AuthRepository(
                     "fullName" to fullName,
                     "email" to email,
                     "phone" to phone,
-                    "passwordHash" to passwordHash,
+                    "password" to password,
                     "storeName" to storeName,
                     "address" to address
                 )
                 val response = authApi.registerStore(request)
                 val message = response["message"] ?: "Success"
+                Result.success(message)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    suspend fun verifyOtp(email: String, otp: String): Result<String> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val request = mapOf("email" to email, "otp" to otp)
+                val response = authApi.verifyOtp(request)
+                val message = response["message"]?.toString() ?: "Success"
                 Result.success(message)
             } catch (e: Exception) {
                 Result.failure(e)

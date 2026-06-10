@@ -13,7 +13,7 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 	userHandler := handlers.NewUserHandler(queries)
 	productHandler := handlers.NewProductHandler(queries, wsManager)
 	transactionHandler := handlers.NewTransactionHandler(queries, pool)
-	authHandler := handlers.NewAuthHandler(queries)
+	authHandler := handlers.NewAuthHandler(queries, pool)
 	adminHandler := handlers.NewAdminHandler(queries)
 
 	// Root route to prevent 404 on base domain
@@ -67,6 +67,8 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 
 		// Auth
 		api.POST("/login", authHandler.Login)
+		api.POST("/auth/register-store", authHandler.RegisterStore)
+		api.POST("/auth/verify-otp", authHandler.VerifyOTP)
 
 		// Admin routes
 		adminRoutes := api.Group("/admin")

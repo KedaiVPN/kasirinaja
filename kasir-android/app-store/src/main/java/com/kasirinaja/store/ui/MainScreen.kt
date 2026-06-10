@@ -24,10 +24,50 @@ import com.kasirinaja.store.ui.screens.BarcodeScannerFormScreen
 import com.kasirinaja.store.ui.screens.ScanScreen
 import com.kasirinaja.store.ui.screens.SettingsScreen
 import com.kasirinaja.store.ui.screens.StockScreen
+import com.kasirinaja.store.presentation.auth.LoginScreen
+import com.kasirinaja.store.presentation.auth.RegisterStoreScreen
+import com.kasirinaja.store.presentation.auth.VerifyOtpScreen
+import com.kasirinaja.store.presentation.auth.AuthViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.kasirinaja.store.presentation.auth.AuthViewModelFactory
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
 
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
+    val context = LocalContext.current
+    val tokenManager = com.kasirinaja.core.network.TokenManager(context)
+    val authRepository = com.kasirinaja.store.data.repository.AuthRepository(
+        com.kasirinaja.core.network.RetrofitClient.authApi,
+        tokenManager
+    )
+
+    // Auth ViewModel
+    val authViewModel: AuthViewModel = viewModel(
+        factory = AuthViewModelFactory(authRepository)
+    )
+
+    var startDest by remember { mutableStateOf(Screen.Login.route) }
+    var isCheckingToken by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        val token = tokenManager.getToken()
+        if (!token.isNullOrEmpty()) {
+            startDest = Screen.Dashboard.route
+        } else {
+            startDest = Screen.Login.route
+        }
+        isCheckingToken = false
+    }
+
+    if (isCheckingToken) {
+        return // Or a splash screen
+    }
+
 
     val bottomBarScreens = listOf(
         Screen.Dashboard,
@@ -39,6 +79,11 @@ fun MainScreen() {
 
     Scaffold(
         bottomBar = {
+            val navBackStackEntry by navController.currentBackStackEntryAsState()
+            val currentDestination = navBackStackEntry?.destination
+            val currentRoute = currentDestination?.route
+
+            if (bottomBarScreens.any { it.route == currentRoute }) {
             NavigationBar {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentDestination = navBackStackEntry?.destination
@@ -64,13 +109,49 @@ fun MainScreen() {
                     }
                 }
             }
+            }
         }
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Dashboard.route,
+            startDestination = startDest,
             modifier = Modifier.padding(innerPadding)
         ) {
+            composable(Screen.Login.route) {
+                LoginScreen(
+                    viewModel = authViewModel,
+                    onNavigateToRegister = { navController.navigate(Screen.Register.route) },
+                    onLoginSuccess = {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+            composable(Screen.Register.route) {
+                RegisterStoreScreen(
+                    viewModel = authViewModel,
+                    onNavigateToLogin = { navController.popBackStack() },
+                    onNavigateToVerifyOtp = { email ->
+                        navController.navigate("${Screen.VerifyOtp.route}/$email")
+                    }
+                )
+            }
+            composable(
+                route = "${Screen.VerifyOtp.route}/{email}",
+                arguments = listOf(androidx.navigation.navArgument("email") { type = androidx.navigation.NavType.StringType })
+            ) { backStackEntry ->
+                val email = backStackEntry.arguments?.getString("email") ?: ""
+                VerifyOtpScreen(
+                    viewModel = authViewModel,
+                    email = email,
+                    onNavigateToLogin = {
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(0)
+                        }
+                    }
+                )
+            }
             composable(Screen.Dashboard.route) { DashboardScreen() }
             composable(Screen.Stock.route) {
                 StockScreen(
