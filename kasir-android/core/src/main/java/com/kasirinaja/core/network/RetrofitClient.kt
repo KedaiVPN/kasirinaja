@@ -7,7 +7,8 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
-    private const val BASE_URL = "https://api-go-v1.free-account.my.id/api/"
+    const val BASE_URL = "https://api-go-v1.free-account.my.id/api/"
+    const val IMAGE_BASE_URL = "https://api-go-v1.free-account.my.id"
 
     private var tokenProvider: (() -> String?)? = null
 

@@ -10,6 +10,14 @@ class TokenManager(context: Context) {
         prefs.edit().putString("jwt_token", token).apply()
     }
 
+    fun saveStoreId(storeId: String) {
+        prefs.edit().putString("store_id", storeId).apply()
+    }
+
+    fun getStoreId(): String? {
+        return prefs.getString("store_id", null)
+    }
+
     fun getToken(): String? {
         return prefs.getString("jwt_token", null)
     }
