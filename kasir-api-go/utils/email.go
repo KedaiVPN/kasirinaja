@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"strings"
 
 	"gopkg.in/gomail.v2"
 )
@@ -32,8 +33,8 @@ func SendOTPEmail(toEmail string, otp string) error {
 	host := os.Getenv("SMTP_HOST")
 	portStr := os.Getenv("SMTP_PORT")
 	user := os.Getenv("SMTP_USER")
-	pass := os.Getenv("SMTP_PASS")
-	from := os.Getenv("SMTP_FROM")
+	pass := strings.Trim(os.Getenv("SMTP_PASS"), `"`)
+	from := strings.Trim(os.Getenv("SMTP_FROM"), `"`)
 
 	port, err := strconv.Atoi(portStr)
 	if err != nil {
@@ -41,7 +42,18 @@ func SendOTPEmail(toEmail string, otp string) error {
 	}
 
 	m := gomail.NewMessage()
-	m.SetHeader("From", from)
+
+	// Safely parse "Name <email>" if provided, or fallback to simple email
+	if strings.Contains(from, "<") && strings.Contains(from, ">") {
+		start := strings.Index(from, "<")
+		end := strings.Index(from, ">")
+		name := strings.TrimSpace(from[:start])
+		emailAddr := from[start+1 : end]
+		m.SetAddressHeader("From", emailAddr, name)
+	} else {
+		m.SetHeader("From", from)
+	}
+
 	m.SetHeader("To", toEmail)
 	m.SetHeader("Subject", "Kode Verifikasi OTP Anda")
 
