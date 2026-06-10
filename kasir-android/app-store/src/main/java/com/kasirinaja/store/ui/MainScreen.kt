@@ -145,9 +145,9 @@ fun MainScreen() {
                 VerifyOtpScreen(
                     viewModel = authViewModel,
                     email = email,
-                    onNavigateToLogin = {
-                        navController.navigate(Screen.Login.route) {
-                            popUpTo(0)
+                    onNavigateToDashboard = {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(0) // Clear backstack so user can't go back to auth
                         }
                     }
                 )

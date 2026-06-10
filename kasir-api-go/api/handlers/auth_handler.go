@@ -173,12 +173,31 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 	// Delete OTP from Redis
 	utils.DeleteRegistrationData(c.Request.Context(), req.Email)
 
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = "secret"
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id": user.ID.Bytes,
+		"role":    user.Role,
+		"exp":     time.Now().Add(time.Hour * 24).Unix(), // 24 hours
+	})
+
+	tokenString, err := token.SignedString([]byte(jwtSecret))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Registration successful",
+		"token": tokenString,
 		"user": gin.H{
 			"id":        user.ID,
 			"full_name": user.FullName,
 			"email":     user.Email.String,
+			"role":      user.Role,
 			"store_id":  store.ID,
 		},
 	})

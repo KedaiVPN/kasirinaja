@@ -66,7 +66,8 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 		api.GET("/ws", wsManager.HandleConnections)
 
 		// Auth
-		api.POST("/login", authHandler.Login)
+		api.POST("/login", authHandler.Login) // Used by Admin
+		api.POST("/auth/login", authHandler.Login) // Used by Store
 		api.POST("/auth/register-store", authHandler.RegisterStore)
 		api.POST("/auth/verify-otp", authHandler.VerifyOTP)
 		api.POST("/auth/resend-otp", authHandler.ResendOTP)
