@@ -55,6 +55,10 @@ class AuthRepository(
             try {
                 val request = mapOf("email" to email, "otp" to otp)
                 val response = authApi.verifyOtp(request)
+                val token = response["token"]?.toString()
+                if (token != null) {
+                    tokenManager.saveToken(token)
+                }
                 val message = response["message"]?.toString() ?: "Success"
                 Result.success(message)
             } catch (e: Exception) {

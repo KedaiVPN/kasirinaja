@@ -12,7 +12,7 @@ import kotlinx.coroutines.delay
 fun VerifyOtpScreen(
     viewModel: AuthViewModel,
     email: String,
-    onNavigateToLogin: () -> Unit
+    onNavigateToDashboard: () -> Unit
 ) {
     var otp by remember { mutableStateOf("") }
     var timeLeft by remember { mutableStateOf(300) } // 5 minutes in seconds
@@ -28,7 +28,7 @@ fun VerifyOtpScreen(
     LaunchedEffect(authState) {
         if (authState is AuthState.Success) {
             viewModel.resetState()
-            onNavigateToLogin()
+            onNavigateToDashboard()
         }
     }
 
