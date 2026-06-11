@@ -74,7 +74,18 @@ class ProductRepository(
             )
             productDao.insertProduct(entity)
         } else {
-            throw Exception("Gagal menambahkan produk ke toko: ${response.message()}")
+            val errorBody = response.errorBody()?.string()
+            val errorMessage = if (!errorBody.isNullOrEmpty()) {
+                try {
+                    val jsonError = org.json.JSONObject(errorBody)
+                    jsonError.optString("error", response.message())
+                } catch (e: Exception) {
+                    errorBody
+                }
+            } else {
+                response.message()
+            }
+            throw Exception("Gagal menambahkan produk ke toko: $errorMessage")
         }
     }
 
