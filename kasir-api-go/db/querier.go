@@ -34,7 +34,7 @@ type Querier interface {
 	GetStoreProduct(ctx context.Context, id pgtype.UUID) (StoreProduct, error)
 	GetUser(ctx context.Context, id pgtype.UUID) (User, error)
 	GetUserByEmail(ctx context.Context, email pgtype.Text) (User, error)
-	ListMasterProducts(ctx context.Context) ([]MasterProduct, error)
+	ListMasterProducts(ctx context.Context) ([]ListMasterProductsRow, error)
 	ListPendingProducts(ctx context.Context) ([]PendingProduct, error)
 	ListStoreProductsByStore(ctx context.Context, storeID pgtype.UUID) ([]StoreProduct, error)
 	ListUsers(ctx context.Context) ([]User, error)

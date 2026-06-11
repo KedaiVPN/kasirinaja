@@ -123,19 +123,39 @@ func (q *Queries) GetMasterProduct(ctx context.Context, id pgtype.UUID) (MasterP
 }
 
 const listMasterProducts = `-- name: ListMasterProducts :many
-SELECT id, barcode, name, photo_url, photo_path, category_id, brand_id, unit, source, is_generated_barcode, is_active, created_by, created_at, updated_at FROM master_products
-ORDER BY id
+SELECT mp.id, mp.barcode, mp.name, mp.photo_url, mp.photo_path, mp.category_id, mp.brand_id, mp.unit, mp.source, mp.is_generated_barcode, mp.is_active, mp.created_by, mp.created_at, mp.updated_at, c.name as category_name
+FROM master_products mp
+LEFT JOIN categories c ON mp.category_id = c.id
+ORDER BY mp.id
 `
 
-func (q *Queries) ListMasterProducts(ctx context.Context) ([]MasterProduct, error) {
+type ListMasterProductsRow struct {
+	ID                 pgtype.UUID      `json:"id"`
+	Barcode            string           `json:"barcode"`
+	Name               string           `json:"name"`
+	PhotoUrl           pgtype.Text      `json:"photo_url"`
+	PhotoPath          pgtype.Text      `json:"photo_path"`
+	CategoryID         pgtype.UUID      `json:"category_id"`
+	BrandID            pgtype.UUID      `json:"brand_id"`
+	Unit               pgtype.Text      `json:"unit"`
+	Source             pgtype.Text      `json:"source"`
+	IsGeneratedBarcode pgtype.Bool      `json:"is_generated_barcode"`
+	IsActive           pgtype.Bool      `json:"is_active"`
+	CreatedBy          pgtype.UUID      `json:"created_by"`
+	CreatedAt          pgtype.Timestamp `json:"created_at"`
+	UpdatedAt          pgtype.Timestamp `json:"updated_at"`
+	CategoryName       pgtype.Text      `json:"category_name"`
+}
+
+func (q *Queries) ListMasterProducts(ctx context.Context) ([]ListMasterProductsRow, error) {
 	rows, err := q.db.Query(ctx, listMasterProducts)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []MasterProduct
+	var items []ListMasterProductsRow
 	for rows.Next() {
-		var i MasterProduct
+		var i ListMasterProductsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Barcode,
@@ -151,6 +171,7 @@ func (q *Queries) ListMasterProducts(ctx context.Context) ([]MasterProduct, erro
 			&i.CreatedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.CategoryName,
 		); err != nil {
 			return nil, err
 		}

@@ -11,8 +11,10 @@ SELECT * FROM master_products
 WHERE id = $1 LIMIT 1;
 
 -- name: ListMasterProducts :many
-SELECT * FROM master_products
-ORDER BY id;
+SELECT mp.*, c.name as category_name
+FROM master_products mp
+LEFT JOIN categories c ON mp.category_id = c.id
+ORDER BY mp.id;
 
 -- name: CountMasterProducts :one
 SELECT COUNT(*) FROM master_products;
