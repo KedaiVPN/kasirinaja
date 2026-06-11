@@ -5,7 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -80,7 +80,7 @@ fun MasterScreen(
             )
             Spacer(modifier = Modifier.width(8.dp))
             IconButton(onClick = onNavigateToScanner) {
-                Icon(Icons.Default.CameraAlt, contentDescription = "Scan Barcode")
+                Icon(Icons.Default.QrCodeScanner, contentDescription = "Scan Barcode")
             }
         }
 
@@ -132,7 +132,7 @@ fun MasterScreen(
 @Composable
 fun MasterProductItem(product: JsonObject, onAddClick: () -> Unit) {
     val name = product.get("name")?.asString ?: ""
-    val categoryId = product.get("category_id")?.asString ?: ""
+    val categoryName = product.get("category_name")?.asString ?: product.get("category_id")?.asString ?: ""
     val barcode = product.get("barcode")?.asString ?: ""
     val photoUrl = product.get("photo_url")?.asString
 
@@ -162,7 +162,7 @@ fun MasterProductItem(product: JsonObject, onAddClick: () -> Unit) {
             // Details
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = name, style = MaterialTheme.typography.titleMedium)
-                Text(text = "Kategori: $categoryId", style = MaterialTheme.typography.bodyMedium)
+                Text(text = "Kategori: $categoryName", style = MaterialTheme.typography.bodyMedium)
                 Text(text = "Barcode: $barcode", style = MaterialTheme.typography.bodySmall)
             }
 

@@ -15,8 +15,13 @@ class AuthRepository(
                 val request = mapOf("email" to email, "password" to password)
                 val response = authApi.login(request)
                 val token = response["token"]?.toString()
+                val user = response["user"] as? Map<*, *>
+                val storeId = user?.get("store_id")?.toString()
                 if (token != null) {
                     tokenManager.saveToken(token)
+                    if (storeId != null) {
+                        tokenManager.saveStoreId(storeId)
+                    }
                     Result.success(token)
                 } else {
                     Result.failure(Exception("Token not found in response"))
@@ -56,8 +61,13 @@ class AuthRepository(
                 val request = mapOf("email" to email, "otp" to otp)
                 val response = authApi.verifyOtp(request)
                 val token = response["token"]?.toString()
+                val user = response["user"] as? Map<*, *>
+                val storeId = user?.get("store_id")?.toString()
                 if (token != null) {
                     tokenManager.saveToken(token)
+                    if (storeId != null) {
+                        tokenManager.saveStoreId(storeId)
+                    }
                 }
                 val message = response["message"]?.toString() ?: "Success"
                 Result.success(message)

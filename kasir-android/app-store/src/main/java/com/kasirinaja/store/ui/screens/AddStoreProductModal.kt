@@ -9,7 +9,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.google.gson.JsonObject
-import kotlinx.coroutines.launch
 
 @Composable
 fun AddStoreProductModal(
@@ -18,7 +17,7 @@ fun AddStoreProductModal(
     onSave: (name: String, category: String, buyPrice: String, sellPrice: String, stock: Int) -> Unit
 ) {
     val initialName = product.get("name")?.asString ?: ""
-    val initialCategory = product.get("category_id")?.asString ?: "" // Fallback for name mapping if any
+    val initialCategory = product.get("category_name")?.asString ?: product.get("category_id")?.asString ?: ""
 
     var name by remember { mutableStateOf(initialName) }
     var category by remember { mutableStateOf(initialCategory) }

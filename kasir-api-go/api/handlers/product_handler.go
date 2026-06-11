@@ -138,6 +138,7 @@ type CreateStoreProductRequest struct {
 	Stock           int32  `json:"stock"`
 	MinStock        int32  `json:"min_stock"`
 	LocalName       string `json:"local_name"`
+	LocalCategory   string `json:"local_category"`
 }
 
 func (h *ProductHandler) CreateStoreProduct(c *gin.Context) {
@@ -172,6 +173,7 @@ func (h *ProductHandler) CreateStoreProduct(c *gin.Context) {
 		Stock:           req.Stock,
 		MinStock:        req.MinStock,
 		LocalName:       pgtype.Text{String: req.LocalName, Valid: req.LocalName != ""},
+		LocalCategory:   pgtype.Text{String: req.LocalCategory, Valid: req.LocalCategory != ""},
 	}
 
 	product, err := h.queries.CreateStoreProduct(c.Request.Context(), arg)
@@ -412,11 +414,12 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 		}
 	} else if status == "approved" {
 		arg := db.UpdateStoreProductParams{
-			ID:        pgtype.UUID{Bytes: id, Valid: true},
-			BuyPrice:  buyPrice,
-			SellPrice: sellPrice,
-			Stock:     req.Stock,
-			LocalName: pgtype.Text{String: req.Name, Valid: req.Name != ""}, // Name mapped to local_name
+			ID:            pgtype.UUID{Bytes: id, Valid: true},
+			BuyPrice:      buyPrice,
+			SellPrice:     sellPrice,
+			Stock:         req.Stock,
+			LocalName:     pgtype.Text{String: req.Name, Valid: req.Name != ""}, // Name mapped to local_name
+			LocalCategory: pgtype.Text{String: req.Category, Valid: req.Category != ""}, // Category mapped to local_category
 		}
 		err = h.queries.UpdateStoreProduct(c.Request.Context(), arg)
 		if err != nil {
