@@ -120,6 +120,22 @@ func (h *ProductHandler) GetMasterProduct(c *gin.Context) {
 	c.JSON(http.StatusOK, product)
 }
 
+type MasterProductResponse struct {
+	ID                 string `json:"id"`
+	Barcode            string `json:"barcode"`
+	Name               string `json:"name"`
+	PhotoUrl           string `json:"photo_url"`
+	PhotoPath          string `json:"photo_path"`
+	CategoryID         string `json:"category_id"`
+	BrandID            string `json:"brand_id"`
+	Unit               string `json:"unit"`
+	Source             string `json:"source"`
+	IsGeneratedBarcode bool   `json:"is_generated_barcode"`
+	IsActive           bool   `json:"is_active"`
+	CreatedBy          string `json:"created_by"`
+	CategoryName       string `json:"category_name"`
+}
+
 func (h *ProductHandler) ListMasterProducts(c *gin.Context) {
 	products, err := h.queries.ListMasterProducts(c.Request.Context())
 	if err != nil {
@@ -127,7 +143,50 @@ func (h *ProductHandler) ListMasterProducts(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, products)
+	var formattedProducts []MasterProductResponse
+	for _, p := range products {
+		idUUID, _ := uuid.FromBytes(p.ID.Bytes[:])
+		categoryUUID, _ := uuid.FromBytes(p.CategoryID.Bytes[:])
+		brandUUID, _ := uuid.FromBytes(p.BrandID.Bytes[:])
+		createdByUUID, _ := uuid.FromBytes(p.CreatedBy.Bytes[:])
+
+		formatted := MasterProductResponse{
+			ID:                 idUUID.String(),
+			Barcode:            p.Barcode,
+			Name:               p.Name,
+			IsGeneratedBarcode: p.IsGeneratedBarcode.Bool,
+			IsActive:           p.IsActive.Bool,
+		}
+
+		if p.PhotoUrl.Valid {
+			formatted.PhotoUrl = p.PhotoUrl.String
+		}
+		if p.PhotoPath.Valid {
+			formatted.PhotoPath = p.PhotoPath.String
+		}
+		if p.CategoryID.Valid {
+			formatted.CategoryID = categoryUUID.String()
+		}
+		if p.CategoryName.Valid {
+			formatted.CategoryName = p.CategoryName.String
+		}
+		if p.BrandID.Valid {
+			formatted.BrandID = brandUUID.String()
+		}
+		if p.Unit.Valid {
+			formatted.Unit = p.Unit.String
+		}
+		if p.Source.Valid {
+			formatted.Source = p.Source.String
+		}
+		if p.CreatedBy.Valid {
+			formatted.CreatedBy = createdByUUID.String()
+		}
+
+		formattedProducts = append(formattedProducts, formatted)
+	}
+
+	c.JSON(http.StatusOK, formattedProducts)
 }
 
 type CreateStoreProductRequest struct {

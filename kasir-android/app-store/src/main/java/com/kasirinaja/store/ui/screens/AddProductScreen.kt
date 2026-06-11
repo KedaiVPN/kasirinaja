@@ -135,9 +135,14 @@ fun AddProductScreen(
                     Text(text = "Foto Produk", style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    if (formState.imageUri != null) {
+                    val currentImageUri = formState.imageUri
+                    if (currentImageUri != null) {
                         AsyncImage(
-                            model = Uri.parse(formState.imageUri),
+                            model = if (currentImageUri.startsWith("content://") || currentImageUri.startsWith("file://") || currentImageUri.startsWith("http")) {
+                                Uri.parse(currentImageUri)
+                            } else {
+                                "${com.kasirinaja.core.network.RetrofitClient.IMAGE_BASE_URL}${if(currentImageUri.startsWith("/")) currentImageUri else "/$currentImageUri"}"
+                            },
                             contentDescription = "Foto Produk",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
