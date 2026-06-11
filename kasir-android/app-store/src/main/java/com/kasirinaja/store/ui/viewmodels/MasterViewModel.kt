@@ -42,7 +42,10 @@ class MasterViewModel(private val repository: ProductRepository) : ViewModel() {
         category: String,
         buyPrice: String,
         sellPrice: String,
-        stock: Int
+        stock: Int,
+        barcode: String,
+        imageUrl: String,
+        description: String
     ) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -56,7 +59,10 @@ class MasterViewModel(private val repository: ProductRepository) : ViewModel() {
                     stock = stock,
                     minStock = 0,
                     localName = name,
-                    localCategory = category
+                    localCategory = category,
+                    barcode = barcode,
+                    imageUrl = imageUrl,
+                    description = description
                 )
                 // Optionally refresh or show success message
             } catch (e: Exception) {

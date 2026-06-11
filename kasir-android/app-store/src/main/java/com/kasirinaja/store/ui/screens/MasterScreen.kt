@@ -114,6 +114,9 @@ fun MasterScreen(
             onSave = { name, category, buyPrice, sellPrice, stock ->
                 val storeId = TokenManager(context).getStoreId() ?: ""
                 val masterProductId = product.get("id")?.asString ?: ""
+                val barcode = product.get("barcode")?.asString ?: ""
+                val photoUrl = product.get("photo_url")?.asString ?: ""
+                val description = product.get("description")?.asString ?: ""
                 viewModel.addStoreProduct(
                     storeId = storeId,
                     masterProductId = masterProductId,
@@ -121,7 +124,10 @@ fun MasterScreen(
                     category = category,
                     buyPrice = buyPrice,
                     sellPrice = sellPrice,
-                    stock = stock
+                    stock = stock,
+                    barcode = barcode,
+                    imageUrl = photoUrl,
+                    description = description
                 )
                 productToEdit = null
             }
