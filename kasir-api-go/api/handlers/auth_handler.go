@@ -283,6 +283,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 			"full_name": user.FullName,
 			"email":     user.Email.String,
 			"role":      user.Role,
+			"store_id":  user.StoreID,
 		},
 	})
 }
