@@ -113,6 +113,11 @@ fun MasterScreen(
             onDismiss = { productToEdit = null },
             onSave = { name, category, buyPrice, sellPrice, stock ->
                 val storeId = TokenManager(context).getStoreId() ?: ""
+
+                // Set default to "0" if empty because backend expects a numeric string but requires the field
+                val safeBuyPrice = buyPrice.ifEmpty { "0" }
+                val safeSellPrice = sellPrice.ifEmpty { "0" }
+
                 val masterProductId = product.get("id")?.asString ?: ""
                 val barcode = product.get("barcode")?.asString ?: ""
                 val photoUrl = product.get("photo_url")?.asString ?: ""
@@ -122,8 +127,8 @@ fun MasterScreen(
                     masterProductId = masterProductId,
                     name = name,
                     category = category,
-                    buyPrice = buyPrice,
-                    sellPrice = sellPrice,
+                    buyPrice = safeBuyPrice,
+                    sellPrice = safeSellPrice,
                     stock = stock,
                     barcode = barcode,
                     imageUrl = photoUrl,
