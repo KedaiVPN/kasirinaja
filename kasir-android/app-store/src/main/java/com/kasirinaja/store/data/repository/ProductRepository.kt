@@ -38,7 +38,10 @@ class ProductRepository(
         stock: Int,
         minStock: Int,
         localName: String,
-        localCategory: String
+        localCategory: String,
+        barcode: String,
+        imageUrl: String,
+        description: String
     ) {
         val request = mapOf(
             "store_id" to storeId,
@@ -50,7 +53,29 @@ class ProductRepository(
             "local_name" to localName,
             "local_category" to localCategory
         )
-        RetrofitClient.productApi.addStoreProduct(request)
+        val response = RetrofitClient.productApi.addStoreProduct(request)
+        if (response.isSuccessful) {
+            val body = response.body()
+            // Ensure ID is properly handled as string
+            val newId = body?.get("id")?.toString() ?: UUID.randomUUID().toString()
+
+            val entity = ProductEntity(
+                id = newId,
+                name = localName,
+                buyPrice = buyPrice,
+                sellPrice = sellPrice,
+                stock = stock,
+                category = localCategory,
+                description = description,
+                barcode = barcode,
+                imageUrl = imageUrl,
+                isSynced = true,
+                pendingSync = false
+            )
+            productDao.insertProduct(entity)
+        } else {
+            throw Exception("Gagal menambahkan produk ke toko: ${response.message()}")
+        }
     }
 
     suspend fun addProductLocalAndSync(
