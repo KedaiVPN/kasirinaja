@@ -17,6 +17,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.kasirinaja.store.utils.FileUtil
+import java.io.File
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.google.gson.JsonObject
 import com.kasirinaja.store.data.local.AppDatabase
 import com.kasirinaja.store.data.repository.ProductRepository
@@ -158,9 +166,31 @@ fun MasterProductItem(product: JsonObject, onAddClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Photo
+            val context = LocalContext.current
+            val fileName = if (!photoUrl.isNullOrEmpty()) FileUtil.extractFileNameFromUrl(photoUrl) else ""
+            val localFile = if (fileName.isNotEmpty()) FileUtil.getLocalImagePath(context, fileName) else null
+
+            var isLocalExists by remember(fileName) { mutableStateOf(false) }
+
+            LaunchedEffect(fileName) {
+                if (fileName.isNotEmpty()) {
+                    isLocalExists = withContext(Dispatchers.IO) {
+                        FileUtil.isImageExistsLocally(context, fileName)
+                    }
+                }
+            }
+
+            val imageModel = if (isLocalExists) {
+                localFile
+            } else if (!photoUrl.isNullOrEmpty()) {
+                "${com.kasirinaja.core.network.RetrofitClient.IMAGE_BASE_URL}${if(photoUrl.startsWith("/")) photoUrl else "/$photoUrl"}"
+            } else {
+                null
+            }
+
             AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(if (!photoUrl.isNullOrEmpty()) "${com.kasirinaja.core.network.RetrofitClient.IMAGE_BASE_URL}$photoUrl" else null)
+                model = ImageRequest.Builder(context)
+                    .data(imageModel)
                     .crossfade(true)
                     .build(),
                 contentDescription = name,
