@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -261,6 +262,21 @@ func (h *ProductHandler) GetStoreProduct(c *gin.Context) {
 	c.JSON(http.StatusOK, product)
 }
 
+type StoreProductResponse struct {
+	ID              string `json:"id"`
+	StoreID         string `json:"store_id"`
+	MasterProductID string `json:"master_product_id"`
+	BuyPrice        string `json:"buy_price"`
+	SellPrice       string `json:"sell_price"`
+	Stock           int32  `json:"stock"`
+	MinStock        int32  `json:"min_stock"`
+	IsActive        bool   `json:"is_active"`
+	LocalName       string `json:"local_name"`
+	LocalCategory   string `json:"local_category"`
+	Barcode         string `json:"barcode"`
+	ImageUrl        string `json:"image_url"`
+}
+
 func (h *ProductHandler) ListStoreProducts(c *gin.Context) {
 	storeIDParam := c.Query("store_id")
 	if storeIDParam == "" {
@@ -280,7 +296,43 @@ func (h *ProductHandler) ListStoreProducts(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, products)
+	var formattedProducts []StoreProductResponse
+	for _, p := range products {
+		idUUID, _ := uuid.FromBytes(p.ID.Bytes[:])
+		storeUUID, _ := uuid.FromBytes(p.StoreID.Bytes[:])
+		masterUUID, _ := uuid.FromBytes(p.MasterProductID.Bytes[:])
+
+		buyPriceStr := "0"
+		if p.BuyPrice.Valid {
+			if num, err := p.BuyPrice.Float64Value(); err == nil {
+				buyPriceStr = fmt.Sprintf("%.2f", num.Float64)
+			}
+		}
+
+		sellPriceStr := "0"
+		if p.SellPrice.Valid {
+			if num, err := p.SellPrice.Float64Value(); err == nil {
+				sellPriceStr = fmt.Sprintf("%.2f", num.Float64)
+			}
+		}
+
+		formattedProducts = append(formattedProducts, StoreProductResponse{
+			ID:              idUUID.String(),
+			StoreID:         storeUUID.String(),
+			MasterProductID: masterUUID.String(),
+			BuyPrice:        buyPriceStr,
+			SellPrice:       sellPriceStr,
+			Stock:           p.Stock,
+			MinStock:        p.MinStock,
+			IsActive:        p.IsActive.Bool,
+			LocalName:       p.LocalName.String,
+			LocalCategory:   p.LocalCategory.String,
+			Barcode:         p.Barcode.String,
+			ImageUrl:        p.ImageUrl.String,
+		})
+	}
+
+	c.JSON(http.StatusOK, formattedProducts)
 }
 
 type SubmitPendingProductRequest struct {

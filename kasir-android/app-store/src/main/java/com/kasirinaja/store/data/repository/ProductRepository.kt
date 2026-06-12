@@ -13,6 +13,7 @@ import com.kasirinaja.store.data.local.ProductEntity
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 import com.google.gson.JsonObject
+import com.kasirinaja.core.network.TokenManager
 
 class ProductRepository(
     private val productDao: ProductDao,
@@ -20,6 +21,46 @@ class ProductRepository(
 ) {
 
     val allProducts: Flow<List<ProductEntity>> = productDao.getAllProducts()
+
+    suspend fun syncStoreProducts() {
+        val storeId = TokenManager(context).getStoreId() ?: return
+        val response = RetrofitClient.productApi.getStoreProducts(storeId)
+        if (response.isSuccessful) {
+            val remoteProducts = response.body() ?: emptyList()
+            remoteProducts.forEach { product ->
+                val id = product.get("id")?.asString ?: return@forEach
+                val name = product.get("local_name")?.asString ?: ""
+                val buyPrice = product.get("buy_price")?.asString ?: "0"
+                val sellPrice = product.get("sell_price")?.asString ?: "0"
+                val stock = product.get("stock")?.asInt ?: 0
+                val category = product.get("local_category")?.asString ?: ""
+
+                // Get these from master_product_id mapping if possible, backend might need to return them
+                // Assuming currently backend returns these in the store_product list response if joined.
+                // If backend does not join master product yet for getStoreProducts, these might be empty.
+                val barcode = product.get("barcode")?.asString ?: ""
+                val imageUrl = product.get("image_url")?.asString ?: ""
+                val description = product.get("description")?.asString ?: ""
+
+                val entity = ProductEntity(
+                    id = id,
+                    name = name,
+                    buyPrice = buyPrice,
+                    sellPrice = sellPrice,
+                    stock = stock,
+                    category = category,
+                    description = description,
+                    barcode = barcode,
+                    imageUrl = imageUrl,
+                    isSynced = true,
+                    pendingSync = false
+                )
+                productDao.insertProduct(entity)
+            }
+        } else {
+            throw Exception("Gagal sync data: ${response.message()}")
+        }
+    }
 
     suspend fun getMasterProducts(): List<JsonObject> {
         val response = RetrofitClient.productApi.getMasterProducts()

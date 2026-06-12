@@ -36,7 +36,7 @@ type Querier interface {
 	GetUserByEmail(ctx context.Context, email pgtype.Text) (User, error)
 	ListMasterProducts(ctx context.Context) ([]ListMasterProductsRow, error)
 	ListPendingProducts(ctx context.Context) ([]PendingProduct, error)
-	ListStoreProductsByStore(ctx context.Context, storeID pgtype.UUID) ([]StoreProduct, error)
+	ListStoreProductsByStore(ctx context.Context, storeID pgtype.UUID) ([]ListStoreProductsByStoreRow, error)
 	ListUsers(ctx context.Context) ([]User, error)
 	UpdatePendingProduct(ctx context.Context, arg UpdatePendingProductParams) error
 	UpdateStoreProduct(ctx context.Context, arg UpdateStoreProductParams) error

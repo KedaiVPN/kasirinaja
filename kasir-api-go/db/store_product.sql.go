@@ -111,18 +111,38 @@ func (q *Queries) GetStoreProduct(ctx context.Context, id pgtype.UUID) (StorePro
 }
 
 const listStoreProductsByStore = `-- name: ListStoreProductsByStore :many
-SELECT id, store_id, master_product_id, buy_price, sell_price, stock, min_stock, is_active, created_at, updated_at, local_name, local_category FROM store_products WHERE store_id = $1 ORDER BY created_at DESC
+SELECT sp.id, sp.store_id, sp.master_product_id, sp.buy_price, sp.sell_price, sp.stock, sp.min_stock, sp.is_active, sp.created_at, sp.updated_at, sp.local_name, sp.local_category, mp.barcode, mp.photo_url as image_url
+FROM store_products sp
+LEFT JOIN master_products mp ON sp.master_product_id = mp.id
+WHERE sp.store_id = $1 ORDER BY sp.created_at DESC
 `
 
-func (q *Queries) ListStoreProductsByStore(ctx context.Context, storeID pgtype.UUID) ([]StoreProduct, error) {
+type ListStoreProductsByStoreRow struct {
+	ID              pgtype.UUID      `json:"id"`
+	StoreID         pgtype.UUID      `json:"store_id"`
+	MasterProductID pgtype.UUID      `json:"master_product_id"`
+	BuyPrice        pgtype.Numeric   `json:"buy_price"`
+	SellPrice       pgtype.Numeric   `json:"sell_price"`
+	Stock           int32            `json:"stock"`
+	MinStock        int32            `json:"min_stock"`
+	IsActive        pgtype.Bool      `json:"is_active"`
+	CreatedAt       pgtype.Timestamp `json:"created_at"`
+	UpdatedAt       pgtype.Timestamp `json:"updated_at"`
+	LocalName       pgtype.Text      `json:"local_name"`
+	LocalCategory   pgtype.Text      `json:"local_category"`
+	Barcode         pgtype.Text      `json:"barcode"`
+	ImageUrl        pgtype.Text      `json:"image_url"`
+}
+
+func (q *Queries) ListStoreProductsByStore(ctx context.Context, storeID pgtype.UUID) ([]ListStoreProductsByStoreRow, error) {
 	rows, err := q.db.Query(ctx, listStoreProductsByStore, storeID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []StoreProduct
+	var items []ListStoreProductsByStoreRow
 	for rows.Next() {
-		var i StoreProduct
+		var i ListStoreProductsByStoreRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.StoreID,
@@ -136,6 +156,8 @@ func (q *Queries) ListStoreProductsByStore(ctx context.Context, storeID pgtype.U
 			&i.UpdatedAt,
 			&i.LocalName,
 			&i.LocalCategory,
+			&i.Barcode,
+			&i.ImageUrl,
 		); err != nil {
 			return nil, err
 		}

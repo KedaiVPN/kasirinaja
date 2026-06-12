@@ -55,4 +55,7 @@ interface ProductApi {
 
     @POST("products/store")
     suspend fun addStoreProduct(@Body request: Map<String, @JvmSuppressWildcards Any>): Response<Map<String, Any>>
+
+    @retrofit2.http.GET("products/store")
+    suspend fun getStoreProducts(@Query("store_id") storeId: String): Response<List<com.google.gson.JsonObject>>
 }
