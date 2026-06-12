@@ -9,9 +9,10 @@ INSERT INTO store_products (
 SELECT * FROM store_products WHERE id = $1;
 
 -- name: ListStoreProductsByStore :many
-SELECT sp.*, mp.barcode, mp.photo_url as image_url
+SELECT sp.*, mp.barcode, mp.photo_url as image_url, c.name as category_name
 FROM store_products sp
 LEFT JOIN master_products mp ON sp.master_product_id = mp.id
+LEFT JOIN categories c ON mp.category_id = c.id
 WHERE sp.store_id = $1 ORDER BY sp.created_at DESC;
 
 -- name: UpdateStoreProductStock :exec

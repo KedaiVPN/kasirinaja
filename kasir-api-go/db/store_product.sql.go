@@ -111,9 +111,10 @@ func (q *Queries) GetStoreProduct(ctx context.Context, id pgtype.UUID) (StorePro
 }
 
 const listStoreProductsByStore = `-- name: ListStoreProductsByStore :many
-SELECT sp.id, sp.store_id, sp.master_product_id, sp.buy_price, sp.sell_price, sp.stock, sp.min_stock, sp.is_active, sp.created_at, sp.updated_at, sp.local_name, sp.local_category, mp.barcode, mp.photo_url as image_url
+SELECT sp.id, sp.store_id, sp.master_product_id, sp.buy_price, sp.sell_price, sp.stock, sp.min_stock, sp.is_active, sp.created_at, sp.updated_at, sp.local_name, sp.local_category, mp.barcode, mp.photo_url as image_url, c.name as category_name
 FROM store_products sp
 LEFT JOIN master_products mp ON sp.master_product_id = mp.id
+LEFT JOIN categories c ON mp.category_id = c.id
 WHERE sp.store_id = $1 ORDER BY sp.created_at DESC
 `
 
@@ -132,6 +133,7 @@ type ListStoreProductsByStoreRow struct {
 	LocalCategory   pgtype.Text      `json:"local_category"`
 	Barcode         pgtype.Text      `json:"barcode"`
 	ImageUrl        pgtype.Text      `json:"image_url"`
+	CategoryName    pgtype.Text      `json:"category_name"`
 }
 
 func (q *Queries) ListStoreProductsByStore(ctx context.Context, storeID pgtype.UUID) ([]ListStoreProductsByStoreRow, error) {
@@ -158,6 +160,7 @@ func (q *Queries) ListStoreProductsByStore(ctx context.Context, storeID pgtype.U
 			&i.LocalCategory,
 			&i.Barcode,
 			&i.ImageUrl,
+			&i.CategoryName,
 		); err != nil {
 			return nil, err
 		}

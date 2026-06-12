@@ -33,14 +33,13 @@ class ProductRepository(
                 val buyPrice = product.get("buy_price")?.asString ?: "0"
                 val sellPrice = product.get("sell_price")?.asString ?: "0"
                 val stock = product.get("stock")?.asInt ?: 0
-                val category = product.get("local_category")?.asString ?: ""
+                val localCategory = if (product.get("local_category") != null && !product.get("local_category").isJsonNull) product.get("local_category").asString else ""
+                val categoryName = if (product.get("category_name") != null && !product.get("category_name").isJsonNull) product.get("category_name").asString else ""
+                val category = if (localCategory.isNotEmpty()) localCategory else categoryName
 
-                // Get these from master_product_id mapping if possible, backend might need to return them
-                // Assuming currently backend returns these in the store_product list response if joined.
-                // If backend does not join master product yet for getStoreProducts, these might be empty.
-                val barcode = product.get("barcode")?.asString ?: ""
-                val imageUrl = product.get("image_url")?.asString ?: ""
-                val description = product.get("description")?.asString ?: ""
+                val barcode = if (product.get("barcode") != null && !product.get("barcode").isJsonNull) product.get("barcode").asString else ""
+                val imageUrl = if (product.get("image_url") != null && !product.get("image_url").isJsonNull) product.get("image_url").asString else ""
+                val description = if (product.get("description") != null && !product.get("description").isJsonNull) product.get("description").asString else ""
 
                 val entity = ProductEntity(
                     id = id,

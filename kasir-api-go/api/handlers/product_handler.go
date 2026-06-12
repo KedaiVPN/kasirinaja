@@ -275,6 +275,7 @@ type StoreProductResponse struct {
 	LocalCategory   string `json:"local_category"`
 	Barcode         string `json:"barcode"`
 	ImageUrl        string `json:"image_url"`
+	CategoryName    string `json:"category_name"`
 }
 
 func (h *ProductHandler) ListStoreProducts(c *gin.Context) {
@@ -316,6 +317,21 @@ func (h *ProductHandler) ListStoreProducts(c *gin.Context) {
 			}
 		}
 
+		barcodeStr := ""
+		if p.Barcode.Valid {
+			barcodeStr = p.Barcode.String
+		}
+
+		imageUrlStr := ""
+		if p.ImageUrl.Valid {
+			imageUrlStr = p.ImageUrl.String
+		}
+
+		categoryNameStr := ""
+		if p.CategoryName.Valid {
+			categoryNameStr = p.CategoryName.String
+		}
+
 		formattedProducts = append(formattedProducts, StoreProductResponse{
 			ID:              idUUID.String(),
 			StoreID:         storeUUID.String(),
@@ -327,8 +343,9 @@ func (h *ProductHandler) ListStoreProducts(c *gin.Context) {
 			IsActive:        p.IsActive.Bool,
 			LocalName:       p.LocalName.String,
 			LocalCategory:   p.LocalCategory.String,
-			Barcode:         p.Barcode.String,
-			ImageUrl:        p.ImageUrl.String,
+			Barcode:         barcodeStr,
+			ImageUrl:        imageUrlStr,
+			CategoryName:    categoryNameStr,
 		})
 	}
 
