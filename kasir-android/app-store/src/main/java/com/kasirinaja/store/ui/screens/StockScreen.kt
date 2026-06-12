@@ -108,10 +108,10 @@ fun StockScreen(
                                 )
                             } else {
                                 AsyncImage(
-                                    model = if (product.imageUrl.startsWith("content://") || product.imageUrl.startsWith("file://")) {
+                                    model = if (product.imageUrl.startsWith("content://") || product.imageUrl.startsWith("file://") || product.imageUrl.startsWith("http")) {
                                         product.imageUrl
                                     } else {
-                                        "https://api-go-v1.free-account.my.id${product.imageUrl}"
+                                        "${com.kasirinaja.core.network.RetrofitClient.IMAGE_BASE_URL}${if(product.imageUrl.startsWith("/")) product.imageUrl else "/${product.imageUrl}"}"
                                     },
                                     contentDescription = product.name,
                                     contentScale = ContentScale.Crop,
@@ -136,6 +136,13 @@ fun StockScreen(
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.secondary
                                 )
+                                if (!product.barcode.isNullOrEmpty()) {
+                                    Text(
+                                        text = "Barcode: ${product.barcode}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                                 if (product.pendingSync) {
                                     Text(
                                         text = "Menunggu Sinkronisasi...",
