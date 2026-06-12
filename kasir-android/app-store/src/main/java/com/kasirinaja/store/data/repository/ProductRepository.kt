@@ -14,6 +14,12 @@ import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 import com.google.gson.JsonObject
 import com.kasirinaja.core.network.TokenManager
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.Data
+import androidx.work.NetworkType
+import androidx.work.Constraints
+import com.kasirinaja.store.worker.ImageDownloadWorker
 
 class ProductRepository(
     private val productDao: ProductDao,
@@ -55,6 +61,25 @@ class ProductRepository(
                     pendingSync = false
                 )
                 productDao.insertProduct(entity)
+            }
+
+            // Queue image downloads using WorkManager
+            val imageUrls = remoteProducts.mapNotNull { it.get("image_url")?.asString ?: it.get("photo_url")?.asString }.filter { it.isNotEmpty() }
+            if (imageUrls.isNotEmpty()) {
+                val constraints = Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
+
+                val inputData = Data.Builder()
+                    .putStringArray("IMAGE_URLS", imageUrls.toTypedArray())
+                    .build()
+
+                val workRequest = OneTimeWorkRequestBuilder<ImageDownloadWorker>()
+                    .setConstraints(constraints)
+                    .setInputData(inputData)
+                    .build()
+
+                WorkManager.getInstance(context).enqueue(workRequest)
             }
         } else {
             throw Exception("Gagal sync data: ${response.message()}")

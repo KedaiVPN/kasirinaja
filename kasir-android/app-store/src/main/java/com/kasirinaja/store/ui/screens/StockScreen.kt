@@ -44,6 +44,14 @@ import com.kasirinaja.store.data.repository.ProductRepository
 import com.kasirinaja.store.ui.viewmodels.StockViewModel
 import com.kasirinaja.store.ui.viewmodels.StockViewModelFactory
 import coil.compose.AsyncImage
+import com.kasirinaja.store.utils.FileUtil
+import java.io.File
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -107,12 +115,30 @@ fun StockScreen(
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             } else {
+                                val safeImageUrl = product.imageUrl
+                                val fileName = FileUtil.extractFileNameFromUrl(safeImageUrl)
+                                val localFile = FileUtil.getLocalImagePath(context, fileName)
+
+                                var isLocalExists by remember(fileName) { mutableStateOf(false) }
+
+                                LaunchedEffect(fileName) {
+                                    if (fileName.isNotEmpty()) {
+                                        isLocalExists = withContext(Dispatchers.IO) {
+                                            FileUtil.isImageExistsLocally(context, fileName)
+                                        }
+                                    }
+                                }
+
+                                val imageModel = if (product.imageUrl.startsWith("content://") || product.imageUrl.startsWith("file://") || product.imageUrl.startsWith("http")) {
+                                    product.imageUrl
+                                } else if (isLocalExists) {
+                                    localFile
+                                } else {
+                                    "${com.kasirinaja.core.network.RetrofitClient.IMAGE_BASE_URL}${if(product.imageUrl.startsWith("/")) product.imageUrl else "/${product.imageUrl}"}"
+                                }
+
                                 AsyncImage(
-                                    model = if (product.imageUrl.startsWith("content://") || product.imageUrl.startsWith("file://") || product.imageUrl.startsWith("http")) {
-                                        product.imageUrl
-                                    } else {
-                                        "${com.kasirinaja.core.network.RetrofitClient.IMAGE_BASE_URL}${if(product.imageUrl.startsWith("/")) product.imageUrl else "/${product.imageUrl}"}"
-                                    },
+                                    model = imageModel,
                                     contentDescription = product.name,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier.size(64.dp)
