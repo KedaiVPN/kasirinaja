@@ -7,9 +7,30 @@ import com.kasirinaja.store.data.repository.ProductRepository
 import kotlinx.coroutines.flow.Flow
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 class StockViewModel(private val repository: ProductRepository) : ViewModel() {
     val products: Flow<List<ProductEntity>> = repository.allProducts
+
+    init {
+        startSyncLoop()
+    }
+
+    private fun startSyncLoop() {
+        viewModelScope.launch {
+            while (true) {
+                try {
+                    repository.syncStoreProducts()
+                    // If sync succeeds, exit loop
+                    break
+                } catch (e: Exception) {
+                    // Sync failed, log error and retry after 1 minute
+                    e.printStackTrace()
+                    delay(60_000)
+                }
+            }
+        }
+    }
 
     fun deleteProduct(id: String, isSynced: Boolean) {
         viewModelScope.launch {
