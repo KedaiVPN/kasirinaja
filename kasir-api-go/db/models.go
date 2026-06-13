@@ -45,8 +45,8 @@ type MasterProduct struct {
 type PendingProduct struct {
 	ID          pgtype.UUID        `json:"id"`
 	Name        string             `json:"name"`
-	BuyPrice    pgtype.Numeric     `json:"buy_price"`
-	SellPrice   pgtype.Numeric     `json:"sell_price"`
+	BuyPrice    int64              `json:"buy_price"`
+	SellPrice   int64              `json:"sell_price"`
 	Stock       int32              `json:"stock"`
 	Category    string             `json:"category"`
 	Description pgtype.Text        `json:"description"`
@@ -85,8 +85,8 @@ type StoreProduct struct {
 	ID              pgtype.UUID      `json:"id"`
 	StoreID         pgtype.UUID      `json:"store_id"`
 	MasterProductID pgtype.UUID      `json:"master_product_id"`
-	BuyPrice        pgtype.Numeric   `json:"buy_price"`
-	SellPrice       pgtype.Numeric   `json:"sell_price"`
+	BuyPrice        int64            `json:"buy_price"`
+	SellPrice       int64            `json:"sell_price"`
 	Stock           int32            `json:"stock"`
 	MinStock        int32            `json:"min_stock"`
 	IsActive        pgtype.Bool      `json:"is_active"`
@@ -101,9 +101,9 @@ type Transaction struct {
 	StoreID         pgtype.UUID      `json:"store_id"`
 	CashierID       pgtype.UUID      `json:"cashier_id"`
 	InvoiceNumber   string           `json:"invoice_number"`
-	TotalAmount     pgtype.Numeric   `json:"total_amount"`
-	PaidAmount      pgtype.Numeric   `json:"paid_amount"`
-	ChangeAmount    pgtype.Numeric   `json:"change_amount"`
+	TotalAmount     int64            `json:"total_amount"`
+	PaidAmount      int64            `json:"paid_amount"`
+	ChangeAmount    int64            `json:"change_amount"`
 	PaymentMethod   string           `json:"payment_method"`
 	TransactionTime pgtype.Timestamp `json:"transaction_time"`
 	SyncStatus      string           `json:"sync_status"`
@@ -121,9 +121,9 @@ type TransactionItem struct {
 	ProductName     string           `json:"product_name"`
 	Barcode         string           `json:"barcode"`
 	Quantity        int32            `json:"quantity"`
-	BuyPrice        pgtype.Numeric   `json:"buy_price"`
-	SellPrice       pgtype.Numeric   `json:"sell_price"`
-	Subtotal        pgtype.Numeric   `json:"subtotal"`
+	BuyPrice        int64            `json:"buy_price"`
+	SellPrice       int64            `json:"sell_price"`
+	Subtotal        int64            `json:"subtotal"`
 	IsActive        pgtype.Bool      `json:"is_active"`
 	CreatedAt       pgtype.Timestamp `json:"created_at"`
 	UpdatedAt       pgtype.Timestamp `json:"updated_at"`

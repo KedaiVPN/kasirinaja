@@ -27,18 +27,18 @@ type CreateTransactionItemRequest struct {
 	ProductName     string `json:"product_name" binding:"required"`
 	Barcode         string `json:"barcode" binding:"required"`
 	Quantity        int32  `json:"quantity" binding:"required"`
-	BuyPrice        string `json:"buy_price" binding:"required"`
-	SellPrice       string `json:"sell_price" binding:"required"`
-	Subtotal        string `json:"subtotal" binding:"required"`
+	BuyPrice        int64  `json:"buy_price"`
+	SellPrice       int64  `json:"sell_price"`
+	Subtotal        int64  `json:"subtotal"`
 }
 
 type CreateTransactionRequest struct {
 	StoreID         string                         `json:"store_id" binding:"required"`
 	CashierID       string                         `json:"cashier_id" binding:"required"`
 	InvoiceNumber   string                         `json:"invoice_number" binding:"required"`
-	TotalAmount     string                         `json:"total_amount" binding:"required"`
-	PaidAmount      string                         `json:"paid_amount" binding:"required"`
-	ChangeAmount    string                         `json:"change_amount" binding:"required"`
+	TotalAmount     int64                          `json:"total_amount"`
+	PaidAmount      int64                          `json:"paid_amount"`
+	ChangeAmount    int64                          `json:"change_amount"`
 	PaymentMethod   string                         `json:"payment_method" binding:"required"`
 	SyncStatus      string                         `json:"sync_status" binding:"required"`
 	DeviceID        string                         `json:"device_id"`
@@ -71,11 +71,6 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 		return
 	}
 
-	var totalAmount, paidAmount, changeAmount pgtype.Numeric
-	totalAmount.Scan(req.TotalAmount)
-	paidAmount.Scan(req.PaidAmount)
-	changeAmount.Scan(req.ChangeAmount)
-
 	// Use database transaction
 	ctx := context.Background()
 	tx, err := h.pool.Begin(ctx)
@@ -92,9 +87,9 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 		StoreID:         pgtype.UUID{Bytes: storeID, Valid: true},
 		CashierID:       pgtype.UUID{Bytes: cashierID, Valid: true},
 		InvoiceNumber:   req.InvoiceNumber,
-		TotalAmount:     totalAmount,
-		PaidAmount:      paidAmount,
-		ChangeAmount:    changeAmount,
+		TotalAmount:     req.TotalAmount,
+		PaidAmount:      req.PaidAmount,
+		ChangeAmount:    req.ChangeAmount,
 		PaymentMethod:   req.PaymentMethod,
 		TransactionTime: pgtype.Timestamp{Time: transactionTime, Valid: true},
 		SyncStatus:      req.SyncStatus,
@@ -120,11 +115,6 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 			return
 		}
 
-		var bPrice, sPrice, stotal pgtype.Numeric
-		bPrice.Scan(item.BuyPrice)
-		sPrice.Scan(item.SellPrice)
-		stotal.Scan(item.Subtotal)
-
 		itemArg := db.CreateTransactionItemParams{
 			TransactionID:   createdTx.ID,
 			StoreProductID:  pgtype.UUID{Bytes: spID, Valid: true},
@@ -132,9 +122,9 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 			ProductName:     item.ProductName,
 			Barcode:         item.Barcode,
 			Quantity:        item.Quantity,
-			BuyPrice:        bPrice,
-			SellPrice:       sPrice,
-			Subtotal:        stotal,
+			BuyPrice:        item.BuyPrice,
+			SellPrice:       item.SellPrice,
+			Subtotal:        item.Subtotal,
 		}
 
 		_, err = qtx.CreateTransactionItem(ctx, itemArg)

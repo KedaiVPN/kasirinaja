@@ -31,15 +31,15 @@ INSERT INTO pending_products (
 `
 
 type CreatePendingProductParams struct {
-	Name        string         `json:"name"`
-	BuyPrice    pgtype.Numeric `json:"buy_price"`
-	SellPrice   pgtype.Numeric `json:"sell_price"`
-	Stock       int32          `json:"stock"`
-	Category    string         `json:"category"`
-	Description pgtype.Text    `json:"description"`
-	Barcode     pgtype.Text    `json:"barcode"`
-	ImageUrl    pgtype.Text    `json:"image_url"`
-	StoreID     pgtype.UUID    `json:"store_id"`
+	Name        string      `json:"name"`
+	BuyPrice    int64       `json:"buy_price"`
+	SellPrice   int64       `json:"sell_price"`
+	Stock       int32       `json:"stock"`
+	Category    string      `json:"category"`
+	Description pgtype.Text `json:"description"`
+	Barcode     pgtype.Text `json:"barcode"`
+	ImageUrl    pgtype.Text `json:"image_url"`
+	StoreID     pgtype.UUID `json:"store_id"`
 }
 
 func (q *Queries) CreatePendingProduct(ctx context.Context, arg CreatePendingProductParams) (PendingProduct, error) {
@@ -146,15 +146,15 @@ WHERE id = $1
 `
 
 type UpdatePendingProductParams struct {
-	ID          pgtype.UUID    `json:"id"`
-	Name        string         `json:"name"`
-	BuyPrice    pgtype.Numeric `json:"buy_price"`
-	SellPrice   pgtype.Numeric `json:"sell_price"`
-	Stock       int32          `json:"stock"`
-	Category    string         `json:"category"`
-	Description pgtype.Text    `json:"description"`
-	Barcode     pgtype.Text    `json:"barcode"`
-	ImageUrl    pgtype.Text    `json:"image_url"`
+	ID          pgtype.UUID `json:"id"`
+	Name        string      `json:"name"`
+	BuyPrice    int64       `json:"buy_price"`
+	SellPrice   int64       `json:"sell_price"`
+	Stock       int32       `json:"stock"`
+	Category    string      `json:"category"`
+	Description pgtype.Text `json:"description"`
+	Barcode     pgtype.Text `json:"barcode"`
+	ImageUrl    pgtype.Text `json:"image_url"`
 }
 
 func (q *Queries) UpdatePendingProduct(ctx context.Context, arg UpdatePendingProductParams) error {

@@ -24,9 +24,9 @@ type CreateTransactionParams struct {
 	StoreID         pgtype.UUID      `json:"store_id"`
 	CashierID       pgtype.UUID      `json:"cashier_id"`
 	InvoiceNumber   string           `json:"invoice_number"`
-	TotalAmount     pgtype.Numeric   `json:"total_amount"`
-	PaidAmount      pgtype.Numeric   `json:"paid_amount"`
-	ChangeAmount    pgtype.Numeric   `json:"change_amount"`
+	TotalAmount     int64            `json:"total_amount"`
+	PaidAmount      int64            `json:"paid_amount"`
+	ChangeAmount    int64            `json:"change_amount"`
 	PaymentMethod   string           `json:"payment_method"`
 	TransactionTime pgtype.Timestamp `json:"transaction_time"`
 	SyncStatus      string           `json:"sync_status"`
@@ -76,15 +76,15 @@ RETURNING id, transaction_id, store_product_id, master_product_id, product_name,
 `
 
 type CreateTransactionItemParams struct {
-	TransactionID   pgtype.UUID    `json:"transaction_id"`
-	StoreProductID  pgtype.UUID    `json:"store_product_id"`
-	MasterProductID pgtype.UUID    `json:"master_product_id"`
-	ProductName     string         `json:"product_name"`
-	Barcode         string         `json:"barcode"`
-	Quantity        int32          `json:"quantity"`
-	BuyPrice        pgtype.Numeric `json:"buy_price"`
-	SellPrice       pgtype.Numeric `json:"sell_price"`
-	Subtotal        pgtype.Numeric `json:"subtotal"`
+	TransactionID   pgtype.UUID `json:"transaction_id"`
+	StoreProductID  pgtype.UUID `json:"store_product_id"`
+	MasterProductID pgtype.UUID `json:"master_product_id"`
+	ProductName     string      `json:"product_name"`
+	Barcode         string      `json:"barcode"`
+	Quantity        int32       `json:"quantity"`
+	BuyPrice        int64       `json:"buy_price"`
+	SellPrice       int64       `json:"sell_price"`
+	Subtotal        int64       `json:"subtotal"`
 }
 
 func (q *Queries) CreateTransactionItem(ctx context.Context, arg CreateTransactionItemParams) (TransactionItem, error) {

@@ -120,6 +120,26 @@ func (h *AdminHandler) ApproveProduct(c *gin.Context) {
 		return
 	}
 
+	// Add product to store_products for the store that requested it
+	if pendingProduct.StoreID.Valid {
+		storeProductArg := db.CreateStoreProductParams{
+			StoreID:         pendingProduct.StoreID,
+			MasterProductID: masterProduct.ID,
+			BuyPrice:        pendingProduct.BuyPrice,
+			SellPrice:       pendingProduct.SellPrice,
+			Stock:           pendingProduct.Stock,
+			MinStock:        0, // Default min stock
+			LocalName:       pgtype.Text{Valid: false},
+			LocalCategory:   pgtype.Text{Valid: false},
+		}
+
+		_, err = h.queries.CreateStoreProduct(c.Request.Context(), storeProductArg)
+		if err != nil {
+			log.Printf("Failed to add approved product %v to store %v: %v\n", masterProduct.ID, pendingProduct.StoreID, err)
+			// Continue execution, as the master product is already created
+		}
+	}
+
 	// Delete from pending
 	err = h.queries.DeletePendingProduct(c.Request.Context(), pendingProduct.ID)
 	if err != nil {

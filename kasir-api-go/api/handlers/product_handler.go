@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -193,8 +192,8 @@ func (h *ProductHandler) ListMasterProducts(c *gin.Context) {
 type CreateStoreProductRequest struct {
 	StoreID         string `json:"store_id" binding:"required"`
 	MasterProductID string `json:"master_product_id" binding:"required"`
-	BuyPrice        string `json:"buy_price" binding:"required"`
-	SellPrice       string `json:"sell_price" binding:"required"`
+	BuyPrice        int64  `json:"buy_price" binding:"required"`
+	SellPrice       int64  `json:"sell_price" binding:"required"`
 	Stock           int32  `json:"stock"`
 	MinStock        int32  `json:"min_stock"`
 	LocalName       string `json:"local_name"`
@@ -219,17 +218,11 @@ func (h *ProductHandler) CreateStoreProduct(c *gin.Context) {
 		return
 	}
 
-	var buyPrice pgtype.Numeric
-	buyPrice.Scan(req.BuyPrice)
-
-	var sellPrice pgtype.Numeric
-	sellPrice.Scan(req.SellPrice)
-
 	arg := db.CreateStoreProductParams{
 		StoreID:         pgtype.UUID{Bytes: storeID, Valid: true},
 		MasterProductID: pgtype.UUID{Bytes: masterProductID, Valid: true},
-		BuyPrice:        buyPrice,
-		SellPrice:       sellPrice,
+		BuyPrice:        req.BuyPrice,
+		SellPrice:       req.SellPrice,
 		Stock:           req.Stock,
 		MinStock:        req.MinStock,
 		LocalName:       pgtype.Text{String: req.LocalName, Valid: req.LocalName != ""},
@@ -266,8 +259,8 @@ type StoreProductResponse struct {
 	ID              string `json:"id"`
 	StoreID         string `json:"store_id"`
 	MasterProductID string `json:"master_product_id"`
-	BuyPrice        string `json:"buy_price"`
-	SellPrice       string `json:"sell_price"`
+	BuyPrice        int64  `json:"buy_price"`
+	SellPrice       int64  `json:"sell_price"`
 	Stock           int32  `json:"stock"`
 	MinStock        int32  `json:"min_stock"`
 	IsActive        bool   `json:"is_active"`
@@ -303,20 +296,6 @@ func (h *ProductHandler) ListStoreProducts(c *gin.Context) {
 		storeUUID, _ := uuid.FromBytes(p.StoreID.Bytes[:])
 		masterUUID, _ := uuid.FromBytes(p.MasterProductID.Bytes[:])
 
-		buyPriceStr := "0"
-		if p.BuyPrice.Valid {
-			if num, err := p.BuyPrice.Float64Value(); err == nil {
-				buyPriceStr = fmt.Sprintf("%.2f", num.Float64)
-			}
-		}
-
-		sellPriceStr := "0"
-		if p.SellPrice.Valid {
-			if num, err := p.SellPrice.Float64Value(); err == nil {
-				sellPriceStr = fmt.Sprintf("%.2f", num.Float64)
-			}
-		}
-
 		barcodeStr := ""
 		if p.Barcode.Valid {
 			barcodeStr = p.Barcode.String
@@ -336,8 +315,8 @@ func (h *ProductHandler) ListStoreProducts(c *gin.Context) {
 			ID:              idUUID.String(),
 			StoreID:         storeUUID.String(),
 			MasterProductID: masterUUID.String(),
-			BuyPrice:        buyPriceStr,
-			SellPrice:       sellPriceStr,
+			BuyPrice:        p.BuyPrice,
+			SellPrice:       p.SellPrice,
 			Stock:           p.Stock,
 			MinStock:        p.MinStock,
 			IsActive:        p.IsActive.Bool,
@@ -354,8 +333,8 @@ func (h *ProductHandler) ListStoreProducts(c *gin.Context) {
 
 type SubmitPendingProductRequest struct {
 	Name        string `json:"name" binding:"required"`
-	BuyPrice    string `json:"buy_price" binding:"required"`
-	SellPrice   string `json:"sell_price" binding:"required"`
+	BuyPrice    int64  `json:"buy_price" binding:"required"`
+	SellPrice   int64  `json:"sell_price" binding:"required"`
 	Stock       int32  `json:"stock"`
 	Category    string `json:"category" binding:"required"`
 	Description string `json:"description"`
@@ -371,16 +350,10 @@ func (h *ProductHandler) SubmitPendingProduct(c *gin.Context) {
 		return
 	}
 
-	var buyPrice pgtype.Numeric
-	buyPrice.Scan(req.BuyPrice)
-
-	var sellPrice pgtype.Numeric
-	sellPrice.Scan(req.SellPrice)
-
 	arg := db.CreatePendingProductParams{
 		Name:        req.Name,
-		BuyPrice:    buyPrice,
-		SellPrice:   sellPrice,
+		BuyPrice:    req.BuyPrice,
+		SellPrice:   req.SellPrice,
 		Stock:       req.Stock,
 		Category:    req.Category,
 		Description: pgtype.Text{String: req.Description, Valid: req.Description != ""},
@@ -492,8 +465,8 @@ func (h *ProductHandler) DeleteProduct(c *gin.Context) {
 
 type UpdateProductRequest struct {
 	Name        string `json:"name"`
-	BuyPrice    string `json:"buy_price"`
-	SellPrice   string `json:"sell_price"`
+	BuyPrice    int64  `json:"buy_price"`
+	SellPrice   int64  `json:"sell_price"`
 	Stock       int32  `json:"stock"`
 	Category    string `json:"category"`
 	Description string `json:"description"`
@@ -517,18 +490,12 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 		return
 	}
 
-	var buyPrice pgtype.Numeric
-	buyPrice.Scan(req.BuyPrice)
-
-	var sellPrice pgtype.Numeric
-	sellPrice.Scan(req.SellPrice)
-
 	if status == "pending" {
 		arg := db.UpdatePendingProductParams{
 			ID:          pgtype.UUID{Bytes: id, Valid: true},
 			Name:        req.Name,
-			BuyPrice:    buyPrice,
-			SellPrice:   sellPrice,
+			BuyPrice:    req.BuyPrice,
+			SellPrice:   req.SellPrice,
 			Stock:       req.Stock,
 			Category:    req.Category,
 			Description: pgtype.Text{String: req.Description, Valid: req.Description != ""},
@@ -543,8 +510,8 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	} else if status == "approved" {
 		arg := db.UpdateStoreProductParams{
 			ID:            pgtype.UUID{Bytes: id, Valid: true},
-			BuyPrice:      buyPrice,
-			SellPrice:     sellPrice,
+			BuyPrice:      req.BuyPrice,
+			SellPrice:     req.SellPrice,
 			Stock:         req.Stock,
 			LocalName:     pgtype.Text{String: req.Name, Valid: req.Name != ""}, // Name mapped to local_name
 			LocalCategory: pgtype.Text{String: req.Category, Valid: req.Category != ""}, // Category mapped to local_category
