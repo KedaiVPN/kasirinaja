@@ -107,11 +107,11 @@ class ProductRepository(
         imageUrl: String,
         description: String
     ) {
-        val request = mapOf(
+        val request = mapOf<String, Any>(
             "store_id" to storeId,
             "master_product_id" to masterProductId,
-            "buy_price" to buyPrice,
-            "sell_price" to sellPrice,
+            "buy_price" to (buyPrice.toLongOrNull() ?: 0L),
+            "sell_price" to (sellPrice.toLongOrNull() ?: 0L),
             "stock" to stock,
             "min_stock" to minStock,
             "local_name" to localName,
