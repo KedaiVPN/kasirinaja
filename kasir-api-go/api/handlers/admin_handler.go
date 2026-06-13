@@ -129,8 +129,8 @@ func (h *AdminHandler) ApproveProduct(c *gin.Context) {
 			SellPrice:       pendingProduct.SellPrice,
 			Stock:           pendingProduct.Stock,
 			MinStock:        0, // Default min stock
-			LocalName:       pgtype.Text{Valid: false},
-			LocalCategory:   pgtype.Text{Valid: false},
+			LocalName:       pgtype.Text{String: pendingProduct.Name, Valid: pendingProduct.Name != ""},
+			LocalCategory:   pgtype.Text{String: pendingProduct.Category, Valid: pendingProduct.Category != ""},
 		}
 
 		_, err = h.queries.CreateStoreProduct(c.Request.Context(), storeProductArg)

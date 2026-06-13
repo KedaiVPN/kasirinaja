@@ -3,7 +3,15 @@ INSERT INTO store_products (
   store_id, master_product_id, buy_price, sell_price, stock, min_stock, local_name, local_category
 ) VALUES (
   $1, $2, $3, $4, $5, $6, $7, $8
-) RETURNING *;
+)
+ON CONFLICT (store_id, master_product_id)
+DO UPDATE SET
+  buy_price = EXCLUDED.buy_price,
+  sell_price = EXCLUDED.sell_price,
+  stock = store_products.stock + EXCLUDED.stock,
+  local_name = EXCLUDED.local_name,
+  local_category = EXCLUDED.local_category
+RETURNING *;
 
 -- name: GetStoreProduct :one
 SELECT * FROM store_products WHERE id = $1;
