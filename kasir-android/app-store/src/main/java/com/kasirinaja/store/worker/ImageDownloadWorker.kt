@@ -10,6 +10,8 @@ import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import com.kasirinaja.core.network.RetrofitClient
+import com.kasirinaja.store.data.local.AppDatabase
+import kotlinx.coroutines.flow.firstOrNull
 
 class ImageDownloadWorker(
     appContext: Context,
@@ -17,7 +19,9 @@ class ImageDownloadWorker(
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        val imageUrls = inputData.getStringArray("IMAGE_URLS") ?: return@withContext Result.success()
+        val database = AppDatabase.getDatabase(applicationContext)
+        val products = database.productDao().getAllProducts().firstOrNull() ?: return@withContext Result.success()
+        val imageUrls = products.mapNotNull { it.imageUrl }.filter { it.isNotEmpty() }.distinct()
 
         var allSuccess = true
 
