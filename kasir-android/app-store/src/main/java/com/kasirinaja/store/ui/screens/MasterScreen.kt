@@ -170,22 +170,14 @@ fun MasterProductItem(product: JsonObject, onAddClick: () -> Unit) {
             val fileName = if (!photoUrl.isNullOrEmpty()) FileUtil.extractFileNameFromUrl(photoUrl) else ""
             val localFile = if (fileName.isNotEmpty()) FileUtil.getLocalImagePath(context, fileName) else null
 
-            var isLocalExists by remember(fileName) { mutableStateOf(false) }
-
-            LaunchedEffect(fileName) {
-                if (fileName.isNotEmpty()) {
-                    isLocalExists = withContext(Dispatchers.IO) {
-                        FileUtil.isImageExistsLocally(context, fileName)
-                    }
+            val imageModel = remember(fileName) {
+                if (fileName.isNotEmpty() && FileUtil.isImageExistsLocally(context, fileName)) {
+                    localFile
+                } else if (!photoUrl.isNullOrEmpty()) {
+                    "${com.kasirinaja.core.network.RetrofitClient.IMAGE_BASE_URL}${if(photoUrl.startsWith("/")) photoUrl else "/$photoUrl"}"
+                } else {
+                    null
                 }
-            }
-
-            val imageModel = if (isLocalExists) {
-                localFile
-            } else if (!photoUrl.isNullOrEmpty()) {
-                "${com.kasirinaja.core.network.RetrofitClient.IMAGE_BASE_URL}${if(photoUrl.startsWith("/")) photoUrl else "/$photoUrl"}"
-            } else {
-                null
             }
 
             AsyncImage(

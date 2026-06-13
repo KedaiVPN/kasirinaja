@@ -44,7 +44,13 @@ class ProductRepository(
                 val category = if (localCategory.isNotEmpty()) localCategory else categoryName
 
                 val barcode = if (product.get("barcode") != null && !product.get("barcode").isJsonNull) product.get("barcode").asString else ""
-                val imageUrl = if (product.get("image_url") != null && !product.get("image_url").isJsonNull) product.get("image_url").asString else ""
+                val imageUrl = if (product.get("image_url") != null && !product.get("image_url").isJsonNull && product.get("image_url").asString.isNotEmpty()) {
+                    product.get("image_url").asString
+                } else if (product.get("photo_url") != null && !product.get("photo_url").isJsonNull && product.get("photo_url").asString.isNotEmpty()) {
+                    product.get("photo_url").asString
+                } else {
+                    ""
+                }
                 val description = if (product.get("description") != null && !product.get("description").isJsonNull) product.get("description").asString else ""
 
                 val entity = ProductEntity(
@@ -64,23 +70,16 @@ class ProductRepository(
             }
 
             // Queue image downloads using WorkManager
-            val imageUrls = remoteProducts.mapNotNull { it.get("image_url")?.asString ?: it.get("photo_url")?.asString }.filter { it.isNotEmpty() }
-            if (imageUrls.isNotEmpty()) {
-                val constraints = Constraints.Builder()
-                    .setRequiredNetworkType(NetworkType.CONNECTED)
-                    .build()
+            // Instead of passing array which might hit 10KB limit, the worker will query Room database for images
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
 
-                val inputData = Data.Builder()
-                    .putStringArray("IMAGE_URLS", imageUrls.toTypedArray())
-                    .build()
+            val workRequest = OneTimeWorkRequestBuilder<ImageDownloadWorker>()
+                .setConstraints(constraints)
+                .build()
 
-                val workRequest = OneTimeWorkRequestBuilder<ImageDownloadWorker>()
-                    .setConstraints(constraints)
-                    .setInputData(inputData)
-                    .build()
-
-                WorkManager.getInstance(context).enqueue(workRequest)
-            }
+            WorkManager.getInstance(context).enqueue(workRequest)
         } else {
             throw Exception("Gagal sync data: ${response.message()}")
         }

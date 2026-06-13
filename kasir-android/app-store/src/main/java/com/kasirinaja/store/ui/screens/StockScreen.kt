@@ -119,22 +119,14 @@ fun StockScreen(
                                 val fileName = FileUtil.extractFileNameFromUrl(safeImageUrl)
                                 val localFile = FileUtil.getLocalImagePath(context, fileName)
 
-                                var isLocalExists by remember(fileName) { mutableStateOf(false) }
-
-                                LaunchedEffect(fileName) {
-                                    if (fileName.isNotEmpty()) {
-                                        isLocalExists = withContext(Dispatchers.IO) {
-                                            FileUtil.isImageExistsLocally(context, fileName)
-                                        }
+                                val imageModel = remember(fileName) {
+                                    if (product.imageUrl.startsWith("content://") || product.imageUrl.startsWith("file://") || product.imageUrl.startsWith("http")) {
+                                        product.imageUrl
+                                    } else if (FileUtil.isImageExistsLocally(context, fileName)) {
+                                        localFile
+                                    } else {
+                                        "${com.kasirinaja.core.network.RetrofitClient.IMAGE_BASE_URL}${if(product.imageUrl.startsWith("/")) product.imageUrl else "/${product.imageUrl}"}"
                                     }
-                                }
-
-                                val imageModel = if (product.imageUrl.startsWith("content://") || product.imageUrl.startsWith("file://") || product.imageUrl.startsWith("http")) {
-                                    product.imageUrl
-                                } else if (isLocalExists) {
-                                    localFile
-                                } else {
-                                    "${com.kasirinaja.core.network.RetrofitClient.IMAGE_BASE_URL}${if(product.imageUrl.startsWith("/")) product.imageUrl else "/${product.imageUrl}"}"
                                 }
 
                                 AsyncImage(
