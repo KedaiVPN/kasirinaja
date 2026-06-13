@@ -20,14 +20,14 @@ INSERT INTO store_products (
 `
 
 type CreateStoreProductParams struct {
-	StoreID         pgtype.UUID    `json:"store_id"`
-	MasterProductID pgtype.UUID    `json:"master_product_id"`
-	BuyPrice        pgtype.Numeric `json:"buy_price"`
-	SellPrice       pgtype.Numeric `json:"sell_price"`
-	Stock           int32          `json:"stock"`
-	MinStock        int32          `json:"min_stock"`
-	LocalName       pgtype.Text    `json:"local_name"`
-	LocalCategory   pgtype.Text    `json:"local_category"`
+	StoreID         pgtype.UUID `json:"store_id"`
+	MasterProductID pgtype.UUID `json:"master_product_id"`
+	BuyPrice        int64       `json:"buy_price"`
+	SellPrice       int64       `json:"sell_price"`
+	Stock           int32       `json:"stock"`
+	MinStock        int32       `json:"min_stock"`
+	LocalName       pgtype.Text `json:"local_name"`
+	LocalCategory   pgtype.Text `json:"local_category"`
 }
 
 func (q *Queries) CreateStoreProduct(ctx context.Context, arg CreateStoreProductParams) (StoreProduct, error) {
@@ -122,8 +122,8 @@ type ListStoreProductsByStoreRow struct {
 	ID              pgtype.UUID      `json:"id"`
 	StoreID         pgtype.UUID      `json:"store_id"`
 	MasterProductID pgtype.UUID      `json:"master_product_id"`
-	BuyPrice        pgtype.Numeric   `json:"buy_price"`
-	SellPrice       pgtype.Numeric   `json:"sell_price"`
+	BuyPrice        int64            `json:"buy_price"`
+	SellPrice       int64            `json:"sell_price"`
 	Stock           int32            `json:"stock"`
 	MinStock        int32            `json:"min_stock"`
 	IsActive        pgtype.Bool      `json:"is_active"`
@@ -179,12 +179,12 @@ WHERE id = $1
 `
 
 type UpdateStoreProductParams struct {
-	ID            pgtype.UUID    `json:"id"`
-	BuyPrice      pgtype.Numeric `json:"buy_price"`
-	SellPrice     pgtype.Numeric `json:"sell_price"`
-	Stock         int32          `json:"stock"`
-	LocalName     pgtype.Text    `json:"local_name"`
-	LocalCategory pgtype.Text    `json:"local_category"`
+	ID            pgtype.UUID `json:"id"`
+	BuyPrice      int64       `json:"buy_price"`
+	SellPrice     int64       `json:"sell_price"`
+	Stock         int32       `json:"stock"`
+	LocalName     pgtype.Text `json:"local_name"`
+	LocalCategory pgtype.Text `json:"local_category"`
 }
 
 func (q *Queries) UpdateStoreProduct(ctx context.Context, arg UpdateStoreProductParams) error {

@@ -82,8 +82,8 @@ class RequestProductViewModel : ViewModel() {
                     name = name,
                     category = category,
                     barcode = barcode,
-                    buy_price = buyPrice,
-                    sell_price = sellPrice,
+                    buy_price = buyPrice.toLongOrNull() ?: 0L,
+                    sell_price = sellPrice.toLongOrNull() ?: 0L,
                     stock = stock,
                     description = description,
                     image_url = imageUrl

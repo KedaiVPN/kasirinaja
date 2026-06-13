@@ -36,8 +36,8 @@ class ProductRepository(
             remoteProducts.forEach { product ->
                 val id = product.get("id")?.asString ?: return@forEach
                 val name = product.get("local_name")?.asString ?: ""
-                val buyPrice = product.get("buy_price")?.asString ?: "0"
-                val sellPrice = product.get("sell_price")?.asString ?: "0"
+                val buyPrice = product.get("buy_price")?.asLong?.toString() ?: "0"
+                val sellPrice = product.get("sell_price")?.asLong?.toString() ?: "0"
                 val stock = product.get("stock")?.asInt ?: 0
                 val localCategory = if (product.get("local_category") != null && !product.get("local_category").isJsonNull) product.get("local_category").asString else ""
                 val categoryName = if (product.get("category_name") != null && !product.get("category_name").isJsonNull) product.get("category_name").asString else ""
@@ -156,8 +156,8 @@ class ProductRepository(
     suspend fun addProductLocalAndSync(
         existingId: String?,
         name: String,
-        buyPrice: String,
-        sellPrice: String,
+        buyPrice: Long,
+        sellPrice: Long,
         stock: Int,
         category: String,
         description: String,
@@ -174,8 +174,8 @@ class ProductRepository(
         val entity = ProductEntity(
             id = localId,
             name = name,
-            buyPrice = buyPrice,
-            sellPrice = sellPrice,
+            buyPrice = buyPrice.toString(),
+            sellPrice = sellPrice.toString(),
             stock = stock,
             category = category,
             description = description,
@@ -275,13 +275,17 @@ class ProductRepository(
         return try {
             val requestMap = mapOf(
                 "master_product_id" to masterProductId,
-                "buy_price" to buyPrice.toString(),
-                "sell_price" to sellPrice.toString(),
+                "buy_price" to buyPrice.toLong(),
+                "sell_price" to sellPrice.toLong(),
                 "stock" to initialStock,
                 "min_stock" to minStock
             )
-            val response = RetrofitClient.storeProductApi.addStoreProduct(requestMap)
-            Result.success(response)
+            val response = RetrofitClient.productApi.addStoreProduct(requestMap)
+            if (response.isSuccessful) {
+                Result.success(response.body() ?: emptyMap())
+            } else {
+                Result.failure(Exception("Gagal menambahkan produk ke toko"))
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }

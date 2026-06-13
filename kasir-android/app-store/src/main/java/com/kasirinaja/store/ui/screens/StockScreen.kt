@@ -35,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import com.kasirinaja.core.utils.FormatUtils
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -145,7 +146,7 @@ fun StockScreen(
                                 )
                                 Text(text = "Kategori: ${product.category}", style = MaterialTheme.typography.bodySmall)
                                 Text(
-                                    text = "Harga Jual: Rp ${product.sellPrice}",
+                                    text = "Harga Jual: ${FormatUtils.formatCurrency(product.sellPrice)}",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.primary
                                 )

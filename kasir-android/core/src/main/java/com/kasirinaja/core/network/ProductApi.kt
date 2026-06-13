@@ -12,8 +12,8 @@ import retrofit2.http.Query
 
 data class PendingProductRequest(
     val name: String,
-    val buy_price: String,
-    val sell_price: String,
+    val buy_price: Long,
+    val sell_price: Long,
     val stock: Int,
     val category: String,
     val description: String,

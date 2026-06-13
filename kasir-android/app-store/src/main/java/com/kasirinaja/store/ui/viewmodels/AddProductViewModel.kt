@@ -83,11 +83,14 @@ class AddProductViewModel(private val repository: ProductRepository) : ViewModel
             // To properly handle editing, ProductRepository should have an update method.
             // For MVP simplicity and because `insertProduct` in ProductDao uses OnConflictStrategy.REPLACE,
             // we can pass the productId to `addProductLocalAndSync` to overwrite the existing record.
+            val buyPriceLong = state.buyPrice.toLongOrNull() ?: 0L
+            val sellPriceLong = state.sellPrice.toLongOrNull() ?: 0L
+
             val result = repository.addProductLocalAndSync(
                 existingId = productId,
                 name = state.name,
-                buyPrice = state.buyPrice,
-                sellPrice = state.sellPrice,
+                buyPrice = buyPriceLong,
+                sellPrice = sellPriceLong,
                 stock = finalStock,
                 category = state.category,
                 description = state.description,
