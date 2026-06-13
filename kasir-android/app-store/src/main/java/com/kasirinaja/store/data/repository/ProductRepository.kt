@@ -192,6 +192,8 @@ class ProductRepository(
         return try {
             val finalImageUrl = uploadImageIfLocal(imageUrl)
 
+            val storeId = TokenManager(context).getStoreId()
+
             val request = PendingProductRequest(
                 name = name,
                 buy_price = buyPrice,
@@ -201,7 +203,7 @@ class ProductRepository(
                 description = description,
                 barcode = barcode,
                 image_url = finalImageUrl,
-                store_id = null // Can be populated if store context is available
+                store_id = storeId
             )
 
             val response = if (existingId != null) {
