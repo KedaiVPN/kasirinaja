@@ -26,6 +26,6 @@ interface ProductDao {
     @Query("DELETE FROM local_products WHERE isSynced = 1")
     suspend fun deleteSyncedProducts()
 
-    @Query("DELETE FROM local_products WHERE name = :name AND pendingSync = 1")
+    @Query("DELETE FROM local_products WHERE name = :name AND isSynced = 0")
     suspend fun deletePendingProductByName(name: String)
 }
