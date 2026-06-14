@@ -33,9 +33,19 @@ class ProductRepository(
         val response = RetrofitClient.productApi.getStoreProducts(storeId)
         if (response.isSuccessful) {
             val remoteProducts = response.body() ?: emptyList()
+
+            // Delete previously synced products before inserting new ones
+            // This prevents duplicates from lingering.
+            productDao.deleteSyncedProducts()
+
             remoteProducts.forEach { product ->
                 val id = product.get("id")?.asString ?: return@forEach
                 val name = product.get("local_name")?.asString ?: ""
+
+                // If a pending product with the same name exists locally (and just got approved), remove it
+                if (name.isNotEmpty()) {
+                    productDao.deletePendingProductByName(name)
+                }
                 val buyPrice = product.get("buy_price")?.asLong?.toString() ?: "0"
                 val sellPrice = product.get("sell_price")?.asLong?.toString() ?: "0"
                 val stock = product.get("stock")?.asInt ?: 0
