@@ -265,8 +265,7 @@ class ProductRepository(
 
         // Then delete from server
         try {
-            val status = if (isSynced) "approved" else "pending"
-            RetrofitClient.productApi.deleteProduct(id, status)
+            RetrofitClient.productApi.deleteStoreProductSpecific(id)
         } catch (e: Exception) {
             // If network fails, the local delete stands.
             // In a true offline-first robust app, you would queue this delete in WorkManager.

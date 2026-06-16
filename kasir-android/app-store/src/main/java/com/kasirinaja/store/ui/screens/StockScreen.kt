@@ -27,6 +27,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -69,6 +75,42 @@ fun StockScreen(
 
     val viewModel: StockViewModel = viewModel(factory = StockViewModelFactory(repository))
     val products by viewModel.products.collectAsState(initial = emptyList())
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var productToDelete by remember { mutableStateOf<com.kasirinaja.store.data.local.ProductEntity?>(null) }
+
+    if (showDeleteDialog && productToDelete != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showDeleteDialog = false
+                productToDelete = null
+            },
+            title = { Text("Hapus Produk") },
+            text = { Text("Apakah Anda yakin ingin menghapus produk ini?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        productToDelete?.let {
+                            viewModel.deleteProduct(it.id, it.isSynced)
+                        }
+                        showDeleteDialog = false
+                        productToDelete = null
+                    }
+                ) {
+                    Text("Hapus", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        productToDelete = null
+                    }
+                ) {
+                    Text("Batal")
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -174,7 +216,10 @@ fun StockScreen(
                                 IconButton(onClick = { onNavigateToEditProduct(product.id) }) {
                                     Icon(Icons.Filled.Edit, contentDescription = "Edit", tint = MaterialTheme.colorScheme.primary)
                                 }
-                                IconButton(onClick = { viewModel.deleteProduct(product.id, product.isSynced) }) {
+                                IconButton(onClick = {
+                                    productToDelete = product
+                                    showDeleteDialog = true
+                                }) {
                                     Icon(Icons.Filled.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
                                 }
                             }
