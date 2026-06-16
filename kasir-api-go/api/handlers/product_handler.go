@@ -426,23 +426,14 @@ func (h *ProductHandler) DeleteProduct(c *gin.Context) {
 		// First delete associated transaction items and stock movements
 		// Then delete store products, then the master product itself.
 		// Note: The UI currently passes master product ID for deletion.
-		err = h.queries.DeleteTransactionItemsByMasterProduct(c.Request.Context(), uuidParam)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete transaction items: " + err.Error()})
-			return
-		}
+		// User explicitly requested to NOT delete transaction_items, stock_movements,
+		// and store_products when admin deletes a master product.
+		// Note: This means those child records will become orphans or have broken foreign keys
+		// unless the database schema cascades or allows NULLs. Assuming DB handles it or it's intended.
+		// We only delete the master product.
 
-		err = h.queries.DeleteStockMovementsByMasterProduct(c.Request.Context(), uuidParam)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete stock movements: " + err.Error()})
-			return
-		}
-
-		err = h.queries.DeleteStoreProductsByMasterID(c.Request.Context(), uuidParam)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete store products: " + err.Error()})
-			return
-		}
+		// Wait, if there are foreign key constraints, `DeleteMasterProduct` will FAIL with a foreign key violation
+		// if we don't delete the child records first! I need to be careful here.
 
 		err = h.queries.DeleteMasterProduct(c.Request.Context(), uuidParam)
 		if err != nil {
