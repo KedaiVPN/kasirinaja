@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"kasir-api-go/db"
@@ -527,4 +528,50 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "product updated successfully"})
+}
+
+func (h *ProductHandler) DeleteStoreProductSpecific(c *gin.Context) {
+	idParam := c.Param("id")
+
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid store product id"})
+		return
+	}
+
+	// Validate ownership
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	// Assuming user_id maps to store_id in this context for store users
+	storeIDStr, ok := userID.(string)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id type"})
+		return
+	}
+
+	// Get the store product to check ownership
+	product, err := h.queries.GetStoreProduct(c.Request.Context(), pgtype.UUID{Bytes: id, Valid: true})
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "store product not found"})
+		return
+	}
+
+	productStoreIDStr := fmt.Sprintf("%x-%x-%x-%x-%x", product.StoreID.Bytes[0:4], product.StoreID.Bytes[4:6], product.StoreID.Bytes[6:8], product.StoreID.Bytes[8:10], product.StoreID.Bytes[10:16])
+
+	if productStoreIDStr != storeIDStr {
+		c.JSON(http.StatusForbidden, gin.H{"error": "you do not have permission to delete this product"})
+		return
+	}
+
+	err = h.queries.DeleteStoreProduct(c.Request.Context(), pgtype.UUID{Bytes: id, Valid: true})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete store product: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "store product deleted successfully"})
 }

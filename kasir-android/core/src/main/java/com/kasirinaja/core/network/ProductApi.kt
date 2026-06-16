@@ -23,6 +23,9 @@ data class PendingProductRequest(
 )
 
 interface ProductApi {
+    @DELETE("products/store/{id}")
+    suspend fun deleteStoreProductSpecific(@Path("id") id: String): Response<Map<String, Any>>
+
     @POST("products/pending")
     suspend fun submitPendingProduct(@Body request: PendingProductRequest): Response<Map<String, Any>>
 
