@@ -180,10 +180,17 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 	}
 
 	parsedID, _ := uuid.FromBytes(user.ID.Bytes[:])
+	storeIDStr := ""
+	if user.StoreID.Valid {
+		parsedStoreID, _ := uuid.FromBytes(user.StoreID.Bytes[:])
+		storeIDStr = parsedStoreID.String()
+	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": parsedID.String(),
-		"role":    user.Role,
-		"exp":     time.Now().Add(time.Hour * 24).Unix(), // 24 hours
+		"user_id":  parsedID.String(),
+		"role":     user.Role,
+		"store_id": storeIDStr,
+		"exp":      time.Now().Add(time.Hour * 24).Unix(), // 24 hours
 	})
 
 	tokenString, err := token.SignedString([]byte(jwtSecret))
@@ -267,10 +274,17 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	parsedID, _ := uuid.FromBytes(user.ID.Bytes[:])
+	storeIDStr := ""
+	if user.StoreID.Valid {
+		parsedStoreID, _ := uuid.FromBytes(user.StoreID.Bytes[:])
+		storeIDStr = parsedStoreID.String()
+	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": parsedID.String(),
-		"role":    user.Role,
-		"exp":     time.Now().Add(time.Hour * 24).Unix(), // 24 hours
+		"user_id":  parsedID.String(),
+		"role":     user.Role,
+		"store_id": storeIDStr,
+		"exp":      time.Now().Add(time.Hour * 24).Unix(), // 24 hours
 	})
 
 	tokenString, err := token.SignedString([]byte(jwtSecret))
