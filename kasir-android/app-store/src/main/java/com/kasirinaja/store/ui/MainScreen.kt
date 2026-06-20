@@ -35,6 +35,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
+import com.kasirinaja.store.ui.screens.PaymentScreen
+import com.kasirinaja.store.ui.viewmodels.ScanViewModel
+import com.kasirinaja.store.ui.viewmodels.ScanViewModelFactory
+import com.kasirinaja.store.data.local.AppDatabase
+import com.kasirinaja.store.data.repository.ProductRepository
 
 @Composable
 fun MainScreen() {
@@ -49,6 +54,14 @@ fun MainScreen() {
     // Auth ViewModel
     val authViewModel: AuthViewModel = viewModel(
         factory = AuthViewModelFactory(authRepository)
+    )
+
+    // Scan ViewModel scoped to MainScreen so it persists between Scan and Payment
+    val productDao = AppDatabase.getDatabase(context).productDao()
+    val transactionDao = AppDatabase.getDatabase(context).transactionDao()
+    val productRepository = ProductRepository(productDao, transactionDao, context)
+    val scanViewModel: ScanViewModel = viewModel(
+        factory = ScanViewModelFactory(productRepository)
     )
 
     var startDest by remember { mutableStateOf(Screen.Login.route) }
@@ -163,7 +176,24 @@ fun MainScreen() {
                     }
                 )
             }
-            composable(Screen.Scan.route) { ScanScreen() }
+                        composable(Screen.Scan.route) {
+                ScanScreen(
+                    viewModel = scanViewModel,
+                    onNavigateToPayment = { navController.navigate(Screen.Payment.route) }
+                )
+            }
+
+            composable(Screen.Payment.route) {
+                PaymentScreen(
+                    viewModel = scanViewModel,
+                    onNavigateBack = { navController.popBackStack() },
+                    onPaymentSuccess = {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Dashboard.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
             composable(Screen.Master.route) { MasterScreen() }
             composable(Screen.Settings.route) { SettingsScreen() }
             composable(
