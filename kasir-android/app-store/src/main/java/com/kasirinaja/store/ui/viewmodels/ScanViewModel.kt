@@ -11,6 +11,8 @@ import com.kasirinaja.store.data.local.ProductEntity
 import com.kasirinaja.store.data.repository.ProductRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
@@ -25,6 +27,9 @@ class ScanViewModel(
 
     private val _cartItems = MutableStateFlow<List<CartItem>>(emptyList())
     val cartItems: StateFlow<List<CartItem>> = _cartItems.asStateFlow()
+
+    private val _toastMessage = MutableSharedFlow<String>()
+    val toastMessage = _toastMessage.asSharedFlow()
 
     private var toneGenerator: ToneGenerator? = null
 
@@ -41,15 +46,16 @@ class ScanViewModel(
     }
 
     fun onBarcodeScanned(barcode: String) {
+        val trimmedBarcode = barcode.trim()
         val currentTime = System.currentTimeMillis()
-        if (barcode == lastScannedBarcode && (currentTime - lastScanTime) < 1500) {
+        if (trimmedBarcode == lastScannedBarcode && (currentTime - lastScanTime) < 2000) {
             return // Debounce rapid same-barcode scans
         }
-        lastScannedBarcode = barcode
+        lastScannedBarcode = trimmedBarcode
         lastScanTime = currentTime
 
         viewModelScope.launch {
-            val product = repository.getProductByBarcode(barcode)
+            val product = repository.getProductByBarcode(trimmedBarcode)
             if (product != null) {
                 // Play sound
                 playBeepSound()
@@ -66,6 +72,9 @@ class ScanViewModel(
                 }
 
                 _cartItems.value = currentCart
+            } else {
+                playErrorSound()
+                _toastMessage.emit("Produk tidak ditemukan: $trimmedBarcode")
             }
         }
     }
@@ -155,6 +164,10 @@ class ScanViewModel(
 
     private fun playBeepSound() {
         toneGenerator?.startTone(ToneGenerator.TONE_PROP_BEEP, 150)
+    }
+
+    private fun playErrorSound() {
+        toneGenerator?.startTone(ToneGenerator.TONE_PROP_BEEP2, 300)
     }
 
     override fun onCleared() {
