@@ -260,15 +260,23 @@ class ProductRepository(
     }
 
     suspend fun deleteProduct(id: String, isSynced: Boolean) {
-        // Delete locally first
-        productDao.deleteProduct(id)
-
-        // Then delete from server
-        try {
-            RetrofitClient.productApi.deleteStoreProductSpecific(id)
-        } catch (e: Exception) {
-            // If network fails, the local delete stands.
-            // In a true offline-first robust app, you would queue this delete in WorkManager.
+        if (isSynced) {
+            // Jika produk sudah sinkron dengan server, hapus dari server dulu
+            try {
+                val response = RetrofitClient.productApi.deleteStoreProductSpecific(id)
+                if (response.isSuccessful || response.code() == 404) {
+                    // Sukses dihapus dari server atau tidak ditemukan di server
+                    productDao.deleteProduct(id)
+                } else {
+                    val errorMsg = response.errorBody()?.string() ?: "Unknown error"
+                    throw Exception("Gagal menghapus produk dari server: $errorMsg")
+                }
+            } catch (e: Exception) {
+                throw Exception("Gagal terhubung ke server: ${e.message}")
+            }
+        } else {
+            // Jika produk pending (belum sinkron), langsung hapus lokal saja
+            productDao.deleteProduct(id)
         }
     }
 

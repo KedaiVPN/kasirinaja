@@ -8,9 +8,18 @@ import kotlinx.coroutines.flow.Flow
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 class StockViewModel(private val repository: ProductRepository) : ViewModel() {
     val products: Flow<List<ProductEntity>> = repository.allProducts
+
+    private val _actionState = MutableStateFlow<String?>(null)
+    val actionState: StateFlow<String?> = _actionState
+
+    fun clearActionState() {
+        _actionState.value = null
+    }
 
     init {
         startSyncLoop()
@@ -34,7 +43,12 @@ class StockViewModel(private val repository: ProductRepository) : ViewModel() {
 
     fun deleteProduct(id: String, isSynced: Boolean) {
         viewModelScope.launch {
-            repository.deleteProduct(id, isSynced)
+            try {
+                repository.deleteProduct(id, isSynced)
+                _actionState.value = "Produk berhasil dihapus"
+            } catch (e: Exception) {
+                _actionState.value = e.message ?: "Gagal menghapus produk"
+            }
         }
     }
 }
