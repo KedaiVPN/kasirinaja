@@ -59,6 +59,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,8 +77,17 @@ fun StockScreen(
 
     val viewModel: StockViewModel = viewModel(factory = StockViewModelFactory(repository))
     val products by viewModel.products.collectAsState(initial = emptyList())
+    val actionState by viewModel.actionState.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
     var productToDelete by remember { mutableStateOf<com.kasirinaja.store.data.local.ProductEntity?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(actionState) {
+        actionState?.let { msg ->
+            snackbarHostState.showSnackbar(message = msg)
+            viewModel.clearActionState()
+        }
+    }
 
     if (showDeleteDialog && productToDelete != null) {
         AlertDialog(
@@ -120,7 +131,8 @@ fun StockScreen(
             FloatingActionButton(onClick = onNavigateToAddProduct) {
                 Icon(Icons.Filled.Add, contentDescription = "Tambah Produk")
             }
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         if (products.isEmpty()) {
             Box(
