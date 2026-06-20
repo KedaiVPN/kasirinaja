@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
@@ -178,8 +179,9 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 		jwtSecret = "secret"
 	}
 
+	parsedID, _ := uuid.FromBytes(user.ID.Bytes[:])
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": user.ID.Bytes,
+		"user_id": parsedID.String(),
 		"role":    user.Role,
 		"exp":     time.Now().Add(time.Hour * 24).Unix(), // 24 hours
 	})
@@ -264,8 +266,9 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		jwtSecret = "secret"
 	}
 
+	parsedID, _ := uuid.FromBytes(user.ID.Bytes[:])
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": user.ID.Bytes,
+		"user_id": parsedID.String(),
 		"role":    user.Role,
 		"exp":     time.Now().Add(time.Hour * 24).Unix(), // 24 hours
 	})
