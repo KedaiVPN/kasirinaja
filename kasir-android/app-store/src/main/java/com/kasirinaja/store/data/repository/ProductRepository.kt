@@ -14,6 +14,7 @@ import com.kasirinaja.store.data.local.LocalTransactionEntity
 import com.kasirinaja.store.data.local.LocalTransactionItemEntity
 import com.kasirinaja.core.network.TokenManager
 import com.kasirinaja.store.data.local.ProductEntity
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 import com.google.gson.JsonObject
@@ -261,7 +262,9 @@ class ProductRepository(
 
 
     suspend fun getProductByBarcode(barcode: String): ProductEntity? {
-        return productDao.getProductByBarcode(barcode)
+        // Find product where barcode string matches exactly
+        val products = productDao.getAllProducts().first()
+        return products.find { it.barcode?.trim() == barcode.trim() }
     }
 
 

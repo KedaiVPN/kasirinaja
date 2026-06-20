@@ -22,6 +22,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
+import android.widget.Toast
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,6 +55,12 @@ fun ScanScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val cartItems by viewModel.cartItems.collectAsState()
     val totalAmount = viewModel.getTotalAmount()
+
+    LaunchedEffect(Unit) {
+        viewModel.toastMessage.collect { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     var hasCameraPermission by remember {
         mutableStateOf(
@@ -237,7 +245,7 @@ private class ContinuousBarcodeAnalyzer(private val onBarcodeScanned: (String) -
             scanner.process(image)
                 .addOnSuccessListener { barcodes ->
                     if (barcodes.isNotEmpty()) {
-                        val displayValue = barcodes[0].displayValue
+                        val displayValue = barcodes[0].rawValue
                         if (!displayValue.isNullOrEmpty()) {
                             onBarcodeScanned(displayValue)
                         }
