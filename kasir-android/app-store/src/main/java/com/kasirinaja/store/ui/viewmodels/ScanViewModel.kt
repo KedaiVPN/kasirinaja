@@ -39,7 +39,7 @@ class ScanViewModel(
 
     init {
         try {
-            toneGenerator = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100)
+            toneGenerator = ToneGenerator(AudioManager.STREAM_ALARM, 100)
         } catch (e: Exception) {
             // Handle exception if ToneGenerator fails to initialize
         }
@@ -163,11 +163,11 @@ class ScanViewModel(
     }
 
     private fun playBeepSound() {
-        toneGenerator?.startTone(ToneGenerator.TONE_PROP_BEEP, 150)
+        toneGenerator?.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 200)
     }
 
     private fun playErrorSound() {
-        toneGenerator?.startTone(ToneGenerator.TONE_PROP_BEEP2, 300)
+        toneGenerator?.startTone(ToneGenerator.TONE_SUP_ERROR, 400)
     }
 
     override fun onCleared() {
