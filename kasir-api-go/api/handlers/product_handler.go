@@ -530,15 +530,15 @@ func (h *ProductHandler) DeleteStoreProductSpecific(c *gin.Context) {
 	}
 
 	// Validate ownership
-	userID, exists := c.Get("user_id")
+	contextStoreID, exists := c.Get("store_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized: missing store_id in context"})
 		return
 	}
 
-	storeIDStr, ok := userID.(string)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id type"})
+	storeIDStr, ok := contextStoreID.(string)
+	if !ok || storeIDStr == "" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only store users can delete products"})
 		return
 	}
 
