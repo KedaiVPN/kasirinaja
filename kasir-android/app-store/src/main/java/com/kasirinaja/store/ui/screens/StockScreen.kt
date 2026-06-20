@@ -72,7 +72,7 @@ fun StockScreen(
 
     val repository = remember {
         val database = AppDatabase.getDatabase(context)
-        ProductRepository(database.productDao(), context.applicationContext)
+        ProductRepository(database.productDao(), database.transactionDao(), context.applicationContext)
     }
 
     val viewModel: StockViewModel = viewModel(factory = StockViewModelFactory(repository))

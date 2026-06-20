@@ -23,6 +23,10 @@ interface ProductDao {
     @Query("SELECT * FROM local_products WHERE id = :productId LIMIT 1")
     suspend fun getProductById(productId: String): ProductEntity?
 
+    @Query("SELECT * FROM local_products WHERE barcode = :barcode LIMIT 1")
+    suspend fun getProductByBarcode(barcode: String): ProductEntity?
+
+
     @Query("DELETE FROM local_products WHERE isSynced = 1")
     suspend fun deleteSyncedProducts()
 

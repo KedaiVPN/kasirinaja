@@ -21,4 +21,5 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object Login : Screen("login", "Login", Icons.Filled.Home) // Not in bottom bar
     object Register : Screen("register", "Register", Icons.Filled.Home) // Not in bottom bar
     object VerifyOtp : Screen("verify_otp", "Verify OTP", Icons.Filled.Home) // Not in bottom bar
+    object Payment : Screen("payment", "Pembayaran", Icons.Filled.Add) // Not in bottom bar
 }

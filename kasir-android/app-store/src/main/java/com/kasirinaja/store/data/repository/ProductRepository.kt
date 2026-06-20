@@ -8,12 +8,15 @@ import com.kasirinaja.store.utils.ImageCompressor
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
+import com.kasirinaja.store.data.local.TransactionDao
 import com.kasirinaja.store.data.local.ProductDao
+import com.kasirinaja.store.data.local.LocalTransactionEntity
+import com.kasirinaja.store.data.local.LocalTransactionItemEntity
+import com.kasirinaja.core.network.TokenManager
 import com.kasirinaja.store.data.local.ProductEntity
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 import com.google.gson.JsonObject
-import com.kasirinaja.core.network.TokenManager
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.Data
@@ -23,6 +26,7 @@ import com.kasirinaja.store.worker.ImageDownloadWorker
 
 class ProductRepository(
     private val productDao: ProductDao,
+    private val transactionDao: TransactionDao,
     private val context: Context
 ) {
 
@@ -254,6 +258,22 @@ class ProductRepository(
             throw Exception("Gagal mengupload gambar: ${response.code()}")
         }
     }
+
+
+    suspend fun getProductByBarcode(barcode: String): ProductEntity? {
+        return productDao.getProductByBarcode(barcode)
+    }
+
+
+
+    suspend fun saveTransaction(
+        transaction: LocalTransactionEntity,
+        items: List<LocalTransactionItemEntity>
+    ) {
+        transactionDao.insertTransaction(transaction)
+        transactionDao.insertTransactionItems(items)
+    }
+
 
     suspend fun getProductById(id: String): ProductEntity? {
         return productDao.getProductById(id)

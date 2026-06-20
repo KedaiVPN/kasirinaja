@@ -53,7 +53,7 @@ fun AddProductScreen(
     // Using remember so it's only instantiated once per composable lifecycle
     val repository = remember {
         val database = AppDatabase.getDatabase(context)
-        ProductRepository(database.productDao(), context.applicationContext)
+        ProductRepository(database.productDao(), database.transactionDao(), context.applicationContext)
     }
 
     val viewModel: AddProductViewModel = viewModel(factory = AddProductViewModelFactory(repository))

@@ -39,7 +39,7 @@ fun MasterScreen(
 ) {
     val context = LocalContext.current
     val database = AppDatabase.getDatabase(context)
-    val repository = remember { ProductRepository(database.productDao(), context) }
+    val repository = remember { ProductRepository(database.productDao(), database.transactionDao(), context) }
     val viewModel: MasterViewModel = viewModel(factory = MasterViewModel.Factory(repository))
 
     val masterProducts by viewModel.masterProducts.collectAsState()
