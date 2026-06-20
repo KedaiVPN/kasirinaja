@@ -181,10 +181,9 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 
 	parsedID, _ := uuid.FromBytes(user.ID.Bytes[:])
 	storeIDStr := ""
-	if user.StoreID.Valid {
-		parsedStoreID, _ := uuid.FromBytes(user.StoreID.Bytes[:])
-		storeIDStr = parsedStoreID.String()
-	}
+	// Use store.ID directly since user.StoreID locally hasn't been updated
+	parsedStoreID, _ := uuid.FromBytes(store.ID.Bytes[:])
+	storeIDStr = parsedStoreID.String()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id":  parsedID.String(),
