@@ -132,6 +132,35 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create transaction item: " + err.Error()})
 			return
 		}
+
+		// Update stock and create stock movement if stock is not unlimited
+		storeProduct, err := qtx.GetStoreProduct(ctx, pgtype.UUID{Bytes: spID, Valid: true})
+		if err == nil && storeProduct.Stock != -1 {
+			// Deduct stock
+			err = qtx.UpdateStoreProductStock(ctx, db.UpdateStoreProductStockParams{
+				ID:    pgtype.UUID{Bytes: spID, Valid: true},
+				Stock: -item.Quantity,
+			})
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update stock: " + err.Error()})
+				return
+			}
+
+			// Create stock movement
+			movementArg := db.CreateStockMovementParams{
+				StoreID:        pgtype.UUID{Bytes: storeID, Valid: true},
+				StoreProductID: pgtype.UUID{Bytes: spID, Valid: true},
+				MovementType:   "SALE",
+				Quantity:       item.Quantity,
+				ReferenceType:  pgtype.Text{String: "TRANSACTION", Valid: true},
+				ReferenceID:    createdTx.ID,
+			}
+			_, err = qtx.CreateStockMovement(ctx, movementArg)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create stock movement: " + err.Error()})
+				return
+			}
+		}
 	}
 
 	err = tx.Commit(ctx)

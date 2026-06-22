@@ -18,4 +18,10 @@ interface TransactionDao {
 
     @Query("SELECT * FROM transaction_items WHERE transactionId = :transactionId")
     suspend fun getTransactionItems(transactionId: String): List<LocalTransactionItemEntity>
+
+    @Query("SELECT * FROM transactions WHERE syncStatus = 'pending'")
+    suspend fun getPendingTransactions(): List<LocalTransactionEntity>
+
+    @Query("UPDATE transactions SET syncStatus = :status WHERE id = :transactionId")
+    suspend fun updateTransactionSyncStatus(transactionId: String, status: String)
 }

@@ -63,8 +63,19 @@ fun MainScreen() {
     val productDao = AppDatabase.getDatabase(context).productDao()
     val transactionDao = AppDatabase.getDatabase(context).transactionDao()
     val productRepository = ProductRepository(productDao, transactionDao, context)
+    val database = com.kasirinaja.store.data.local.AppDatabase.getDatabase(context)
+    val transactionRepository = com.kasirinaja.store.data.repository.TransactionRepository(
+        database.transactionDao(),
+        com.kasirinaja.core.network.RetrofitClient.transactionApi
+    )
+    val workManager = androidx.work.WorkManager.getInstance(context)
+
     val scanViewModel: ScanViewModel = viewModel(
-        factory = ScanViewModelFactory(productRepository)
+        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                return ScanViewModel(productRepository, transactionRepository, workManager) as T
+            }
+        }
     )
 
     val receiptViewModel: ReceiptViewModel = viewModel(
