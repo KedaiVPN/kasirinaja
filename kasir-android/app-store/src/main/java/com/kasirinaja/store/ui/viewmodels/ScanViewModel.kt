@@ -119,7 +119,7 @@ class ScanViewModel(
         _cartItems.value = currentCart
     }
 
-    fun saveTransaction(paidAmount: Double, changeAmount: Double, storeId: String = "dummy_store", cashierId: String = "dummy_cashier", onTransactionSaved: (String) -> Unit = {}) {
+    fun saveTransaction(paidAmount: Double, changeAmount: Double, storeId: String, cashierId: String, onTransactionSaved: (String) -> Unit = {}) {
         viewModelScope.launch {
             val items = _cartItems.value
             if (items.isEmpty()) return@launch

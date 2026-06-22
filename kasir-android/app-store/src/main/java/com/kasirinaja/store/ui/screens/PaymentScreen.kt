@@ -1,25 +1,28 @@
 package com.kasirinaja.store.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
+import androidx.compose.ui.Modifier
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.*
+import com.kasirinaja.core.utils.FormatUtils
+import androidx.compose.material3.*
+import androidx.compose.ui.Alignment
+import com.kasirinaja.store.ui.viewmodels.ScanViewModel
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.kasirinaja.store.ui.viewmodels.ScanViewModel
-import com.kasirinaja.core.utils.FormatUtils
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,7 +49,9 @@ fun PaymentScreen(
         0.0
     }
 
-    val isPaymentValid = paidAmount >= totalAmount && totalAmount > 0
+    val isPaymentValid = paidAmount >= totalAmount
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val isValid = paidAmount >= totalAmount && totalAmount > 0
 
     Scaffold(
         topBar = {
@@ -163,10 +168,43 @@ fun PaymentScreen(
 
             Button(
                 onClick = {
-                    if (isPaymentValid) {
-                        // Here you would typically save the transaction to the database
-                        // For now, we clear the cart and navigate back
-                        viewModel.saveTransaction(paidAmount = paidAmount, changeAmount = changeAmount) { transactionId ->
+                    if (isValid) {
+                        val tokenManager = com.kasirinaja.core.network.TokenManager(context)
+                        val storeId = tokenManager.getStoreId() ?: ""
+
+                        // Extract user ID from token (or assuming it's available). For now we'll send a valid UUID format
+                        // Or we can extract it properly. For this fix, let's parse JWT payload to get cashier/user id
+                        val token = tokenManager.getToken() ?: ""
+                        var cashierId = ""
+                        if (token.isNotEmpty()) {
+                            try {
+                                val parts = token.split(".")
+                                if (parts.size > 1) {
+                                    val payload = String(android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE))
+                                    val jsonObject = org.json.JSONObject(payload)
+                                    cashierId = jsonObject.optString("user_id", "")
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+
+                        // Fallback UUIDs if empty to prevent completely breaking while debugging
+                        if (storeId.isEmpty()) {
+                            android.widget.Toast.makeText(context, "Error: Store ID tidak ditemukan!", android.widget.Toast.LENGTH_LONG).show()
+                            return@Button
+                        }
+                        if (cashierId.isEmpty()) {
+                            android.widget.Toast.makeText(context, "Error: Cashier ID tidak ditemukan!", android.widget.Toast.LENGTH_LONG).show()
+                            return@Button
+                        }
+
+                        viewModel.saveTransaction(
+                            paidAmount = paidAmount,
+                            changeAmount = changeAmount,
+                            storeId = storeId,
+                            cashierId = cashierId
+                        ) { transactionId ->
                             onPaymentSuccess(transactionId)
                         }
                     }
