@@ -18,6 +18,22 @@ class TokenManager(context: Context) {
         return prefs.getString("store_id", null)
     }
 
+    fun saveStoreName(storeName: String) {
+        prefs.edit().putString("store_name", storeName).apply()
+    }
+
+    fun getStoreName(): String? {
+        return prefs.getString("store_name", null)
+    }
+
+    fun saveStoreAddress(storeAddress: String) {
+        prefs.edit().putString("store_address", storeAddress).apply()
+    }
+
+    fun getStoreAddress(): String? {
+        return prefs.getString("store_address", null)
+    }
+
     fun getToken(): String? {
         return prefs.getString("jwt_token", null)
     }

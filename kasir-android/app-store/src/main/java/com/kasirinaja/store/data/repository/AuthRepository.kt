@@ -17,10 +17,18 @@ class AuthRepository(
                 val token = response["token"]?.toString()
                 val user = response["user"] as? Map<*, *>
                 val storeId = user?.get("store_id")?.toString()
+                val storeName = user?.get("store_name")?.toString()
+                val storeAddress = user?.get("store_address")?.toString()
                 if (token != null) {
                     tokenManager.saveToken(token)
                     if (storeId != null) {
                         tokenManager.saveStoreId(storeId)
+                    }
+                    if (storeName != null) {
+                        tokenManager.saveStoreName(storeName)
+                    }
+                    if (storeAddress != null) {
+                        tokenManager.saveStoreAddress(storeAddress)
                     }
                     Result.success(token)
                 } else {
@@ -63,10 +71,18 @@ class AuthRepository(
                 val token = response["token"]?.toString()
                 val user = response["user"] as? Map<*, *>
                 val storeId = user?.get("store_id")?.toString()
+                val storeName = user?.get("store_name")?.toString()
+                val storeAddress = user?.get("store_address")?.toString()
                 if (token != null) {
                     tokenManager.saveToken(token)
                     if (storeId != null) {
                         tokenManager.saveStoreId(storeId)
+                    }
+                    if (storeName != null) {
+                        tokenManager.saveStoreName(storeName)
+                    }
+                    if (storeAddress != null) {
+                        tokenManager.saveStoreAddress(storeAddress)
                     }
                 }
                 val message = response["message"]?.toString() ?: "Success"

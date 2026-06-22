@@ -202,11 +202,13 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 		"message": "Registration successful",
 		"token": tokenString,
 		"user": gin.H{
-			"id":        user.ID,
-			"full_name": user.FullName,
-			"email":     user.Email.String,
-			"role":      user.Role,
-			"store_id":  store.ID,
+			"id":            user.ID,
+			"full_name":     user.FullName,
+			"email":         user.Email.String,
+			"role":          user.Role,
+			"store_id":      store.ID,
+			"store_name":    store.StoreName,
+			"store_address": store.Address.String,
 		},
 	})
 }
@@ -292,14 +294,25 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	var storeName, storeAddress string
+	if user.StoreID.Valid {
+		store, err := h.queries.GetStore(c.Request.Context(), user.StoreID)
+		if err == nil {
+			storeName = store.StoreName
+			storeAddress = store.Address.String
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"token": tokenString,
 		"user": gin.H{
-			"id":        user.ID,
-			"full_name": user.FullName,
-			"email":     user.Email.String,
-			"role":      user.Role,
-			"store_id":  user.StoreID,
+			"id":            user.ID,
+			"full_name":     user.FullName,
+			"email":         user.Email.String,
+			"role":          user.Role,
+			"store_id":      user.StoreID,
+			"store_name":    storeName,
+			"store_address": storeAddress,
 		},
 	})
 }

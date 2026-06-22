@@ -26,7 +26,7 @@ import com.kasirinaja.core.utils.FormatUtils
 fun PaymentScreen(
     viewModel: ScanViewModel,
     onNavigateBack: () -> Unit,
-    onPaymentSuccess: () -> Unit
+    onPaymentSuccess: (String) -> Unit
 ) {
     val cartItems by viewModel.cartItems.collectAsState()
     val totalAmount = viewModel.getTotalAmount()
@@ -166,8 +166,9 @@ fun PaymentScreen(
                     if (isPaymentValid) {
                         // Here you would typically save the transaction to the database
                         // For now, we clear the cart and navigate back
-                        viewModel.saveTransaction(paidAmount = paidAmount, changeAmount = changeAmount)
-                        onPaymentSuccess()
+                        viewModel.saveTransaction(paidAmount = paidAmount, changeAmount = changeAmount) { transactionId ->
+                            onPaymentSuccess(transactionId)
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),

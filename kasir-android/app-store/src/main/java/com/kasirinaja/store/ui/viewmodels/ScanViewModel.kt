@@ -22,7 +22,7 @@ data class CartItem(
 )
 
 class ScanViewModel(
-    private val repository: ProductRepository
+    val repository: ProductRepository
 ) : ViewModel() {
 
     private val _cartItems = MutableStateFlow<List<CartItem>>(emptyList())
@@ -109,7 +109,7 @@ class ScanViewModel(
         _cartItems.value = currentCart
     }
 
-    fun saveTransaction(paidAmount: Double, changeAmount: Double, storeId: String = "dummy_store", cashierId: String = "dummy_cashier") {
+    fun saveTransaction(paidAmount: Double, changeAmount: Double, storeId: String = "dummy_store", cashierId: String = "dummy_cashier", onTransactionSaved: (String) -> Unit = {}) {
         viewModelScope.launch {
             val items = _cartItems.value
             if (items.isEmpty()) return@launch
@@ -148,6 +148,7 @@ class ScanViewModel(
 
             repository.saveTransaction(transaction, transactionItems)
             clearCart()
+            onTransactionSaved(transactionId)
         }
     }
 
