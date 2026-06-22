@@ -11,10 +11,15 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+
 class TransactionRepository(
     private val transactionDao: TransactionDao,
     private val transactionApi: TransactionApi
 ) {
+    private val _syncStatus = MutableSharedFlow<String>()
+    val syncStatus = _syncStatus.asSharedFlow()
     suspend fun saveTransactionLocally(
         transaction: LocalTransactionEntity,
         items: List<LocalTransactionItemEntity>
@@ -25,6 +30,12 @@ class TransactionRepository(
 
     suspend fun syncPendingTransactions() {
         val pendingTransactions = transactionDao.getPendingTransactions()
+        if (pendingTransactions.isNotEmpty()) {
+            _syncStatus.emit("sync_started")
+        }
+
+        var anyFailed = false
+        var anySuccess = false
 
         for (localTx in pendingTransactions) {
             try {
@@ -65,9 +76,19 @@ class TransactionRepository(
 
                 // If successful, update local status
                 transactionDao.updateTransactionSyncStatus(localTx.id, "synced")
+                anySuccess = true
             } catch (e: Exception) {
                 // If sync fails, it will remain pending and retry later
                 e.printStackTrace()
+                anyFailed = true
+            }
+        }
+
+        if (pendingTransactions.isNotEmpty()) {
+            if (anyFailed) {
+                _syncStatus.emit("sync_failed")
+            } else if (anySuccess) {
+                _syncStatus.emit("sync_success")
             }
         }
     }

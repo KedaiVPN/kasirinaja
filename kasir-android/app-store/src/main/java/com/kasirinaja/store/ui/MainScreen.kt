@@ -1,53 +1,58 @@
 package com.kasirinaja.store.ui
-
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.kasirinaja.store.ui.navigation.Screen
-import com.kasirinaja.store.ui.screens.AddProductScreen
-import com.kasirinaja.store.ui.screens.DashboardScreen
-import com.kasirinaja.store.ui.screens.MasterScreen
-import com.kasirinaja.store.ui.screens.CameraCaptureScreen
-import com.kasirinaja.store.ui.screens.BarcodeScannerFormScreen
-import com.kasirinaja.store.ui.screens.ScanScreen
-import com.kasirinaja.store.ui.screens.SettingsScreen
-import com.kasirinaja.store.ui.screens.StockScreen
-import com.kasirinaja.store.presentation.auth.LoginScreen
-import com.kasirinaja.store.presentation.auth.RegisterStoreScreen
-import com.kasirinaja.store.presentation.auth.VerifyOtpScreen
-import com.kasirinaja.store.presentation.auth.AuthViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.kasirinaja.store.presentation.auth.AuthViewModelFactory
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.remember
-import com.kasirinaja.store.ui.screens.ReceiptScreen
-import com.kasirinaja.store.ui.viewmodels.ReceiptViewModel
-import com.kasirinaja.store.ui.viewmodels.ReceiptViewModelFactory
-import com.kasirinaja.store.ui.screens.PaymentScreen
+import androidx.compose.runtime.Composable
 import com.kasirinaja.store.ui.viewmodels.ScanViewModel
-import com.kasirinaja.store.ui.viewmodels.ScanViewModelFactory
+import com.kasirinaja.store.ui.screens.BarcodeScannerFormScreen
+import com.kasirinaja.store.ui.screens.StockScreen
+import androidx.compose.runtime.remember
+import androidx.compose.ui.unit.dp
+import com.kasirinaja.store.ui.screens.CameraCaptureScreen
+import androidx.compose.foundation.layout.width
 import com.kasirinaja.store.data.local.AppDatabase
+import com.kasirinaja.store.ui.screens.AddProductScreen
+import androidx.navigation.compose.currentBackStackEntryAsState
+import com.kasirinaja.store.ui.viewmodels.ReceiptViewModel
+import com.kasirinaja.store.ui.screens.DashboardScreen
+import com.kasirinaja.store.presentation.auth.RegisterStoreScreen
+import com.kasirinaja.store.ui.screens.PaymentScreen
+import androidx.compose.material3.Scaffold
+import androidx.compose.foundation.layout.size
+import com.kasirinaja.store.presentation.auth.AuthViewModel
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.setValue
+import com.kasirinaja.store.presentation.auth.AuthViewModelFactory
+import com.kasirinaja.store.ui.screens.ScanScreen
+import androidx.compose.foundation.layout.padding
+import com.kasirinaja.store.ui.viewmodels.ScanViewModelFactory
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.compose.material3.Text
+import com.kasirinaja.store.ui.screens.MasterScreen
+import androidx.compose.material3.Icon
+import com.kasirinaja.store.ui.navigation.Screen
+import androidx.compose.material3.NavigationBarItem
+import com.kasirinaja.store.presentation.auth.VerifyOtpScreen
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import com.kasirinaja.store.data.repository.ProductRepository
+import androidx.compose.material3.NavigationBar
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.kasirinaja.store.presentation.auth.LoginScreen
+import androidx.navigation.compose.composable
+import com.kasirinaja.store.ui.screens.SettingsScreen
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import com.kasirinaja.store.ui.screens.ReceiptScreen
+import androidx.navigation.compose.NavHost
+import androidx.compose.runtime.mutableStateOf
+import com.kasirinaja.store.ui.viewmodels.ReceiptViewModelFactory
+
 
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val tokenManager = com.kasirinaja.core.network.TokenManager(context)
     val authRepository = com.kasirinaja.store.data.repository.AuthRepository(
         com.kasirinaja.core.network.RetrofitClient.authApi,
@@ -69,6 +74,45 @@ fun MainScreen() {
         com.kasirinaja.core.network.RetrofitClient.transactionApi
     )
     val workManager = androidx.work.WorkManager.getInstance(context)
+
+    var showSyncDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        transactionRepository.syncStatus.collect { status ->
+            when (status) {
+                "sync_started" -> {
+                    showSyncDialog = true
+                    android.widget.Toast.makeText(context, "Sinkronisasi dimulai...", android.widget.Toast.LENGTH_SHORT).show()
+                }
+                "sync_success" -> {
+                    showSyncDialog = false
+                    android.widget.Toast.makeText(context, "Sinkronisasi berhasil!", android.widget.Toast.LENGTH_SHORT).show()
+                }
+                "sync_failed" -> {
+                    showSyncDialog = false
+                    android.widget.Toast.makeText(context, "Sinkronisasi gagal. Akan mencoba lagi nanti.", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    if (showSyncDialog) {
+        androidx.compose.ui.window.Dialog(onDismissRequest = { /* Cannot dismiss */ }) {
+            androidx.compose.material3.Surface(
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                color = androidx.compose.material3.MaterialTheme.colorScheme.surface
+            ) {
+                androidx.compose.foundation.layout.Row(
+                    modifier = androidx.compose.ui.Modifier.padding(16.dp),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                ) {
+                    androidx.compose.material3.CircularProgressIndicator(modifier = androidx.compose.ui.Modifier.size(24.dp))
+                    androidx.compose.foundation.layout.Spacer(modifier = androidx.compose.ui.Modifier.width(16.dp))
+                    androidx.compose.material3.Text("Sedang menyinkronkan transaksi...")
+                }
+            }
+        }
+    }
 
     val scanViewModel: ScanViewModel = viewModel(
         factory = object : androidx.lifecycle.ViewModelProvider.Factory {

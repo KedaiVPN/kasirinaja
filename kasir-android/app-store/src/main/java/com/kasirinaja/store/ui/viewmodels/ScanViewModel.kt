@@ -156,6 +156,7 @@ class ScanViewModel(
                 )
             }
 
+            _toastMessage.emit("Menyimpan transaksi...")
             transactionRepository?.saveTransactionLocally(transaction, transactionItems)
 
             // Enqueue worker to sync immediately with network constraints
@@ -173,6 +174,7 @@ class ScanViewModel(
                 syncRequest
             )
 
+            _toastMessage.emit("Transaksi berhasil disimpan secara lokal. Sinkronisasi berjalan di latar belakang.")
             clearCart()
             onTransactionSaved(transactionId)
         }
