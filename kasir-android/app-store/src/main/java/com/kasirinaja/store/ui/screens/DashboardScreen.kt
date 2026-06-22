@@ -79,14 +79,14 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
                     DashboardCard(
                         modifier = Modifier.weight(1f),
                         title = "Pendapatan",
-                        value = "Rp 1.500.000",
+                        value = FormatUtils.formatCurrency(state.totalRevenue.toLong()),
                         icon = Icons.Filled.TrendingUp,
                         iconColor = Color(0xFF4CAF50)
                     )
                     DashboardCard(
                         modifier = Modifier.weight(1f),
                         title = "Transaksi",
-                        value = "24",
+                        value = "${state.totalTransactions}",
                         icon = Icons.Filled.Receipt,
                         iconColor = MaterialTheme.colorScheme.primary
                     )
@@ -99,14 +99,14 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
                     DashboardCard(
                         modifier = Modifier.weight(1f),
                         title = "Total Produk",
-                        value = "120",
+                        value = "${state.totalProducts}",
                         icon = Icons.Filled.Inventory,
                         iconColor = Color(0xFFFF9800)
                     )
                     DashboardCard(
                         modifier = Modifier.weight(1f),
                         title = "Laba Bersih",
-                        value = "Rp 450.000",
+                        value = FormatUtils.formatCurrency(state.netProfit.toLong()),
                         icon = Icons.Filled.AttachMoney,
                         iconColor = Color(0xFF2196F3)
                     )
