@@ -277,6 +277,14 @@ class ProductRepository(
         transactionDao.insertTransactionItems(items)
     }
 
+    suspend fun getTransaction(transactionId: String): LocalTransactionEntity? {
+        return transactionDao.getTransactionById(transactionId)
+    }
+
+    suspend fun getTransactionItems(transactionId: String): List<LocalTransactionItemEntity> {
+        return transactionDao.getTransactionItems(transactionId)
+    }
+
 
     suspend fun getProductById(id: String): ProductEntity? {
         return productDao.getProductById(id)

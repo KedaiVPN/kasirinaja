@@ -35,6 +35,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
+import com.kasirinaja.store.ui.screens.ReceiptScreen
+import com.kasirinaja.store.ui.viewmodels.ReceiptViewModel
+import com.kasirinaja.store.ui.viewmodels.ReceiptViewModelFactory
 import com.kasirinaja.store.ui.screens.PaymentScreen
 import com.kasirinaja.store.ui.viewmodels.ScanViewModel
 import com.kasirinaja.store.ui.viewmodels.ScanViewModelFactory
@@ -62,6 +65,10 @@ fun MainScreen() {
     val productRepository = ProductRepository(productDao, transactionDao, context)
     val scanViewModel: ScanViewModel = viewModel(
         factory = ScanViewModelFactory(productRepository)
+    )
+
+    val receiptViewModel: ReceiptViewModel = viewModel(
+        factory = ReceiptViewModelFactory(productRepository)
     )
 
     var startDest by remember { mutableStateOf(Screen.Login.route) }
@@ -187,9 +194,25 @@ fun MainScreen() {
                 PaymentScreen(
                     viewModel = scanViewModel,
                     onNavigateBack = { navController.popBackStack() },
-                    onPaymentSuccess = {
+                    onPaymentSuccess = { transactionId ->
+                        navController.navigate("${Screen.Receipt.route}/$transactionId") {
+                            popUpTo(Screen.Scan.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            composable(
+                route = "${Screen.Receipt.route}/{transactionId}",
+                arguments = listOf(androidx.navigation.navArgument("transactionId") { type = androidx.navigation.NavType.StringType })
+            ) { backStackEntry ->
+                val transactionId = backStackEntry.arguments?.getString("transactionId") ?: ""
+                ReceiptScreen(
+                    viewModel = receiptViewModel,
+                    transactionId = transactionId,
+                    onNavigateBack = {
                         navController.navigate(Screen.Dashboard.route) {
-                            popUpTo(Screen.Dashboard.route) { inclusive = true }
+                            popUpTo(0)
                         }
                     }
                 )
