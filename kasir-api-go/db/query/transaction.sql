@@ -21,3 +21,23 @@ INSERT INTO stock_movements (
   $1, $2, $3, $4, $5, $6
 )
 RETURNING *;
+
+-- name: GetStoreDashboardStats :one
+SELECT
+    COALESCE(SUM(total_amount), 0)::BIGINT AS total_revenue,
+    COUNT(id)::INT AS total_transactions,
+    (SELECT COUNT(store_products.id)::INT FROM store_products WHERE store_products.store_id = $1 AND store_products.is_active = true) AS total_products,
+    COALESCE(
+        (SELECT SUM(ti.subtotal - (ti.buy_price * ti.quantity))
+         FROM transaction_items ti
+         JOIN transactions t ON ti.transaction_id = t.id
+         WHERE t.store_id = $1), 0
+    )::BIGINT AS net_profit
+FROM transactions
+WHERE transactions.store_id = $1;
+
+-- name: GetRecentStoreTransactions :many
+SELECT * FROM transactions
+WHERE store_id = $1
+ORDER BY transaction_time DESC
+LIMIT 5;

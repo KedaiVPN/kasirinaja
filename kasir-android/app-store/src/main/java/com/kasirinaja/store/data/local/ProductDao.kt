@@ -32,4 +32,7 @@ interface ProductDao {
 
     @Query("DELETE FROM local_products WHERE name = :name AND isSynced = 0")
     suspend fun deletePendingProductByName(name: String)
+
+    @Query("SELECT COUNT(id) FROM local_products")
+    suspend fun getTotalProducts(): Int?
 }

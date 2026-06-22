@@ -34,9 +34,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import com.kasirinaja.store.ui.viewmodels.DashboardViewModel
+import com.kasirinaja.core.utils.FormatUtils
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardScreen() {
+fun DashboardScreen(viewModel: DashboardViewModel) {
+    val state by viewModel.state.collectAsState()
     Scaffold(
         topBar = {
             TopAppBar(
@@ -115,11 +124,14 @@ fun DashboardScreen() {
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            items(5) { index ->
+            items(state.recentTransactions.size) { index ->
+                val tx = state.recentTransactions[index]
+                val formatter = SimpleDateFormat("HH:mm", Locale.getDefault())
+                val timeString = formatter.format(Date(tx.transactionTime))
                 TransactionItem(
-                    id = "TRX-100${5 - index}",
-                    amount = "Rp ${(index + 1) * 25}.000",
-                    time = "1${index}:00"
+                    id = tx.invoiceNumber,
+                    amount = FormatUtils.formatCurrency(tx.totalAmount.toLong()),
+                    time = timeString
                 )
             }
         }

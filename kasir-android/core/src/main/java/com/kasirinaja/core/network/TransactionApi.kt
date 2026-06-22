@@ -1,7 +1,10 @@
 package com.kasirinaja.core.network
 
-import retrofit2.http.Body
 import retrofit2.http.POST
+import retrofit2.http.Body
+import retrofit2.http.GET
+
+
 
 data class TransactionItemRequest(
     val store_product_id: String,
@@ -28,7 +31,19 @@ data class TransactionRequest(
     val items: List<TransactionItemRequest>
 )
 
+
+data class DashboardStatsResponse(
+    val total_revenue: Long,
+    val total_transactions: Int,
+    val total_products: Int,
+    val net_profit: Long,
+    val recent_transactions: List<Map<String, Any>>
+)
+
 interface TransactionApi {
     @POST("transactions/")
     suspend fun createTransaction(@Body request: TransactionRequest): Map<String, Any>
+
+    @GET("transactions/dashboard")
+    suspend fun getDashboardStats(): DashboardStatsResponse
 }

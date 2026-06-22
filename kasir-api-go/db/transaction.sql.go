@@ -160,3 +160,79 @@ func (q *Queries) CreateTransactionItem(ctx context.Context, arg CreateTransacti
 	)
 	return i, err
 }
+
+const getRecentStoreTransactions = `-- name: GetRecentStoreTransactions :many
+SELECT id, store_id, cashier_id, invoice_number, total_amount, paid_amount, change_amount, payment_method, transaction_time, sync_status, device_id, is_active, created_at, updated_at FROM transactions
+WHERE store_id = $1
+ORDER BY transaction_time DESC
+LIMIT 5
+`
+
+func (q *Queries) GetRecentStoreTransactions(ctx context.Context, storeID pgtype.UUID) ([]Transaction, error) {
+	rows, err := q.db.Query(ctx, getRecentStoreTransactions, storeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Transaction
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.StoreID,
+			&i.CashierID,
+			&i.InvoiceNumber,
+			&i.TotalAmount,
+			&i.PaidAmount,
+			&i.ChangeAmount,
+			&i.PaymentMethod,
+			&i.TransactionTime,
+			&i.SyncStatus,
+			&i.DeviceID,
+			&i.IsActive,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getStoreDashboardStats = `-- name: GetStoreDashboardStats :one
+SELECT
+    COALESCE(SUM(total_amount), 0)::BIGINT AS total_revenue,
+    COUNT(id)::INT AS total_transactions,
+    (SELECT COUNT(store_products.id)::INT FROM store_products WHERE store_products.store_id = $1 AND store_products.is_active = true) AS total_products,
+    COALESCE(
+        (SELECT SUM(ti.subtotal - (ti.buy_price * ti.quantity))
+         FROM transaction_items ti
+         JOIN transactions t ON ti.transaction_id = t.id
+         WHERE t.store_id = $1), 0
+    )::BIGINT AS net_profit
+FROM transactions
+WHERE transactions.store_id = $1
+`
+
+type GetStoreDashboardStatsRow struct {
+	TotalRevenue      int64 `json:"total_revenue"`
+	TotalTransactions int32 `json:"total_transactions"`
+	TotalProducts     int32 `json:"total_products"`
+	NetProfit         int64 `json:"net_profit"`
+}
+
+func (q *Queries) GetStoreDashboardStats(ctx context.Context, storeID pgtype.UUID) (GetStoreDashboardStatsRow, error) {
+	row := q.db.QueryRow(ctx, getStoreDashboardStats, storeID)
+	var i GetStoreDashboardStatsRow
+	err := row.Scan(
+		&i.TotalRevenue,
+		&i.TotalTransactions,
+		&i.TotalProducts,
+		&i.NetProfit,
+	)
+	return i, err
+}
