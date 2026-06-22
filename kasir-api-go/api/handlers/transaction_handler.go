@@ -171,3 +171,46 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, createdTx)
 }
+
+type DashboardStatsResponse struct {
+	TotalRevenue      int64             `json:"total_revenue"`
+	TotalTransactions int32             `json:"total_transactions"`
+	TotalProducts     int32             `json:"total_products"`
+	NetProfit         int64             `json:"net_profit"`
+	RecentTransactions []db.Transaction `json:"recent_transactions"`
+}
+
+func (h *TransactionHandler) GetDashboardStats(c *gin.Context) {
+	storeIDRaw, exists := c.Get("store_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "store_id not found in token"})
+		return
+	}
+
+	storeID, err := uuid.Parse(storeIDRaw.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid store id"})
+		return
+	}
+
+	ctx := c.Request.Context()
+
+	stats, err := h.queries.GetStoreDashboardStats(ctx, pgtype.UUID{Bytes: storeID, Valid: true})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch stats"})
+		return
+	}
+
+	recentTx, err := h.queries.GetRecentStoreTransactions(ctx, pgtype.UUID{Bytes: storeID, Valid: true})
+	if err != nil {
+		recentTx = []db.Transaction{}
+	}
+
+	c.JSON(http.StatusOK, DashboardStatsResponse{
+		TotalRevenue:      stats.TotalRevenue,
+		TotalTransactions: stats.TotalTransactions,
+		TotalProducts:     stats.TotalProducts,
+		NetProfit:         stats.NetProfit,
+		RecentTransactions: recentTx,
+	})
+}

@@ -24,4 +24,16 @@ interface TransactionDao {
 
     @Query("UPDATE transactions SET syncStatus = :status WHERE id = :transactionId")
     suspend fun updateTransactionSyncStatus(transactionId: String, status: String)
+
+    @Query("SELECT SUM(totalAmount) FROM transactions")
+    suspend fun getTotalRevenue(): Double?
+
+    @Query("SELECT COUNT(id) FROM transactions")
+    suspend fun getTotalTransactions(): Int?
+
+    @Query("SELECT SUM(subtotal - (buyPrice * quantity)) FROM transaction_items")
+    suspend fun getNetProfit(): Double?
+
+    @Query("SELECT * FROM transactions ORDER BY transactionTime DESC LIMIT :limit")
+    fun getRecentTransactionsFlow(limit: Int): kotlinx.coroutines.flow.Flow<List<LocalTransactionEntity>>
 }

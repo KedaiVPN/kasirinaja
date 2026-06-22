@@ -114,6 +114,14 @@ fun MainScreen() {
         }
     }
 
+    val dashboardViewModel: com.kasirinaja.store.ui.viewmodels.DashboardViewModel = viewModel(
+        factory = com.kasirinaja.store.ui.viewmodels.DashboardViewModel.Factory(
+            database.transactionDao(),
+            database.productDao(),
+            com.kasirinaja.core.network.RetrofitClient.transactionApi
+        )
+    )
+
     val scanViewModel: ScanViewModel = viewModel(
         factory = object : androidx.lifecycle.ViewModelProvider.Factory {
             override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
@@ -227,7 +235,7 @@ fun MainScreen() {
                     }
                 )
             }
-            composable(Screen.Dashboard.route) { DashboardScreen() }
+            composable(Screen.Dashboard.route) { DashboardScreen(dashboardViewModel) }
             composable(Screen.Stock.route) {
                 StockScreen(
                     onNavigateToAddProduct = {
