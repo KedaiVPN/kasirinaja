@@ -1,5 +1,4 @@
 package com.kasirinaja.store.ui.viewmodels
-
 import android.media.AudioManager
 import android.media.ToneGenerator
 import androidx.lifecycle.ViewModel
@@ -15,14 +14,25 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.kasirinaja.store.data.repository.TransactionRepository
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import androidx.work.ExistingWorkPolicy
+import androidx.work.WorkManager
+import com.kasirinaja.store.worker.TransactionSyncWorker
+
 
 data class CartItem(
     val product: ProductEntity,
     var quantity: Int
 )
 
+
 class ScanViewModel(
-    val repository: ProductRepository
+    val repository: ProductRepository,
+    private val transactionRepository: TransactionRepository? = null,
+    private val workManager: WorkManager? = null
 ) : ViewModel() {
 
     private val _cartItems = MutableStateFlow<List<CartItem>>(emptyList())
@@ -127,7 +137,7 @@ class ScanViewModel(
                 changeAmount = changeAmount,
                 paymentMethod = "CASH",
                 transactionTime = System.currentTimeMillis(),
-                syncStatus = "PENDING",
+                syncStatus = "pending",
                 deviceId = "device_1"
             )
 
@@ -136,7 +146,7 @@ class ScanViewModel(
                     id = UUID.randomUUID().toString(),
                     transactionId = transactionId,
                     storeProductId = cartItem.product.id,
-                    masterProductId = cartItem.product.id, // Assuming same for local dummy
+                    masterProductId = cartItem.product.id, // Fallback if missing
                     barcode = cartItem.product.barcode ?: "",
                     productName = cartItem.product.name,
                     quantity = cartItem.quantity,
@@ -146,7 +156,23 @@ class ScanViewModel(
                 )
             }
 
-            repository.saveTransaction(transaction, transactionItems)
+            transactionRepository?.saveTransactionLocally(transaction, transactionItems)
+
+            // Enqueue worker to sync immediately with network constraints
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+
+            val syncRequest = OneTimeWorkRequestBuilder<TransactionSyncWorker>()
+                .setConstraints(constraints)
+                .build()
+
+            workManager?.enqueueUniqueWork(
+                "TransactionSyncWork",
+                ExistingWorkPolicy.REPLACE,
+                syncRequest
+            )
+
             clearCart()
             onTransactionSaved(transactionId)
         }

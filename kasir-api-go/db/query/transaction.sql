@@ -13,3 +13,11 @@ INSERT INTO transaction_items (
   $1, $2, $3, $4, $5, $6, $7, $8, $9
 )
 RETURNING *;
+
+-- name: CreateStockMovement :one
+INSERT INTO stock_movements (
+  store_id, store_product_id, movement_type, quantity, reference_type, reference_id
+) VALUES (
+  $1, $2, $3, $4, $5, $6
+)
+RETURNING *;
