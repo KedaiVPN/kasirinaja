@@ -10,6 +10,7 @@ import com.kasirinaja.store.data.local.ProductEntity
 import com.kasirinaja.store.data.repository.ProductRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,6 +35,8 @@ class ScanViewModel(
     private val transactionRepository: TransactionRepository? = null,
     private val workManager: WorkManager? = null
 ) : ViewModel() {
+
+    val products: Flow<List<ProductEntity>> = repository.allProducts
 
     private val _cartItems = MutableStateFlow<List<CartItem>>(emptyList())
     val cartItems: StateFlow<List<CartItem>> = _cartItems.asStateFlow()
@@ -67,26 +70,30 @@ class ScanViewModel(
         viewModelScope.launch {
             val product = repository.getProductByBarcode(trimmedBarcode)
             if (product != null) {
-                // Play sound
-                playBeepSound()
-
-                // Add to cart or increment
-                val currentCart = _cartItems.value.toMutableList()
-                val existingItemIndex = currentCart.indexOfFirst { it.product.id == product.id }
-
-                if (existingItemIndex != -1) {
-                    val existingItem = currentCart[existingItemIndex]
-                    currentCart[existingItemIndex] = existingItem.copy(quantity = existingItem.quantity + 1)
-                } else {
-                    currentCart.add(CartItem(product, 1))
-                }
-
-                _cartItems.value = currentCart
+                addProductToCart(product)
             } else {
                 playErrorSound()
                 _toastMessage.emit("Produk tidak ditemukan: $trimmedBarcode")
             }
         }
+    }
+
+    fun addProductToCart(product: ProductEntity) {
+        // Play sound
+        playBeepSound()
+
+        // Add to cart or increment
+        val currentCart = _cartItems.value.toMutableList()
+        val existingItemIndex = currentCart.indexOfFirst { it.product.id == product.id }
+
+        if (existingItemIndex != -1) {
+            val existingItem = currentCart[existingItemIndex]
+            currentCart[existingItemIndex] = existingItem.copy(quantity = existingItem.quantity + 1)
+        } else {
+            currentCart.add(CartItem(product, 1))
+        }
+
+        _cartItems.value = currentCart
     }
 
     fun incrementQuantity(product: ProductEntity) {
