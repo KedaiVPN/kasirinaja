@@ -25,10 +25,15 @@ import androidx.compose.material3.*
 import android.widget.Toast
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
@@ -36,11 +41,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import coil.compose.AsyncImage
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import com.kasirinaja.store.ui.viewmodels.ScanViewModel
 import com.kasirinaja.core.utils.FormatUtils
+import com.kasirinaja.store.utils.FileUtil
 import java.util.concurrent.Executors
 import java.util.concurrent.ExecutorService
 import androidx.compose.runtime.DisposableEffect
@@ -54,7 +61,11 @@ fun ScanScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val cartItems by viewModel.cartItems.collectAsState()
+    val products by viewModel.products.collectAsState(initial = emptyList())
     val totalAmount = viewModel.getTotalAmount()
+
+    var showCamera by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         viewModel.toastMessage.collect { message ->
@@ -94,63 +105,29 @@ fun ScanScreen(
     }
 
     if (hasCameraPermission) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            // Camera Preview
-            AndroidView(
-                factory = { ctx ->
-                    val previewView = PreviewView(ctx)
-                    val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
+        val filteredProducts = remember(searchQuery, products) {
+            if (searchQuery.isEmpty()) products else {
+                products.filter { product ->
+                    product.name.contains(searchQuery, ignoreCase = true)
+                }
+            }
+        }
 
-                    cameraProviderFuture.addListener({
-                        val cameraProvider = cameraProviderFuture.get()
-                        val preview = Preview.Builder().build().also {
-                            it.setSurfaceProvider(previewView.surfaceProvider)
-                        }
-
-                        val imageAnalyzer = ImageAnalysis.Builder()
-                            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                            .build()
-
-                        imageAnalyzer.setAnalyzer(cameraExecutor, ContinuousBarcodeAnalyzer { barcodeValue ->
-                            viewModel.onBarcodeScanned(barcodeValue)
-                        })
-
-                        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
-                        try {
-                            cameraProvider.unbindAll()
-                            cameraProvider.bindToLifecycle(
-                                lifecycleOwner,
-                                cameraSelector,
-                                preview,
-                                imageAnalyzer
-                            )
-                        } catch (exc: Exception) {
-                            Log.e("ScanScreen", "Use case binding failed", exc)
-                        }
-                    }, ContextCompat.getMainExecutor(ctx))
-
-                    previewView
-                },
-                modifier = Modifier.fillMaxSize()
-            )
-
-            // UI Overlay for Cart
-            if (cartItems.isNotEmpty()) {
-                BottomSheetScaffold(
-                    sheetContent = {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
-                                .heightIn(max = 400.dp)
-                        ) {
-                            Text(
-                                text = "Keranjang Belanja",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp,
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
+        BottomSheetScaffold(
+            sheetContent = {
+                if (cartItems.isNotEmpty()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .heightIn(max = 400.dp)
+                    ) {
+                        Text(
+                            text = "Keranjang Belanja",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
 
                             LazyColumn(
                                 modifier = Modifier.weight(1f)
@@ -186,43 +163,185 @@ fun ScanScreen(
                                 }
                             }
 
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 16.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column {
-                                    Text("Total Harga")
-                                    Text(
-                                        text = FormatUtils.formatCurrency(totalAmount.toLong()),
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 18.sp
-                                    )
-                                }
-                                Button(onClick = onNavigateToPayment) {
-                                    Text("Bayar")
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text("Total Harga")
+                                Text(
+                                    text = FormatUtils.formatCurrency(totalAmount.toLong()),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp
+                                )
+                            }
+                            Button(onClick = onNavigateToPayment) {
+                                Text("Bayar")
+                            }
+                        }
+                    }
+                } else {
+                    Box(modifier = Modifier.height(0.dp))
+                }
+            },
+            sheetPeekHeight = if (cartItems.isNotEmpty()) 200.dp else 0.dp,
+            sheetContainerColor = MaterialTheme.colorScheme.surface,
+            containerColor = Color.Transparent
+        ) { paddingValues ->
+            Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+                if (!showCamera) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            OutlinedTextField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                modifier = Modifier.weight(1f),
+                                placeholder = { Text("Cari nama produk...") },
+                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                                singleLine = true
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            IconButton(onClick = { showCamera = true }) {
+                                Icon(Icons.Default.QrCodeScanner, contentDescription = "Scan Barcode")
+                            }
+                        }
+
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(filteredProducts) { product ->
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        if (product.imageUrl.isNullOrEmpty()) {
+                                            Icon(
+                                                imageVector = Icons.Filled.Image,
+                                                contentDescription = "No Image",
+                                                modifier = Modifier.size(64.dp),
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        } else {
+                                            val safeImageUrl = product.imageUrl
+                                            val fileName = FileUtil.extractFileNameFromUrl(safeImageUrl)
+                                            val localFile = FileUtil.getLocalImagePath(context, fileName)
+
+                                            val imageModel = remember(fileName) {
+                                                if (product.imageUrl.startsWith("content://") || product.imageUrl.startsWith("file://") || product.imageUrl.startsWith("http")) {
+                                                    product.imageUrl
+                                                } else if (FileUtil.isImageExistsLocally(context, fileName)) {
+                                                    localFile
+                                                } else {
+                                                    "${com.kasirinaja.core.network.RetrofitClient.IMAGE_BASE_URL}${if(product.imageUrl.startsWith("/")) product.imageUrl else "/${product.imageUrl}"}"
+                                                }
+                                            }
+
+                                            AsyncImage(
+                                                model = imageModel,
+                                                contentDescription = product.name,
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier.size(64.dp)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(16.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = product.name,
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Text(text = "Kategori: ${product.category}", style = MaterialTheme.typography.bodySmall)
+                                            Text(
+                                                text = "Harga: ${FormatUtils.formatCurrency(product.sellPrice)}",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                        Button(onClick = { viewModel.addProductToCart(product) }) {
+                                            Text("Beli")
+                                        }
+                                    }
                                 }
                             }
                         }
-                    },
-                    sheetPeekHeight = 200.dp,
-                    sheetContainerColor = MaterialTheme.colorScheme.surface,
-                    containerColor = Color.Transparent
-                ) {
-                    // Empty content for scaffold body
+                    }
+                } else {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        TopAppBar(
+                            title = { Text("Scan Barcode") },
+                            navigationIcon = {
+                                IconButton(onClick = { showCamera = false }) {
+                                    Icon(Icons.Default.ArrowBack, contentDescription = "Kembali")
+                                }
+                            }
+                        )
+                        Box(modifier = Modifier.fillMaxSize().padding(16.dp).clip(RoundedCornerShape(16.dp))) {
+                            AndroidView(
+                                factory = { ctx ->
+                                    val previewView = PreviewView(ctx)
+                                    val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
+
+                                    cameraProviderFuture.addListener({
+                                        val cameraProvider = cameraProviderFuture.get()
+                                        val preview = Preview.Builder().build().also {
+                                            it.setSurfaceProvider(previewView.surfaceProvider)
+                                        }
+
+                                        val imageAnalyzer = ImageAnalysis.Builder()
+                                            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                                            .build()
+
+                                        imageAnalyzer.setAnalyzer(cameraExecutor, ContinuousBarcodeAnalyzer { barcodeValue ->
+                                            viewModel.onBarcodeScanned(barcodeValue)
+                                        })
+
+                                        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+
+                                        try {
+                                            cameraProvider.unbindAll()
+                                            cameraProvider.bindToLifecycle(
+                                                lifecycleOwner,
+                                                cameraSelector,
+                                                preview,
+                                                imageAnalyzer
+                                            )
+                                        } catch (exc: Exception) {
+                                            Log.e("ScanScreen", "Use case binding failed", exc)
+                                        }
+                                    }, ContextCompat.getMainExecutor(ctx))
+
+                                    previewView
+                                },
+                                modifier = Modifier.fillMaxSize()
+                            )
+                            Text(
+                                text = "Arahkan barcode ke area ini",
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .padding(bottom = 32.dp)
+                                    .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                                    .padding(16.dp),
+                                color = Color.White
+                            )
+                        }
+                    }
                 }
-            } else {
-                Text(
-                    text = "Arahkan barcode ke area ini",
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 32.dp)
-                        .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                        .padding(16.dp),
-                    color = Color.White
-                )
             }
         }
     } else {
