@@ -75,10 +75,18 @@ fun MainScreen() {
     )
     val workManager = androidx.work.WorkManager.getInstance(context)
 
+        val dashboardViewModel: com.kasirinaja.store.ui.viewmodels.DashboardViewModel = viewModel(
+        factory = com.kasirinaja.store.ui.viewmodels.DashboardViewModel.Factory(
+            database.transactionDao(),
+            database.productDao(),
+            com.kasirinaja.core.network.RetrofitClient.transactionApi
+        )
+    )
+
     var showSyncDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        transactionRepository.syncStatus.collect { status ->
+        com.kasirinaja.store.data.repository.TransactionSyncState.syncStatus.collect { status ->
             when (status) {
                 "sync_started" -> {
                     showSyncDialog = true
@@ -87,6 +95,7 @@ fun MainScreen() {
                 "sync_success" -> {
                     showSyncDialog = false
                     android.widget.Toast.makeText(context, "Sinkronisasi berhasil!", android.widget.Toast.LENGTH_SHORT).show()
+                    dashboardViewModel.fetchServerStats()
                 }
                 "sync_failed" -> {
                     showSyncDialog = false
@@ -114,13 +123,7 @@ fun MainScreen() {
         }
     }
 
-    val dashboardViewModel: com.kasirinaja.store.ui.viewmodels.DashboardViewModel = viewModel(
-        factory = com.kasirinaja.store.ui.viewmodels.DashboardViewModel.Factory(
-            database.transactionDao(),
-            database.productDao(),
-            com.kasirinaja.core.network.RetrofitClient.transactionApi
-        )
-    )
+
 
     val scanViewModel: ScanViewModel = viewModel(
         factory = object : androidx.lifecycle.ViewModelProvider.Factory {

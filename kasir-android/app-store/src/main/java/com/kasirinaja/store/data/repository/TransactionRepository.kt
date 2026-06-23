@@ -6,20 +6,26 @@ import com.kasirinaja.core.network.TransactionItemRequest
 import com.kasirinaja.store.data.local.TransactionDao
 import com.kasirinaja.store.data.local.LocalTransactionEntity
 import com.kasirinaja.store.data.local.LocalTransactionItemEntity
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
+object TransactionSyncState {
+    private val _syncStatus = MutableSharedFlow<String>()
+    val syncStatus = _syncStatus.asSharedFlow()
+
+    suspend fun emit(status: String) {
+        _syncStatus.emit(status)
+    }
+}
 
 class TransactionRepository(
     private val transactionDao: TransactionDao,
     private val transactionApi: TransactionApi
 ) {
-    private val _syncStatus = MutableSharedFlow<String>()
-    val syncStatus = _syncStatus.asSharedFlow()
     suspend fun saveTransactionLocally(
         transaction: LocalTransactionEntity,
         items: List<LocalTransactionItemEntity>
@@ -31,7 +37,7 @@ class TransactionRepository(
     suspend fun syncPendingTransactions() {
         val pendingTransactions = transactionDao.getPendingTransactions()
         if (pendingTransactions.isNotEmpty()) {
-            _syncStatus.emit("sync_started")
+            TransactionSyncState.emit("sync_started")
         }
 
         var anyFailed = false
@@ -86,9 +92,9 @@ class TransactionRepository(
 
         if (pendingTransactions.isNotEmpty()) {
             if (anyFailed) {
-                _syncStatus.emit("sync_failed")
+                TransactionSyncState.emit("sync_failed")
             } else if (anySuccess) {
-                _syncStatus.emit("sync_success")
+                TransactionSyncState.emit("sync_success")
             }
         }
     }
