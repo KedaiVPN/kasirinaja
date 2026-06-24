@@ -10,7 +10,7 @@ interface TransactionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransaction(transaction: LocalTransactionEntity)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertTransactionItems(items: List<LocalTransactionItemEntity>)
 
     @Query("SELECT * FROM transactions WHERE id = :transactionId")
