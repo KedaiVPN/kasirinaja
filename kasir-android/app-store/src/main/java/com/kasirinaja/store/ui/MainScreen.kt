@@ -28,6 +28,9 @@ import androidx.compose.foundation.layout.padding
 import com.kasirinaja.store.ui.viewmodels.ScanViewModelFactory
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.compose.material3.Text
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.foundation.layout.Box
 import com.kasirinaja.store.ui.screens.MasterScreen
 import androidx.compose.material3.Icon
 import com.kasirinaja.store.ui.navigation.Screen
@@ -45,6 +48,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.kasirinaja.store.ui.screens.ReceiptScreen
 import androidx.navigation.compose.NavHost
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import com.kasirinaja.store.ui.viewmodels.ReceiptViewModelFactory
 
 
@@ -159,9 +163,11 @@ fun MainScreen() {
         Screen.Dashboard,
         Screen.Stock,
         Screen.Scan,
-        Screen.Master,
-        Screen.Settings
+        Screen.More
     )
+
+    var showMoreMenu by remember { mutableStateOf(false) }
+    val bottomBarVisibleScreens = listOf(Screen.Dashboard.route, Screen.Stock.route, Screen.Scan.route, Screen.Master.route, Screen.Settings.route)
 
     Scaffold(
         bottomBar = {
@@ -169,32 +175,65 @@ fun MainScreen() {
             val currentDestination = navBackStackEntry?.destination
             val currentRoute = currentDestination?.route
 
-            if (bottomBarScreens.any { it.route == currentRoute }) {
-            NavigationBar {
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentDestination = navBackStackEntry?.destination
-                val currentRoute = currentDestination?.route
-
-                // Only show bottom bar on main screens
-                if (bottomBarScreens.any { it.route == currentRoute }) {
+            if (bottomBarVisibleScreens.contains(currentRoute)) {
+                NavigationBar {
                     bottomBarScreens.forEach { screen ->
-                        NavigationBarItem(
-                            icon = { Icon(screen.icon, contentDescription = screen.title) },
-                            label = { Text(screen.title) },
-                            selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
-                            onClick = {
-                                navController.navigate(screen.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
+                        if (screen == Screen.More) {
+                            Box(modifier = Modifier.weight(1f)) {
+                                this@NavigationBar.NavigationBarItem(
+                                    icon = { Icon(screen.icon, contentDescription = screen.title) },
+                                    label = { Text(screen.title) },
+                                    selected = currentDestination?.hierarchy?.any { it.route == Screen.Master.route || it.route == Screen.Settings.route } == true,
+                                    onClick = { showMoreMenu = true }
+                                )
+                                DropdownMenu(
+                                    expanded = showMoreMenu,
+                                    onDismissRequest = { showMoreMenu = false }
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text("Master") },
+                                        leadingIcon = { Icon(Screen.Master.icon, contentDescription = "Master") },
+                                        onClick = {
+                                            showMoreMenu = false
+                                            navController.navigate(Screen.Master.route) {
+                                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                                launchSingleTop = true
+                                                restoreState = true
+                                            }
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Pengaturan") },
+                                        leadingIcon = { Icon(Screen.Settings.icon, contentDescription = "Pengaturan") },
+                                        onClick = {
+                                            showMoreMenu = false
+                                            navController.navigate(Screen.Settings.route) {
+                                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                                launchSingleTop = true
+                                                restoreState = true
+                                            }
+                                        }
+                                    )
                                 }
                             }
-                        )
+                        } else {
+                            NavigationBarItem(
+                                icon = { Icon(screen.icon, contentDescription = screen.title) },
+                                label = { Text(screen.title) },
+                                selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                                onClick = {
+                                    navController.navigate(screen.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
-            }
             }
         }
     ) { innerPadding ->
