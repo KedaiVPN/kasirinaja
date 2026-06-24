@@ -12,6 +12,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import java.util.UUID
 
 object TransactionSyncState {
     private val _syncStatus = MutableSharedFlow<String>()
@@ -96,6 +97,65 @@ class TransactionRepository(
             } else if (anySuccess) {
                 TransactionSyncState.emit("sync_success")
             }
+        }
+    }
+
+    suspend fun fetchAndSaveAllTransactions() {
+        try {
+            val response = transactionApi.getAllTransactions()
+            if (response.isSuccessful) {
+                val remoteTransactions = response.body() ?: emptyList()
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
+                dateFormat.timeZone = TimeZone.getTimeZone("UTC")
+
+                for (remoteTx in remoteTransactions) {
+                    val existingTx = transactionDao.getTransactionById(remoteTx.id)
+                    if (existingTx == null) {
+                        var transactionTime = System.currentTimeMillis()
+                        try {
+                            val parsedDate = dateFormat.parse(remoteTx.transaction_time)
+                            if (parsedDate != null) {
+                                transactionTime = parsedDate.time
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+
+                        val localTx = LocalTransactionEntity(
+                            id = remoteTx.id,
+                            storeId = remoteTx.store_id,
+                            cashierId = remoteTx.cashier_id,
+                            invoiceNumber = remoteTx.invoice_number,
+                            totalAmount = remoteTx.total_amount.toDouble(),
+                            paidAmount = remoteTx.paid_amount.toDouble(),
+                            changeAmount = remoteTx.change_amount.toDouble(),
+                            paymentMethod = remoteTx.payment_method,
+                            transactionTime = transactionTime,
+                            syncStatus = "synced",
+                            deviceId = remoteTx.device_id
+                        )
+
+                        val localItems = remoteTx.items.map { item ->
+                            LocalTransactionItemEntity(
+                                id = UUID.randomUUID().toString(),
+                                transactionId = remoteTx.id,
+                                storeProductId = item.store_product_id,
+                                masterProductId = item.master_product_id,
+                                barcode = item.barcode,
+                                productName = item.product_name,
+                                quantity = item.quantity,
+                                buyPrice = item.buy_price.toDouble(),
+                                sellPrice = item.sell_price.toDouble(),
+                                subtotal = item.subtotal.toDouble()
+                            )
+                        }
+
+                        saveTransactionLocally(localTx, localItems)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }

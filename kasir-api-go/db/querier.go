@@ -28,6 +28,7 @@ type Querier interface {
 	DeleteStoreProduct(ctx context.Context, id pgtype.UUID) error
 	DeleteStoreProductsByMasterID(ctx context.Context, masterProductID pgtype.UUID) error
 	DeleteTransactionItemsByMasterProduct(ctx context.Context, masterProductID pgtype.UUID) error
+	GetAllStoreTransactions(ctx context.Context, storeID pgtype.UUID) ([]Transaction, error)
 	GetCategoryByName(ctx context.Context, name string) (Category, error)
 	GetMasterProduct(ctx context.Context, id pgtype.UUID) (MasterProduct, error)
 	GetPendingProduct(ctx context.Context, id pgtype.UUID) (PendingProduct, error)
@@ -35,6 +36,7 @@ type Querier interface {
 	GetStore(ctx context.Context, id pgtype.UUID) (Store, error)
 	GetStoreDashboardStats(ctx context.Context, storeID pgtype.UUID) (GetStoreDashboardStatsRow, error)
 	GetStoreProduct(ctx context.Context, id pgtype.UUID) (StoreProduct, error)
+	GetTransactionItemsByTransactionId(ctx context.Context, transactionID pgtype.UUID) ([]TransactionItem, error)
 	GetUser(ctx context.Context, id pgtype.UUID) (User, error)
 	GetUserByEmail(ctx context.Context, email pgtype.Text) (User, error)
 	ListMasterProducts(ctx context.Context) ([]ListMasterProductsRow, error)

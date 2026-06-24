@@ -41,3 +41,12 @@ SELECT * FROM transactions
 WHERE store_id = $1
 ORDER BY transaction_time DESC
 LIMIT 5;
+
+-- name: GetAllStoreTransactions :many
+SELECT * FROM transactions
+WHERE store_id = $1
+ORDER BY transaction_time DESC;
+
+-- name: GetTransactionItemsByTransactionId :many
+SELECT * FROM transaction_items
+WHERE transaction_id = $1;

@@ -214,3 +214,87 @@ func (h *TransactionHandler) GetDashboardStats(c *gin.Context) {
 		RecentTransactions: recentTx,
 	})
 }
+
+type TransactionResponse struct {
+	ID              string                         `json:"id"`
+	StoreID         string                         `json:"store_id"`
+	CashierID       string                         `json:"cashier_id"`
+	InvoiceNumber   string                         `json:"invoice_number"`
+	TotalAmount     int64                          `json:"total_amount"`
+	PaidAmount      int64                          `json:"paid_amount"`
+	ChangeAmount    int64                          `json:"change_amount"`
+	PaymentMethod   string                         `json:"payment_method"`
+	TransactionTime string                         `json:"transaction_time"`
+	SyncStatus      string                         `json:"sync_status"`
+	DeviceID        string                         `json:"device_id"`
+	Items           []CreateTransactionItemRequest `json:"items"`
+}
+
+func (h *TransactionHandler) GetAllTransactions(c *gin.Context) {
+	ctx := c.Request.Context()
+	storeIDStr := c.GetString("store_id")
+
+	if storeIDStr == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	storeIDBytes, err := uuid.Parse(storeIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid store id"})
+		return
+	}
+
+	transactions, err := h.queries.GetAllStoreTransactions(ctx, pgtype.UUID{Bytes: storeIDBytes, Valid: true})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch transactions"})
+		return
+	}
+
+	var response []TransactionResponse
+	for _, tx := range transactions {
+		items, err := h.queries.GetTransactionItemsByTransactionId(ctx, tx.ID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch transaction items"})
+			return
+		}
+
+		var itemResponses []CreateTransactionItemRequest
+		for _, item := range items {
+			storeProductID, _ := uuid.FromBytes(item.StoreProductID.Bytes[:])
+			masterProductID, _ := uuid.FromBytes(item.MasterProductID.Bytes[:])
+
+			itemResponses = append(itemResponses, CreateTransactionItemRequest{
+				StoreProductID:  storeProductID.String(),
+				MasterProductID: masterProductID.String(),
+				ProductName:     item.ProductName,
+				Barcode:         item.Barcode,
+				Quantity:        item.Quantity,
+				BuyPrice:        item.BuyPrice,
+				SellPrice:       item.SellPrice,
+				Subtotal:        item.Subtotal,
+			})
+		}
+
+		txID, _ := uuid.FromBytes(tx.ID.Bytes[:])
+		storeID, _ := uuid.FromBytes(tx.StoreID.Bytes[:])
+		cashierID, _ := uuid.FromBytes(tx.CashierID.Bytes[:])
+
+		response = append(response, TransactionResponse{
+			ID:              txID.String(),
+			StoreID:         storeID.String(),
+			CashierID:       cashierID.String(),
+			InvoiceNumber:   tx.InvoiceNumber,
+			TotalAmount:     tx.TotalAmount,
+			PaidAmount:      tx.PaidAmount,
+			ChangeAmount:    tx.ChangeAmount,
+			PaymentMethod:   tx.PaymentMethod,
+			TransactionTime: tx.TransactionTime.Time.Format(time.RFC3339),
+			SyncStatus:      tx.SyncStatus,
+			DeviceID:        tx.DeviceID.String,
+			Items:           itemResponses,
+		})
+	}
+
+	c.JSON(http.StatusOK, response)
+}

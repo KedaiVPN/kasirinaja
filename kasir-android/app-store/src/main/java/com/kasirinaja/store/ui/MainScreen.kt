@@ -145,7 +145,7 @@ fun MainScreen() {
     )
 
     val historyViewModel: HistoryViewModel = viewModel(
-        factory = HistoryViewModelFactory(transactionDao)
+        factory = HistoryViewModelFactory(transactionDao, transactionRepository)
     )
 
     var startDest by remember { mutableStateOf(Screen.Login.route) }

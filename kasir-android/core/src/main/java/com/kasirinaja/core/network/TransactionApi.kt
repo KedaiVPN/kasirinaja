@@ -32,6 +32,21 @@ data class TransactionRequest(
 )
 
 
+data class TransactionResponse(
+    val id: String,
+    val store_id: String,
+    val cashier_id: String,
+    val invoice_number: String,
+    val total_amount: Long,
+    val paid_amount: Long,
+    val change_amount: Long,
+    val payment_method: String,
+    val transaction_time: String,
+    val sync_status: String,
+    val device_id: String,
+    val items: List<TransactionItemRequest>
+)
+
 data class DashboardStatsResponse(
     val total_revenue: Long,
     val total_transactions: Int,
@@ -46,4 +61,7 @@ interface TransactionApi {
 
     @GET("transactions/dashboard")
     suspend fun getDashboardStats(): DashboardStatsResponse
+
+    @GET("transactions/")
+    suspend fun getAllTransactions(): retrofit2.Response<List<TransactionResponse>>
 }
