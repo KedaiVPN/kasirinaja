@@ -161,6 +161,47 @@ func (q *Queries) CreateTransactionItem(ctx context.Context, arg CreateTransacti
 	return i, err
 }
 
+const getAllStoreTransactions = `-- name: GetAllStoreTransactions :many
+SELECT id, store_id, cashier_id, invoice_number, total_amount, paid_amount, change_amount, payment_method, transaction_time, sync_status, device_id, is_active, created_at, updated_at FROM transactions
+WHERE store_id = $1
+ORDER BY transaction_time DESC
+`
+
+func (q *Queries) GetAllStoreTransactions(ctx context.Context, storeID pgtype.UUID) ([]Transaction, error) {
+	rows, err := q.db.Query(ctx, getAllStoreTransactions, storeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Transaction
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.StoreID,
+			&i.CashierID,
+			&i.InvoiceNumber,
+			&i.TotalAmount,
+			&i.PaidAmount,
+			&i.ChangeAmount,
+			&i.PaymentMethod,
+			&i.TransactionTime,
+			&i.SyncStatus,
+			&i.DeviceID,
+			&i.IsActive,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getRecentStoreTransactions = `-- name: GetRecentStoreTransactions :many
 SELECT id, store_id, cashier_id, invoice_number, total_amount, paid_amount, change_amount, payment_method, transaction_time, sync_status, device_id, is_active, created_at, updated_at FROM transactions
 WHERE store_id = $1
@@ -235,4 +276,43 @@ func (q *Queries) GetStoreDashboardStats(ctx context.Context, storeID pgtype.UUI
 		&i.NetProfit,
 	)
 	return i, err
+}
+
+const getTransactionItemsByTransactionId = `-- name: GetTransactionItemsByTransactionId :many
+SELECT id, transaction_id, store_product_id, master_product_id, product_name, barcode, quantity, buy_price, sell_price, subtotal, is_active, created_at, updated_at FROM transaction_items
+WHERE transaction_id = $1
+`
+
+func (q *Queries) GetTransactionItemsByTransactionId(ctx context.Context, transactionID pgtype.UUID) ([]TransactionItem, error) {
+	rows, err := q.db.Query(ctx, getTransactionItemsByTransactionId, transactionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TransactionItem
+	for rows.Next() {
+		var i TransactionItem
+		if err := rows.Scan(
+			&i.ID,
+			&i.TransactionID,
+			&i.StoreProductID,
+			&i.MasterProductID,
+			&i.ProductName,
+			&i.Barcode,
+			&i.Quantity,
+			&i.BuyPrice,
+			&i.SellPrice,
+			&i.Subtotal,
+			&i.IsActive,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

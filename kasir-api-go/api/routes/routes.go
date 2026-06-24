@@ -63,6 +63,7 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 		{
 			transactions.POST("/", transactionHandler.CreateTransaction)
 			transactions.GET("/dashboard", transactionHandler.GetDashboardStats)
+			transactions.GET("/", transactionHandler.GetAllTransactions)
 		}
 
 		// WebSocket routes
