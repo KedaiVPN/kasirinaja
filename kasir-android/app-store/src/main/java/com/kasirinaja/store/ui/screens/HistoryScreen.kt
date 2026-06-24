@@ -50,7 +50,7 @@ fun HistoryScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(transactions) { transaction ->
+                items(transactions.distinctBy { it.id }) { transaction ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()

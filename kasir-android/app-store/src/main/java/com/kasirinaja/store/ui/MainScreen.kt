@@ -332,9 +332,7 @@ fun MainScreen() {
                     viewModel = receiptViewModel,
                     transactionId = transactionId,
                     onNavigateBack = {
-                        navController.navigate(Screen.Dashboard.route) {
-                            popUpTo(0)
-                        }
+                        navController.popBackStack()
                     }
                 )
             }
