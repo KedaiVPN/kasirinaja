@@ -25,6 +25,9 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE syncStatus = 'pending' ORDER BY transactionTime DESC")
     fun getPendingTransactionsFlow(): kotlinx.coroutines.flow.Flow<List<LocalTransactionEntity>>
 
+    @Query("SELECT * FROM transactions ORDER BY transactionTime DESC")
+    fun getAllTransactionsFlow(): kotlinx.coroutines.flow.Flow<List<LocalTransactionEntity>>
+
     @Query("UPDATE transactions SET syncStatus = :status WHERE id = :transactionId")
     suspend fun updateTransactionSyncStatus(transactionId: String, status: String)
 

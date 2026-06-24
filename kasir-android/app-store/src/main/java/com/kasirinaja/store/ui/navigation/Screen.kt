@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.PointOfSale
 import androidx.compose.material.icons.filled.Settings
@@ -14,6 +15,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     object Dashboard : Screen("dashboard", "Dashboard", Icons.Filled.Home)
     object Stock : Screen("stock", "Produk & Stok", Icons.Filled.Inventory)
+    object History : Screen("history", "Riwayat", Icons.Filled.History)
     object Scan : Screen("scan", "Transaksi", Icons.Filled.PointOfSale)
     object Master : Screen("master", "Master", Icons.Filled.List)
     object Settings : Screen("settings", "Pengaturan", Icons.Filled.Settings)
