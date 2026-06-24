@@ -44,7 +44,7 @@ data class TransactionResponse(
     val transaction_time: String,
     val sync_status: String,
     val device_id: String,
-    val items: List<TransactionItemRequest>
+    val items: List<TransactionItemRequest>?
 )
 
 data class DashboardStatsResponse(
