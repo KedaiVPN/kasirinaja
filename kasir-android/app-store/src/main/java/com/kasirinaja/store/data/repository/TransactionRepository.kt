@@ -135,7 +135,8 @@ class TransactionRepository(
                             deviceId = remoteTx.device_id
                         )
 
-                        val localItems = remoteTx.items.map { item ->
+                        val itemsList = remoteTx.items ?: emptyList()
+                        val localItems = itemsList.map { item ->
                             LocalTransactionItemEntity(
                                 id = UUID.randomUUID().toString(),
                                 transactionId = remoteTx.id,

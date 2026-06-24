@@ -251,7 +251,7 @@ func (h *TransactionHandler) GetAllTransactions(c *gin.Context) {
 		return
 	}
 
-	var response []TransactionResponse
+	response := []TransactionResponse{}
 	for _, tx := range transactions {
 		items, err := h.queries.GetTransactionItemsByTransactionId(ctx, tx.ID)
 		if err != nil {
@@ -259,7 +259,7 @@ func (h *TransactionHandler) GetAllTransactions(c *gin.Context) {
 			return
 		}
 
-		var itemResponses []CreateTransactionItemRequest
+		itemResponses := []CreateTransactionItemRequest{}
 		for _, item := range items {
 			storeProductID, _ := uuid.FromBytes(item.StoreProductID.Bytes[:])
 			masterProductID, _ := uuid.FromBytes(item.MasterProductID.Bytes[:])
