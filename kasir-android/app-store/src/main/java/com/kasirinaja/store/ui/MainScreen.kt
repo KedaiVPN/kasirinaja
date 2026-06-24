@@ -16,6 +16,9 @@ import com.kasirinaja.store.ui.viewmodels.ReceiptViewModel
 import com.kasirinaja.store.ui.screens.DashboardScreen
 import com.kasirinaja.store.presentation.auth.RegisterStoreScreen
 import com.kasirinaja.store.ui.screens.PaymentScreen
+import com.kasirinaja.store.ui.screens.HistoryScreen
+import com.kasirinaja.store.ui.viewmodels.HistoryViewModel
+import com.kasirinaja.store.ui.viewmodels.HistoryViewModelFactory
 import androidx.compose.material3.Scaffold
 import androidx.compose.foundation.layout.size
 import com.kasirinaja.store.presentation.auth.AuthViewModel
@@ -141,6 +144,10 @@ fun MainScreen() {
         factory = ReceiptViewModelFactory(productRepository)
     )
 
+    val historyViewModel: HistoryViewModel = viewModel(
+        factory = HistoryViewModelFactory(transactionDao)
+    )
+
     var startDest by remember { mutableStateOf(Screen.Login.route) }
     var isCheckingToken by remember { mutableStateOf(true) }
 
@@ -162,12 +169,13 @@ fun MainScreen() {
     val bottomBarScreens = listOf(
         Screen.Dashboard,
         Screen.Stock,
+        Screen.History,
         Screen.Scan,
         Screen.More
     )
 
     var showMoreMenu by remember { mutableStateOf(false) }
-    val bottomBarVisibleScreens = listOf(Screen.Dashboard.route, Screen.Stock.route, Screen.Scan.route, Screen.Master.route, Screen.Settings.route)
+    val bottomBarVisibleScreens = listOf(Screen.Dashboard.route, Screen.Stock.route, Screen.History.route, Screen.Scan.route, Screen.Master.route, Screen.Settings.route)
 
     Scaffold(
         bottomBar = {
@@ -285,6 +293,14 @@ fun MainScreen() {
                     },
                     onNavigateToEditProduct = { productId ->
                         navController.navigate("${Screen.AddProduct.route}?productId=$productId")
+                    }
+                )
+            }
+            composable(Screen.History.route) {
+                HistoryScreen(
+                    viewModel = historyViewModel,
+                    onNavigateToReceipt = { transactionId ->
+                        navController.navigate("${Screen.Receipt.route}/$transactionId")
                     }
                 )
             }
