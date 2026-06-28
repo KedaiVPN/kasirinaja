@@ -20,7 +20,7 @@ func NewUserHandler(queries *db.Queries) *UserHandler {
 
 type CreateUserRequest struct {
 	FullName string `json:"full_name" binding:"required"`
-	Email    string `json:"email" binding:"required,email"`
+	Email    string `json:"email"`
 	Phone    string `json:"phone" binding:"required"`
 	Password string `json:"password" binding:"required"`
 	Role     string `json:"role" binding:"required"`
