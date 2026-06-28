@@ -134,7 +134,7 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 		Email:        pgtype.Text{String: regData.Email, Valid: true},
 		Phone:        pgtype.Text{String: regData.Phone, Valid: true},
 		PasswordHash: regData.Password,
-		Role:         "store",
+		Role:         "owner",
 		// StoreID will be updated after store creation
 	})
 	if err != nil {
@@ -351,4 +351,111 @@ func InitAdminUser(queries *db.Queries) {
 	} else {
 		log.Println("Admin user initialized successfully.")
 	}
+}
+
+type SwitchUserRequest struct {
+	TargetUserID string `json:"target_user_id" binding:"required"`
+	Password     string `json:"password"` // Required only when switching from cashier back to owner
+}
+
+func (h *AuthHandler) SwitchUser(c *gin.Context) {
+	var req SwitchUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request parameters"})
+		return
+	}
+
+	targetUserIDUUID, err := uuid.Parse(req.TargetUserID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	// currentUserIDStr, _ := c.Get("user_id")
+	currentUserRole, _ := c.Get("role")
+	currentStoreID, _ := c.Get("store_id")
+
+	// Get target user
+	targetUser, err := h.queries.GetUser(c.Request.Context(), pgtype.UUID{Bytes: targetUserIDUUID, Valid: true})
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Target user not found"})
+		return
+	}
+
+	// Verify both users belong to the same store
+	var targetStoreIDStr string
+	if targetUser.StoreID.Valid {
+		parsedStoreID, _ := uuid.FromBytes(targetUser.StoreID.Bytes[:])
+		targetStoreIDStr = parsedStoreID.String()
+	}
+
+	if currentStoreID != targetStoreIDStr {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Users do not belong to the same store"})
+		return
+	}
+
+	// Authorization logic
+	if currentUserRole == "owner" {
+		// Owner can switch to any user in the same store without password
+	} else if currentUserRole == "kasir" && targetUser.Role == "owner" {
+		// Cashier switching to owner requires owner's password
+		if req.Password == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Password required to switch to owner"})
+			return
+		}
+
+		if err := bcrypt.CompareHashAndPassword([]byte(targetUser.PasswordHash), []byte(req.Password)); err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid password"})
+			return
+		}
+	} else {
+		// Cashier switching to another cashier? Or other cases. Disallow for now to keep it simple, or allow without password?
+		// Usually cashier shouldn't switch to another cashier without logging out.
+		c.JSON(http.StatusForbidden, gin.H{"error": "Not allowed to switch user"})
+		return
+	}
+
+	// Generate new token for target user
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = "secret"
+	}
+
+	parsedID, _ := uuid.FromBytes(targetUser.ID.Bytes[:])
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id":  parsedID.String(),
+		"role":     targetUser.Role,
+		"store_id": targetStoreIDStr,
+		"exp":      time.Now().Add(time.Hour * 24).Unix(), // 24 hours
+	})
+
+	tokenString, err := token.SignedString([]byte(jwtSecret))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		return
+	}
+
+	var storeName, storeAddress string
+	if targetUser.StoreID.Valid {
+		store, err := h.queries.GetStore(c.Request.Context(), targetUser.StoreID)
+		if err == nil {
+			storeName = store.StoreName
+			storeAddress = store.Address.String
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "User switched successfully",
+		"token":   tokenString,
+		"user": gin.H{
+			"id":            targetUser.ID,
+			"full_name":     targetUser.FullName,
+			"email":         targetUser.Email.String,
+			"role":          targetUser.Role,
+			"store_id":      targetUser.StoreID,
+			"store_name":    storeName,
+			"store_address": storeAddress,
+		},
+	})
 }

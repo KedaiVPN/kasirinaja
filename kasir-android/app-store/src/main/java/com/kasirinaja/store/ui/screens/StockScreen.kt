@@ -77,6 +77,7 @@ fun StockScreen(
 
     val viewModel: StockViewModel = viewModel(factory = StockViewModelFactory(repository))
     val products by viewModel.products.collectAsState(initial = emptyList())
+    val currentRole = remember { com.kasirinaja.core.network.TokenManager(context).getRole() ?: "owner" }
     val actionState by viewModel.actionState.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
     var productToDelete by remember { mutableStateOf<com.kasirinaja.store.data.local.ProductEntity?>(null) }
@@ -128,8 +129,10 @@ fun StockScreen(
             TopAppBar(title = { Text("Produk & Stok") })
         },
         floatingActionButton = {
+            if (currentRole != "kasir") {
             FloatingActionButton(onClick = onNavigateToAddProduct) {
                 Icon(Icons.Filled.Add, contentDescription = "Tambah Produk")
+            }
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -225,6 +228,7 @@ fun StockScreen(
                                 }
                             }
                             Column {
+                                if (currentRole != "kasir") {
                                 IconButton(onClick = { onNavigateToEditProduct(product.id) }) {
                                     Icon(Icons.Filled.Edit, contentDescription = "Edit", tint = MaterialTheme.colorScheme.primary)
                                 }
@@ -233,6 +237,7 @@ fun StockScreen(
                                     showDeleteDialog = true
                                 }) {
                                     Icon(Icons.Filled.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
+                                }
                                 }
                             }
                         }

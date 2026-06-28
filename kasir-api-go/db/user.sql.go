@@ -136,6 +136,43 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 	return items, nil
 }
 
+const listUsersByStore = `-- name: ListUsersByStore :many
+SELECT id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at FROM users
+WHERE store_id = $1
+ORDER BY created_at ASC
+`
+
+func (q *Queries) ListUsersByStore(ctx context.Context, storeID pgtype.UUID) ([]User, error) {
+	rows, err := q.db.Query(ctx, listUsersByStore, storeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []User
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.FullName,
+			&i.Email,
+			&i.Phone,
+			&i.PasswordHash,
+			&i.Role,
+			&i.StoreID,
+			&i.IsActive,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateUserStoreID = `-- name: UpdateUserStoreID :exec
 UPDATE users SET store_id = $2 WHERE id = $1
 `

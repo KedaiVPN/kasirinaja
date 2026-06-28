@@ -19,6 +19,7 @@ class AuthRepository(
                 val storeId = user?.get("store_id")?.toString()
                 val storeName = user?.get("store_name")?.toString()
                 val storeAddress = user?.get("store_address")?.toString()
+                val role = user?.get("role")?.toString()
                 if (token != null) {
                     tokenManager.saveToken(token)
                     if (storeId != null) {
@@ -29,6 +30,9 @@ class AuthRepository(
                     }
                     if (storeAddress != null) {
                         tokenManager.saveStoreAddress(storeAddress)
+                    }
+                    if (role != null) {
+                        tokenManager.saveRole(role)
                     }
                     Result.success(token)
                 } else {
@@ -73,6 +77,7 @@ class AuthRepository(
                 val storeId = user?.get("store_id")?.toString()
                 val storeName = user?.get("store_name")?.toString()
                 val storeAddress = user?.get("store_address")?.toString()
+                val role = user?.get("role")?.toString()
                 if (token != null) {
                     tokenManager.saveToken(token)
                     if (storeId != null) {
@@ -83,6 +88,9 @@ class AuthRepository(
                     }
                     if (storeAddress != null) {
                         tokenManager.saveStoreAddress(storeAddress)
+                    }
+                    if (role != null) {
+                        tokenManager.saveRole(role)
                     }
                 }
                 val message = response["message"]?.toString() ?: "Success"
@@ -100,6 +108,44 @@ class AuthRepository(
                 val response = authApi.resendOtp(request)
                 val message = response["message"]?.toString() ?: "Success"
                 Result.success(message)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    suspend fun switchUser(targetUserId: String, password: String? = null): Result<String> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val request = mutableMapOf("target_user_id" to targetUserId)
+                if (password != null) {
+                    request["password"] = password
+                }
+                val response = authApi.switchUser(request)
+                val token = response["token"]?.toString()
+                val user = response["user"] as? Map<*, *>
+                val storeId = user?.get("store_id")?.toString()
+                val storeName = user?.get("store_name")?.toString()
+                val storeAddress = user?.get("store_address")?.toString()
+                val role = user?.get("role")?.toString()
+                if (token != null) {
+                    tokenManager.saveToken(token)
+                    if (storeId != null) {
+                        tokenManager.saveStoreId(storeId)
+                    }
+                    if (storeName != null) {
+                        tokenManager.saveStoreName(storeName)
+                    }
+                    if (storeAddress != null) {
+                        tokenManager.saveStoreAddress(storeAddress)
+                    }
+                    if (role != null) {
+                        tokenManager.saveRole(role)
+                    }
+                    Result.success(token)
+                } else {
+                    Result.failure(Exception("Token not found in response"))
+                }
             } catch (e: Exception) {
                 Result.failure(e)
             }

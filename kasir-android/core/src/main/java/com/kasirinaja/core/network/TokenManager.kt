@@ -34,11 +34,20 @@ class TokenManager(context: Context) {
         return prefs.getString("store_address", null)
     }
 
+    fun saveRole(role: String) {
+        prefs.edit().putString("role", role).apply()
+    }
+
+    fun getRole(): String? {
+        return prefs.getString("role", null)
+    }
+
     fun getToken(): String? {
         return prefs.getString("jwt_token", null)
     }
 
     fun clearToken() {
         prefs.edit().remove("jwt_token").apply()
+        prefs.edit().remove("role").apply()
     }
 }

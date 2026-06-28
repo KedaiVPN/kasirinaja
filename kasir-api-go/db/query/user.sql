@@ -19,3 +19,8 @@ SELECT * FROM users
 ORDER BY id;
 -- name: UpdateUserStoreID :exec
 UPDATE users SET store_id = $2 WHERE id = $1;
+
+-- name: ListUsersByStore :many
+SELECT * FROM users
+WHERE store_id = $1
+ORDER BY created_at ASC;

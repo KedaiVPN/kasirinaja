@@ -56,6 +56,7 @@ fun MasterScreen(
     }
 
     // Derived state for filtered products
+    val currentRole = remember { com.kasirinaja.core.network.TokenManager(context).getRole() ?: "owner" }
     val filteredProducts = remember(searchQuery, masterProducts) {
         if (searchQuery.isEmpty()) masterProducts else {
             masterProducts.filter { product ->
@@ -107,7 +108,7 @@ fun MasterScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(filteredProducts) { product ->
-                    MasterProductItem(product = product, onAddClick = {
+                    MasterProductItem(product = product, currentRole = currentRole, onAddClick = {
                         productToEdit = product
                     })
                 }
@@ -149,7 +150,7 @@ fun MasterScreen(
 }
 
 @Composable
-fun MasterProductItem(product: JsonObject, onAddClick: () -> Unit) {
+fun MasterProductItem(product: JsonObject, onAddClick: () -> Unit, currentRole: String) {
     val name = product.get("name")?.asString ?: ""
     val categoryName = product.get("category_name")?.asString ?: product.get("category_id")?.asString ?: ""
     val barcode = product.get("barcode")?.asString ?: ""
@@ -200,8 +201,10 @@ fun MasterProductItem(product: JsonObject, onAddClick: () -> Unit) {
             }
 
             // Add Button
+            if (currentRole != "kasir") {
             IconButton(onClick = onAddClick) {
                 Icon(Icons.Default.Add, contentDescription = "Tambah Produk")
+            }
             }
         }
     }
