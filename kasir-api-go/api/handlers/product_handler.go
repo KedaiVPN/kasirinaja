@@ -38,6 +38,12 @@ type CreateMasterProductRequest struct {
 }
 
 func (h *ProductHandler) CreateMasterProduct(c *gin.Context) {
+
+	role, exists := c.Get("role")
+	if exists && role == "kasir" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Kasir is not allowed to create master product"})
+		return
+	}
 	var req CreateMasterProductRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -201,6 +207,12 @@ type CreateStoreProductRequest struct {
 }
 
 func (h *ProductHandler) CreateStoreProduct(c *gin.Context) {
+
+	role, exists := c.Get("role")
+	if exists && role == "kasir" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Kasir is not allowed to create store product"})
+		return
+	}
 	var req CreateStoreProductRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -344,6 +356,12 @@ type SubmitPendingProductRequest struct {
 }
 
 func (h *ProductHandler) SubmitPendingProduct(c *gin.Context) {
+
+	role, exists := c.Get("role")
+	if exists && role == "kasir" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Kasir is not allowed to submit pending product"})
+		return
+	}
 	var req SubmitPendingProductRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -392,6 +410,12 @@ func (h *ProductHandler) ListPendingProducts(c *gin.Context) {
 }
 
 func (h *ProductHandler) DeleteProduct(c *gin.Context) {
+
+	role, exists := c.Get("role")
+	if exists && role == "kasir" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Kasir is not allowed to delete product"})
+		return
+	}
 	idParam := c.Param("id")
 	status := c.Query("status") // "pending" or "approved"
 
@@ -466,6 +490,12 @@ type UpdateProductRequest struct {
 }
 
 func (h *ProductHandler) UpdateProduct(c *gin.Context) {
+
+	role, exists := c.Get("role")
+	if exists && role == "kasir" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Kasir is not allowed to update product"})
+		return
+	}
 	idParam := c.Param("id")
 	status := c.Query("status") // "pending" or "approved"
 
@@ -521,6 +551,12 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 }
 
 func (h *ProductHandler) DeleteStoreProductSpecific(c *gin.Context) {
+
+	role, exists := c.Get("role")
+	if exists && role == "kasir" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Kasir is not allowed to delete store product"})
+		return
+	}
 	idParam := c.Param("id")
 
 	id, err := uuid.Parse(idParam)

@@ -4,6 +4,9 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 
 interface AuthApi {
+    @POST("auth/switch-user")
+    suspend fun switchUser(@Body request: Map<String, String>): Map<String, Any>
+
     @POST("auth/login")
     suspend fun login(@Body request: Map<String, String>): Map<String, Any>
 

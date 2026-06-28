@@ -211,7 +211,7 @@ fun MainScreen() {
                                         }
                                     )
                                     DropdownMenuItem(
-                                        text = { Text("Pengaturan") },
+                                        text = { Text("Pengaturan Users") },
                                         leadingIcon = { Icon(Screen.Settings.icon, contentDescription = "Pengaturan") },
                                         onClick = {
                                             showMoreMenu = false

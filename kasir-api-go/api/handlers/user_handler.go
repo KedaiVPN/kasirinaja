@@ -90,3 +90,78 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 
 	c.JSON(http.StatusOK, users)
 }
+
+func (h *UserHandler) ListStoreUsers(c *gin.Context) {
+	storeIDStr, exists := c.Get("store_id")
+	if !exists || storeIDStr == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Store ID missing from token"})
+		return
+	}
+
+	storeIDUUID, err := uuid.Parse(storeIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid store ID format"})
+		return
+	}
+
+	users, err := h.queries.ListUsersByStore(c.Request.Context(), pgtype.UUID{Bytes: storeIDUUID, Valid: true})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, users)
+}
+
+func (h *UserHandler) AddStoreEmployee(c *gin.Context) {
+	role, exists := c.Get("role")
+	if !exists || role != "owner" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only owners can add employees"})
+		return
+	}
+
+	storeIDStr, exists := c.Get("store_id")
+	if !exists || storeIDStr == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Store ID missing from token"})
+		return
+	}
+
+	var req CreateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// We don't need email for cashier, but the database schema requires a unique email.
+	// Since we are not using email for login, we can generate a dummy email based on phone or name.
+	// Wait, the schema says: email VARCHAR(255) UNIQUE.
+	email := req.Email
+	if email == "" {
+		email = req.Phone + "@dummy.kasirinaja.com"
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+		return
+	}
+
+	storeUUID, _ := uuid.Parse(storeIDStr.(string))
+
+	arg := db.CreateUserParams{
+		FullName:     req.FullName,
+		Email:        pgtype.Text{String: email, Valid: true},
+		Phone:        pgtype.Text{String: req.Phone, Valid: true},
+		PasswordHash: string(hashedPassword),
+		Role:         req.Role, // Should be "kasir"
+		StoreID:      pgtype.UUID{Bytes: storeUUID, Valid: true},
+	}
+
+	user, err := h.queries.CreateUser(c.Request.Context(), arg)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, user)
+}

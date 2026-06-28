@@ -36,25 +36,29 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 			users.POST("/", userHandler.CreateUser)
 			users.GET("/:id", userHandler.GetUser)
 			users.GET("/", userHandler.ListUsers)
+			usersAuth := users.Group("/store")
+			usersAuth.Use(handlers.AuthMiddleware())
+			usersAuth.GET("/", userHandler.ListStoreUsers)
+			usersAuth.POST("/add-employee", userHandler.AddStoreEmployee)
 		}
 
 		// Product routes
 		products := api.Group("/products")
 		{
-			products.POST("/master", productHandler.CreateMasterProduct)
+			products.POST("/master", handlers.AuthMiddleware(), productHandler.CreateMasterProduct)
 			products.GET("/master/:id", productHandler.GetMasterProduct)
 			products.GET("/master", productHandler.ListMasterProducts)
 
-			products.POST("/store", productHandler.CreateStoreProduct)
+			products.POST("/store", handlers.AuthMiddleware(), productHandler.CreateStoreProduct)
 			products.GET("/store/:id", productHandler.GetStoreProduct)
 			products.GET("/store", productHandler.ListStoreProducts)
 
-			products.POST("/pending", productHandler.SubmitPendingProduct)
+			products.POST("/pending", handlers.AuthMiddleware(), productHandler.SubmitPendingProduct)
 			products.GET("/pending", productHandler.ListPendingProducts)
 
 			products.DELETE("/store/:id", handlers.AuthMiddleware(), productHandler.DeleteStoreProductSpecific)
-			products.DELETE("/:id", productHandler.DeleteProduct)
-			products.PUT("/:id", productHandler.UpdateProduct)
+			products.DELETE("/:id", handlers.AuthMiddleware(), productHandler.DeleteProduct)
+			products.PUT("/:id", handlers.AuthMiddleware(), productHandler.UpdateProduct)
 		}
 
 		// Transaction routes
@@ -75,6 +79,9 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 		api.POST("/auth/register-store", authHandler.RegisterStore)
 		api.POST("/auth/verify-otp", authHandler.VerifyOTP)
 		api.POST("/auth/resend-otp", authHandler.ResendOTP)
+		authGroup := api.Group("/auth")
+		authGroup.Use(handlers.AuthMiddleware())
+		authGroup.POST("/switch-user", authHandler.SwitchUser)
 
 		// Admin routes
 		adminRoutes := api.Group("/admin")
