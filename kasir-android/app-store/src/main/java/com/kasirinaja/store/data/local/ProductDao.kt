@@ -35,4 +35,7 @@ interface ProductDao {
 
     @Query("SELECT COUNT(id) FROM local_products")
     suspend fun getTotalProducts(): Int?
+
+    @Query("SELECT COUNT(id) FROM local_products")
+    fun getTotalProductsFlow(): Flow<Int?>
 }
