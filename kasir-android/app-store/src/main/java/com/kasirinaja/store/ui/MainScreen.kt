@@ -86,7 +86,7 @@ fun MainScreen() {
         factory = com.kasirinaja.store.ui.viewmodels.DashboardViewModel.Factory(
             database.transactionDao(),
             database.productDao(),
-            com.kasirinaja.core.network.RetrofitClient.transactionApi
+            transactionRepository
         )
     )
 
