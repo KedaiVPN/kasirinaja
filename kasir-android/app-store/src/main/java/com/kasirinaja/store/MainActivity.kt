@@ -8,6 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.kasirinaja.store.ui.MainScreen
+import com.kasirinaja.store.ui.theme.KasirTheme
 
 import com.kasirinaja.core.network.RetrofitClient
 import com.kasirinaja.core.network.TokenManager
@@ -18,7 +19,7 @@ class MainActivity : ComponentActivity() {
         val tokenManager = TokenManager(this)
         RetrofitClient.initialize { tokenManager.getToken() }
         setContent {
-            MaterialTheme {
+            KasirTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
