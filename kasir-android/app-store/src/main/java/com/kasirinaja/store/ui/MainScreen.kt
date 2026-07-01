@@ -51,6 +51,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.kasirinaja.store.ui.screens.ReceiptScreen
 import androidx.navigation.compose.NavHost
 import androidx.compose.runtime.mutableStateOf
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.remember
 import com.kasirinaja.store.ui.viewmodels.ReceiptViewModelFactory
 
@@ -91,6 +92,7 @@ fun MainScreen() {
     )
 
     var showSyncDialog by remember { mutableStateOf(false) }
+    var showInitialSyncDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         com.kasirinaja.store.data.repository.TransactionSyncState.syncStatus.collect { status ->
@@ -130,7 +132,23 @@ fun MainScreen() {
         }
     }
 
-
+    if (showInitialSyncDialog) {
+        androidx.compose.ui.window.Dialog(onDismissRequest = { /* Cannot dismiss */ }) {
+            androidx.compose.material3.Surface(
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                color = androidx.compose.material3.MaterialTheme.colorScheme.surface
+            ) {
+                androidx.compose.foundation.layout.Row(
+                    modifier = androidx.compose.ui.Modifier.padding(16.dp),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                ) {
+                    androidx.compose.material3.CircularProgressIndicator(modifier = androidx.compose.ui.Modifier.size(24.dp))
+                    androidx.compose.foundation.layout.Spacer(modifier = androidx.compose.ui.Modifier.width(16.dp))
+                    androidx.compose.material3.Text("Sedang menyinkronkan data, mohon tunggu...")
+                }
+            }
+        }
+    }
 
     val scanViewModel: ScanViewModel = viewModel(
         factory = object : androidx.lifecycle.ViewModelProvider.Factory {
@@ -255,8 +273,20 @@ fun MainScreen() {
                     viewModel = authViewModel,
                     onNavigateToRegister = { navController.navigate(Screen.Register.route) },
                     onLoginSuccess = {
-                        navController.navigate(Screen.Dashboard.route) {
-                            popUpTo(Screen.Login.route) { inclusive = true }
+                        coroutineScope.launch {
+                            try {
+                                showInitialSyncDialog = true
+                                productRepository.syncStoreProducts()
+                                transactionRepository.fetchAndSaveAllTransactions()
+                                dashboardViewModel.fetchServerStats()
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            } finally {
+                                showInitialSyncDialog = false
+                                navController.navigate(Screen.Dashboard.route) {
+                                    popUpTo(Screen.Login.route) { inclusive = true }
+                                }
+                            }
                         }
                     }
                 )
