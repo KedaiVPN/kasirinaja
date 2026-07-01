@@ -110,8 +110,17 @@ class TransactionRepository(
                 dateFormat.timeZone = TimeZone.getTimeZone("UTC")
 
                 for (remoteTx in remoteTransactions) {
-                    val existingTx = transactionDao.getTransactionById(remoteTx.id)
-                    if (existingTx == null) {
+                    val existingTxById = transactionDao.getTransactionById(remoteTx.id)
+                    val existingTxByInvoice = transactionDao.getTransactionByInvoiceNumber(remoteTx.invoice_number)
+
+                    if (existingTxById == null) {
+                        // If we have an existing transaction locally with the same invoice but different ID, it's a duplicate.
+                        // We delete the local one so we can insert the server's version.
+                        if (existingTxByInvoice != null) {
+                            transactionDao.deleteTransactionItemsByTransactionId(existingTxByInvoice.id)
+                            transactionDao.deleteTransactionById(existingTxByInvoice.id)
+                        }
+
                         var transactionTime = System.currentTimeMillis()
                         try {
                             val parsedDate = dateFormat.parse(remoteTx.transaction_time)
