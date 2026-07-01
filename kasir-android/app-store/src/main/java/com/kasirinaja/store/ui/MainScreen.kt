@@ -209,6 +209,7 @@ fun MainScreen() {
                                 this@NavigationBar.NavigationBarItem(
                                     icon = { Icon(screen.icon, contentDescription = screen.title) },
                                     label = { Text(screen.title) },
+                                alwaysShowLabel = false,
                                     selected = currentDestination?.hierarchy?.any { it.route == Screen.Master.route || it.route == Screen.Settings.route } == true,
                                     onClick = { showMoreMenu = true }
                                 )
@@ -246,6 +247,7 @@ fun MainScreen() {
                             NavigationBarItem(
                                 icon = { Icon(screen.icon, contentDescription = screen.title) },
                                 label = { Text(screen.title) },
+                                alwaysShowLabel = false,
                                 selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                                 onClick = {
                                     navController.navigate(screen.route) {

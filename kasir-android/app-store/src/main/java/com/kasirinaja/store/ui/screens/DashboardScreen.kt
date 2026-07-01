@@ -1,46 +1,28 @@
 package com.kasirinaja.store.ui.screens
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AttachMoney
-import androidx.compose.material.icons.filled.Inventory
-import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material.icons.filled.TrendingUp
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import com.kasirinaja.store.ui.viewmodels.DashboardViewModel
 import com.kasirinaja.core.utils.FormatUtils
+import com.kasirinaja.store.ui.viewmodels.DashboardViewModel
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,78 +30,208 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
     val state by viewModel.state.collectAsState()
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Dashboard Kasir", fontWeight = FontWeight.Bold) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            )
+            // Remove default TopAppBar, we'll build a custom one inside LazyColumn or Box
         }
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .background(MaterialTheme.colorScheme.background),
         ) {
             item {
-                Text(
-                    text = "Ringkasan Hari Ini",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                // Header Hijau
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
+                        )
+                        .padding(top = 16.dp, bottom = 24.dp, start = 16.dp, end = 16.dp)
                 ) {
-                    DashboardCard(
-                        modifier = Modifier.weight(1f),
-                        title = "Pendapatan",
-                        value = FormatUtils.formatCurrency(state.totalRevenue.toLong()),
-                        icon = Icons.Filled.TrendingUp,
-                        iconColor = Color(0xFF4CAF50)
-                    )
-                    DashboardCard(
-                        modifier = Modifier.weight(1f),
-                        title = "Transaksi",
-                        value = "${state.totalTransactions}",
-                        icon = Icons.Filled.Receipt,
-                        iconColor = MaterialTheme.colorScheme.primary
-                    )
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    DashboardCard(
-                        modifier = Modifier.weight(1f),
-                        title = "Total Produk",
-                        value = "${state.totalProducts}",
-                        icon = Icons.Filled.Inventory,
-                        iconColor = Color(0xFFFF9800)
-                    )
-                    DashboardCard(
-                        modifier = Modifier.weight(1f),
-                        title = "Laba Bersih",
-                        value = FormatUtils.formatCurrency(state.netProfit.toLong()),
-                        icon = Icons.Filled.AttachMoney,
-                        iconColor = Color(0xFF2196F3)
-                    )
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(onClick = { /* TODO: Open drawer/menu */ }) {
+                                Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = Color.White)
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .background(Color.White, shape = RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 12.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    "POS KEDAI",
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    letterSpacing = 1.sp
+                                )
+                            }
+
+                            // Placeholder for balancing the row
+                            Spacer(modifier = Modifier.width(48.dp))
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Filled.ShoppingBasket,
+                                contentDescription = "Basket",
+                                tint = Color.White,
+                                modifier = Modifier.size(40.dp)
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column {
+                                Text(
+                                    "Laporan Hari ini",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row {
+                                    Text("Total Penjualan", color = Color.White, fontSize = 12.sp, modifier = Modifier.width(100.dp))
+                                    Text(": ${FormatUtils.formatCurrency(state.totalRevenue.toLong())}", color = Color.White, fontSize = 12.sp)
+                                }
+                                Row {
+                                    Text("Total Profit", color = Color.White, fontSize = 12.sp, modifier = Modifier.width(100.dp))
+                                    Text(": ${FormatUtils.formatCurrency(state.netProfit.toLong())}", color = Color.White, fontSize = 12.sp)
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.weight(1f))
+
+                            Text(
+                                "v1.1.7",
+                                color = Color.White.copy(alpha = 0.7f),
+                                fontSize = 12.sp,
+                                modifier = Modifier.align(Alignment.Bottom)
+                            )
+                        }
+                    }
                 }
             }
 
             item {
                 Spacer(modifier = Modifier.height(16.dp))
+
+                // Action Buttons Row
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        IconButton(
+                            onClick = { /* TODO */ },
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(Color.Black, CircleShape)
+                        ) {
+                            Icon(Icons.Filled.Person, contentDescription = "Profile", tint = Color.White)
+                        }
+                        IconButton(
+                            onClick = { /* TODO */ },
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(Color(0xFFE53935), CircleShape) // Red color for logout
+                        ) {
+                            Icon(Icons.Filled.Logout, contentDescription = "Logout", tint = Color.White)
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        Text("Owner", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Store Info Card
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp)),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                ) {
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Logo Box
+                            Box(
+                                modifier = Modifier
+                                    .size(60.dp)
+                                    .border(1.dp, Color.Black)
+                                    .padding(8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("logo\ntoko", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                            }
+
+                            Spacer(modifier = Modifier.width(16.dp))
+
+                            Column {
+                                Text(
+                                    "Nama Toko",
+                                    fontSize = 24.sp,
+                                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Divider(color = Color.Black, modifier = Modifier.padding(vertical = 4.dp))
+                                Text(
+                                    "alamat toko",
+                                    fontSize = 12.sp,
+                                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                                )
+                            }
+                        }
+
+                        // Edit Icon Button
+                        IconButton(
+                            onClick = { /* TODO */ },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .offset(x = 8.dp, y = (-8).dp)
+                                .size(32.dp)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape)
+                        ) {
+                            Icon(Icons.Filled.Edit, contentDescription = "Edit", tint = Color.White, modifier = Modifier.size(16.dp))
+                        }
+                    }
+                }
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(24.dp))
                 Text(
                     text = "Transaksi Terakhir",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }
@@ -128,51 +240,18 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
                 val tx = state.recentTransactions[index]
                 val formatter = SimpleDateFormat("HH:mm", Locale.getDefault())
                 val timeString = formatter.format(Date(tx.transactionTime))
-                TransactionItem(
-                    id = tx.invoiceNumber,
-                    amount = FormatUtils.formatCurrency(tx.totalAmount.toLong()),
-                    time = timeString
-                )
+                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    TransactionItem(
+                        id = tx.invoiceNumber,
+                        amount = FormatUtils.formatCurrency(tx.totalAmount.toLong()),
+                        time = timeString
+                    )
+                }
             }
-        }
-    }
-}
 
-@Composable
-fun DashboardCard(modifier: Modifier = Modifier, title: String, value: String, icon: ImageVector, iconColor: Color) {
-    Card(
-        modifier = modifier.height(110.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.Center
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = title,
-                    tint = iconColor,
-                    modifier = Modifier.size(24.dp)
-                )
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = value,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
         }
     }
 }
