@@ -16,6 +16,15 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE id = :transactionId")
     suspend fun getTransactionById(transactionId: String): LocalTransactionEntity?
 
+    @Query("SELECT * FROM transactions WHERE invoiceNumber = :invoiceNumber LIMIT 1")
+    suspend fun getTransactionByInvoiceNumber(invoiceNumber: String): LocalTransactionEntity?
+
+    @Query("DELETE FROM transactions WHERE id = :transactionId")
+    suspend fun deleteTransactionById(transactionId: String)
+
+    @Query("DELETE FROM transaction_items WHERE transactionId = :transactionId")
+    suspend fun deleteTransactionItemsByTransactionId(transactionId: String)
+
     @Query("SELECT * FROM transaction_items WHERE transactionId = :transactionId")
     suspend fun getTransactionItems(transactionId: String): List<LocalTransactionItemEntity>
 
