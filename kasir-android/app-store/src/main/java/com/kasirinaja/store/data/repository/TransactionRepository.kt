@@ -35,12 +35,13 @@ class TransactionRepository(
         transactionDao.insertTransactionItems(items)
     }
 
-    suspend fun syncPendingTransactions() {
+    suspend fun syncPendingTransactions(): Boolean {
         val pendingTransactions = transactionDao.getPendingTransactions()
-        if (pendingTransactions.isNotEmpty()) {
-            TransactionSyncState.emit("sync_started")
+        if (pendingTransactions.isEmpty()) {
+            return true // Nothing to sync
         }
 
+        TransactionSyncState.emit("sync_started")
         var anyFailed = false
         var anySuccess = false
 
@@ -91,13 +92,13 @@ class TransactionRepository(
             }
         }
 
-        if (pendingTransactions.isNotEmpty()) {
-            if (anyFailed) {
-                TransactionSyncState.emit("sync_failed")
-            } else if (anySuccess) {
-                TransactionSyncState.emit("sync_success")
-            }
+        if (anyFailed) {
+            TransactionSyncState.emit("sync_failed")
+        } else if (anySuccess) {
+            TransactionSyncState.emit("sync_success")
         }
+
+        return !anyFailed
     }
 
     suspend fun fetchAndSaveAllTransactions() {

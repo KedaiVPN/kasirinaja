@@ -21,6 +21,8 @@ import androidx.work.Constraints
 import androidx.work.NetworkType
 import androidx.work.ExistingWorkPolicy
 import androidx.work.WorkManager
+import androidx.work.BackoffPolicy
+import java.util.concurrent.TimeUnit
 import com.kasirinaja.store.worker.TransactionSyncWorker
 
 
@@ -173,6 +175,11 @@ class ScanViewModel(
 
             val syncRequest = OneTimeWorkRequestBuilder<TransactionSyncWorker>()
                 .setConstraints(constraints)
+                .setBackoffCriteria(
+                    BackoffPolicy.EXPONENTIAL,
+                    30, // Mulai dari 30 detik untuk percobaan ulang
+                    TimeUnit.SECONDS
+                )
                 .build()
 
             workManager?.enqueueUniqueWork(

@@ -19,9 +19,13 @@ class TransactionSyncWorker(
             val transactionApi = RetrofitClient.transactionApi
 
             val repository = TransactionRepository(transactionDao, transactionApi)
-            repository.syncPendingTransactions()
+            val success = repository.syncPendingTransactions()
 
-            Result.success()
+            if (success) {
+                Result.success()
+            } else {
+                Result.retry()
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             Result.retry()
