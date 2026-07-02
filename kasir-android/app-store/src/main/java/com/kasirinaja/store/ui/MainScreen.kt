@@ -259,8 +259,8 @@ fun MainScreen() {
                         }
 
                         androidx.compose.foundation.layout.Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp, androidx.compose.ui.Alignment.CenterHorizontally),
+                            modifier = Modifier.fillMaxWidth().animateContentSize(animationSpec = androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioLowBouncy, stiffness = androidx.compose.animation.core.Spring.StiffnessLow)),
+                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceEvenly,
                             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                         ) {
                             bottomBarScreens.forEach { screen ->
@@ -268,7 +268,13 @@ fun MainScreen() {
                                     it.route == screen.route || (screen == Screen.More && (it.route == Screen.Master.route || it.route == Screen.Settings.route))
                                 } == true
 
-                                Box {
+                                Box(modifier = Modifier.onGloballyPositioned { coordinates ->
+                                    if (isSelected) {
+                                        indicatorOffsetX = coordinates.positionInParent().x
+                                        indicatorWidth = coordinates.size.width.toFloat()
+                                        indicatorHeight = coordinates.size.height.toFloat()
+                                    }
+                                }) {
                                     androidx.compose.foundation.layout.Row(
                                         modifier = Modifier
                                             .clip(androidx.compose.foundation.shape.RoundedCornerShape(24.dp))
@@ -285,15 +291,7 @@ fun MainScreen() {
                                                     }
                                                 }
                                             }
-                                            .onGloballyPositioned { coordinates ->
-                                                if (isSelected) {
-                                                    indicatorOffsetX = coordinates.positionInParent().x
-                                                    indicatorWidth = coordinates.size.width.toFloat()
-                                                    indicatorHeight = coordinates.size.height.toFloat()
-                                                }
-                                            }
-                                            .padding(horizontal = if (isSelected) 16.dp else 8.dp, vertical = 12.dp)
-                                            .animateContentSize(animationSpec = androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioLowBouncy, stiffness = androidx.compose.animation.core.Spring.StiffnessLow)),
+                                            .padding(horizontal = if (isSelected) 16.dp else 12.dp, vertical = 12.dp),
                                         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                                     ) {
                                         Icon(
