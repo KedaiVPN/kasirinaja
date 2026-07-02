@@ -1,5 +1,11 @@
 package com.kasirinaja.store.ui
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
@@ -204,32 +210,65 @@ fun MainScreen() {
             val currentRoute = currentDestination?.route
 
             if (bottomBarVisibleScreens.contains(currentRoute)) {
-                Box(modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 16.dp)
-                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(32.dp))
+                androidx.compose.material3.Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(32.dp),
+                    color = androidx.compose.ui.graphics.Color.White,
+                    shadowElevation = 8.dp
                 ) {
-                    NavigationBar(
-                        containerColor = androidx.compose.ui.graphics.Color.White,
-                        tonalElevation = 8.dp
+                    androidx.compose.foundation.layout.Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 8.dp),
+                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceAround,
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                     ) {
                         bottomBarScreens.forEach { screen ->
-                            if (screen == Screen.More) {
-                                Box(modifier = Modifier.weight(1f)) {
-                                    this@NavigationBar.NavigationBarItem(
-                                        icon = { Icon(screen.icon, contentDescription = screen.title) },
-                                        label = { Text(screen.title) },
-                                        alwaysShowLabel = false,
-                                        colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
-                                            indicatorColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
-                                            selectedIconColor = androidx.compose.ui.graphics.Color.White,
-                                            unselectedIconColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
-                                            selectedTextColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
-                                            unselectedTextColor = androidx.compose.ui.graphics.Color.Gray
-                                        ),
-                                        selected = currentDestination?.hierarchy?.any { it.route == Screen.Master.route || it.route == Screen.Settings.route } == true,
-                                        onClick = { showMoreMenu = true }
+                            val isSelected = currentDestination?.hierarchy?.any {
+                                it.route == screen.route || (screen == Screen.More && (it.route == Screen.Master.route || it.route == Screen.Settings.route))
+                            } == true
+
+                            Box {
+                                androidx.compose.foundation.layout.Row(
+                                    modifier = Modifier
+                                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(24.dp))
+                                        .background(if (isSelected) androidx.compose.material3.MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.Transparent)
+                                        .clickable {
+                                            if (screen == Screen.More) {
+                                                showMoreMenu = true
+                                            } else {
+                                                navController.navigate(screen.route) {
+                                                    popUpTo(navController.graph.findStartDestination().id) {
+                                                        saveState = true
+                                                    }
+                                                    launchSingleTop = true
+                                                    restoreState = true
+                                                }
+                                            }
+                                        }
+                                        .padding(horizontal = if (isSelected) 16.dp else 8.dp, vertical = 12.dp)
+                                        .animateContentSize(),
+                                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = screen.icon,
+                                        contentDescription = screen.title,
+                                        tint = if (isSelected) androidx.compose.ui.graphics.Color.White else androidx.compose.ui.graphics.Color(0xFF2C3E50)
                                     )
+                                    if (isSelected) {
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = screen.title,
+                                            color = androidx.compose.ui.graphics.Color.White,
+                                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                            fontSize = 14.sp
+                                        )
+                                    }
+                                }
+
+                                if (screen == Screen.More) {
                                     DropdownMenu(
                                         expanded = showMoreMenu,
                                         onDismissRequest = { showMoreMenu = false }
@@ -260,29 +299,6 @@ fun MainScreen() {
                                         )
                                     }
                                 }
-                            } else {
-                                NavigationBarItem(
-                                    icon = { Icon(screen.icon, contentDescription = screen.title) },
-                                    label = { Text(screen.title) },
-                                    alwaysShowLabel = false,
-                                    colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
-                                        indicatorColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
-                                        selectedIconColor = androidx.compose.ui.graphics.Color.White,
-                                        unselectedIconColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
-                                        selectedTextColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
-                                        unselectedTextColor = androidx.compose.ui.graphics.Color.Gray
-                                    ),
-                                    selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
-                                    onClick = {
-                                        navController.navigate(screen.route) {
-                                            popUpTo(navController.graph.findStartDestination().id) {
-                                                saveState = true
-                                            }
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
-                                    }
-                                )
                             }
                         }
                     }
