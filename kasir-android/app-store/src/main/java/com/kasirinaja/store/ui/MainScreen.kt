@@ -1,4 +1,6 @@
 package com.kasirinaja.store.ui
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.runtime.Composable
@@ -202,63 +204,86 @@ fun MainScreen() {
             val currentRoute = currentDestination?.route
 
             if (bottomBarVisibleScreens.contains(currentRoute)) {
-                NavigationBar {
-                    bottomBarScreens.forEach { screen ->
-                        if (screen == Screen.More) {
-                            Box(modifier = Modifier.weight(1f)) {
-                                this@NavigationBar.NavigationBarItem(
-                                    icon = { Icon(screen.icon, contentDescription = screen.title) },
-                                    label = { Text(screen.title) },
-                                alwaysShowLabel = false,
-                                    selected = currentDestination?.hierarchy?.any { it.route == Screen.Master.route || it.route == Screen.Settings.route } == true,
-                                    onClick = { showMoreMenu = true }
-                                )
-                                DropdownMenu(
-                                    expanded = showMoreMenu,
-                                    onDismissRequest = { showMoreMenu = false }
-                                ) {
-                                    DropdownMenuItem(
-                                        text = { Text("Master") },
-                                        leadingIcon = { Icon(Screen.Master.icon, contentDescription = "Master") },
-                                        onClick = {
-                                            showMoreMenu = false
-                                            navController.navigate(Screen.Master.route) {
-                                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                                launchSingleTop = true
-                                                restoreState = true
-                                            }
-                                        }
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 16.dp)
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(32.dp))
+                ) {
+                    NavigationBar(
+                        containerColor = androidx.compose.ui.graphics.Color.White,
+                        tonalElevation = 8.dp
+                    ) {
+                        bottomBarScreens.forEach { screen ->
+                            if (screen == Screen.More) {
+                                Box(modifier = Modifier.weight(1f)) {
+                                    this@NavigationBar.NavigationBarItem(
+                                        icon = { Icon(screen.icon, contentDescription = screen.title) },
+                                        label = { Text(screen.title) },
+                                        alwaysShowLabel = false,
+                                        colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
+                                            indicatorColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                                            selectedIconColor = androidx.compose.ui.graphics.Color.White,
+                                            unselectedIconColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                                            selectedTextColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                                            unselectedTextColor = androidx.compose.ui.graphics.Color.Gray
+                                        ),
+                                        selected = currentDestination?.hierarchy?.any { it.route == Screen.Master.route || it.route == Screen.Settings.route } == true,
+                                        onClick = { showMoreMenu = true }
                                     )
-                                    DropdownMenuItem(
-                                        text = { Text("Pengaturan Users") },
-                                        leadingIcon = { Icon(Screen.Settings.icon, contentDescription = "Pengaturan") },
-                                        onClick = {
-                                            showMoreMenu = false
-                                            navController.navigate(Screen.Settings.route) {
-                                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                                launchSingleTop = true
-                                                restoreState = true
+                                    DropdownMenu(
+                                        expanded = showMoreMenu,
+                                        onDismissRequest = { showMoreMenu = false }
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = { Text("Master") },
+                                            leadingIcon = { Icon(Screen.Master.icon, contentDescription = "Master") },
+                                            onClick = {
+                                                showMoreMenu = false
+                                                navController.navigate(Screen.Master.route) {
+                                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                                    launchSingleTop = true
+                                                    restoreState = true
+                                                }
                                             }
-                                        }
-                                    )
-                                }
-                            }
-                        } else {
-                            NavigationBarItem(
-                                icon = { Icon(screen.icon, contentDescription = screen.title) },
-                                label = { Text(screen.title) },
-                                alwaysShowLabel = false,
-                                selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
-                                onClick = {
-                                    navController.navigate(screen.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("Pengaturan Users") },
+                                            leadingIcon = { Icon(Screen.Settings.icon, contentDescription = "Pengaturan") },
+                                            onClick = {
+                                                showMoreMenu = false
+                                                navController.navigate(Screen.Settings.route) {
+                                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                                    launchSingleTop = true
+                                                    restoreState = true
+                                                }
+                                            }
+                                        )
                                     }
                                 }
-                            )
+                            } else {
+                                NavigationBarItem(
+                                    icon = { Icon(screen.icon, contentDescription = screen.title) },
+                                    label = { Text(screen.title) },
+                                    alwaysShowLabel = false,
+                                    colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
+                                        indicatorColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                                        selectedIconColor = androidx.compose.ui.graphics.Color.White,
+                                        unselectedIconColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                                        selectedTextColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                                        unselectedTextColor = androidx.compose.ui.graphics.Color.Gray
+                                    ),
+                                    selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                                    onClick = {
+                                        navController.navigate(screen.route) {
+                                            popUpTo(navController.graph.findStartDestination().id) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    }
+                                )
+                            }
                         }
                     }
                 }
