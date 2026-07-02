@@ -23,6 +23,7 @@ import com.kasirinaja.core.utils.FormatUtils
 import com.kasirinaja.store.ui.viewmodels.DashboardViewModel
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.ui.zIndex
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,7 +31,6 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
     val state by viewModel.state.collectAsState()
     Scaffold(
         topBar = {
-            // Remove default TopAppBar, we'll build a custom one inside LazyColumn or Box
         }
     ) { paddingValues ->
         LazyColumn(
@@ -40,7 +40,6 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
                 .background(MaterialTheme.colorScheme.background),
         ) {
             item {
-                // Header Hijau
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -73,7 +72,6 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
                                 )
                             }
 
-                            // Placeholder for balancing the row
                             Spacer(modifier = Modifier.width(48.dp))
                         }
 
@@ -124,7 +122,6 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
             item {
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Action Buttons Row
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -132,7 +129,7 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         IconButton(
                             onClick = { /* TODO */ },
                             modifier = Modifier
@@ -145,9 +142,9 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
                             onClick = { /* TODO */ },
                             modifier = Modifier
                                 .size(40.dp)
-                                .background(Color(0xFFE53935), CircleShape) // Red color for logout
+                                .background(Color(0xFFE53935), CircleShape)
                         ) {
-                            Icon(Icons.Filled.Logout, contentDescription = "Logout", tint = Color.White)
+                            Icon(Icons.Filled.ExitToApp, contentDescription = "Logout", tint = Color.White)
                         }
                     }
 
@@ -164,23 +161,23 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
             item {
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Store Info Card
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp)),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
-                ) {
-                    Box(modifier = Modifier.fillMaxWidth()) {
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 8.dp, end = 8.dp)) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp)),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White)
+                    ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Logo Box
                             Box(
                                 modifier = Modifier
                                     .size(60.dp)
@@ -208,18 +205,19 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
                                 )
                             }
                         }
+                    }
 
-                        // Edit Icon Button
-                        IconButton(
-                            onClick = { /* TODO */ },
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .offset(x = 8.dp, y = (-8).dp)
-                                .size(32.dp)
-                                .background(MaterialTheme.colorScheme.primary, CircleShape)
-                        ) {
-                            Icon(Icons.Filled.Edit, contentDescription = "Edit", tint = Color.White, modifier = Modifier.size(16.dp))
-                        }
+                    IconButton(
+                        onClick = { /* TODO */ },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .offset(x = 12.dp, y = (-12).dp)
+                            .size(32.dp)
+                            .background(MaterialTheme.colorScheme.primary, CircleShape)
+                            .border(2.dp, Color.White, CircleShape)
+                            .zIndex(1f)
+                    ) {
+                        Icon(Icons.Filled.Edit, contentDescription = "Edit", tint = Color.White, modifier = Modifier.size(16.dp))
                     }
                 }
             }
