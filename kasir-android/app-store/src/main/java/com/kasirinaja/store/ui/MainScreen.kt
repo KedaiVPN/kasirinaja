@@ -1,5 +1,11 @@
 package com.kasirinaja.store.ui
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Spacer
@@ -219,85 +225,124 @@ fun MainScreen() {
                     color = androidx.compose.ui.graphics.Color.White,
                     shadowElevation = 8.dp
                 ) {
-                    androidx.compose.foundation.layout.Row(
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp, androidx.compose.ui.Alignment.CenterHorizontally),
-                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
-                        bottomBarScreens.forEach { screen ->
-                            val isSelected = currentDestination?.hierarchy?.any {
-                                it.route == screen.route || (screen == Screen.More && (it.route == Screen.Master.route || it.route == Screen.Settings.route))
-                            } == true
+                        // Indicator logic
+                        var indicatorOffsetX by remember { androidx.compose.runtime.mutableStateOf(0f) }
+                        var indicatorWidth by remember { androidx.compose.runtime.mutableStateOf(0f) }
+                        var indicatorHeight by remember { androidx.compose.runtime.mutableStateOf(0f) }
+                        val density = androidx.compose.ui.platform.LocalDensity.current
 
-                            Box {
-                                androidx.compose.foundation.layout.Row(
-                                    modifier = Modifier
-                                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(24.dp))
-                                        .background(if (isSelected) androidx.compose.material3.MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.Transparent)
-                                        .clickable {
-                                            if (screen == Screen.More) {
-                                                showMoreMenu = true
-                                            } else {
-                                                navController.navigate(screen.route) {
-                                                    popUpTo(navController.graph.findStartDestination().id) {
-                                                        saveState = true
+                        val animatedOffsetX by androidx.compose.animation.core.animateFloatAsState(
+                            targetValue = indicatorOffsetX,
+                            animationSpec = androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioLowBouncy, stiffness = androidx.compose.animation.core.Spring.StiffnessLow)
+                        )
+                        val animatedWidth by androidx.compose.animation.core.animateFloatAsState(
+                            targetValue = indicatorWidth,
+                            animationSpec = androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioLowBouncy, stiffness = androidx.compose.animation.core.Spring.StiffnessLow)
+                        )
+
+                        // Animated Pill Background
+                        if (indicatorWidth > 0f) {
+                            Box(
+                                modifier = Modifier
+                                    .offset { androidx.compose.ui.unit.IntOffset(animatedOffsetX.toInt(), 0) }
+                                    .width(with(density) { animatedWidth.toDp() })
+                                    .height(with(density) { indicatorHeight.toDp() })
+                                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(24.dp))
+                                    .background(androidx.compose.material3.MaterialTheme.colorScheme.primary)
+                                    .align(androidx.compose.ui.Alignment.CenterStart)
+                            )
+                        }
+
+                        androidx.compose.foundation.layout.Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp, androidx.compose.ui.Alignment.CenterHorizontally),
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                        ) {
+                            bottomBarScreens.forEach { screen ->
+                                val isSelected = currentDestination?.hierarchy?.any {
+                                    it.route == screen.route || (screen == Screen.More && (it.route == Screen.Master.route || it.route == Screen.Settings.route))
+                                } == true
+
+                                Box {
+                                    androidx.compose.foundation.layout.Row(
+                                        modifier = Modifier
+                                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(24.dp))
+                                            .clickable {
+                                                if (screen == Screen.More) {
+                                                    showMoreMenu = true
+                                                } else {
+                                                    navController.navigate(screen.route) {
+                                                        popUpTo(navController.graph.findStartDestination().id) {
+                                                            saveState = true
+                                                        }
+                                                        launchSingleTop = true
+                                                        restoreState = true
                                                     }
-                                                    launchSingleTop = true
-                                                    restoreState = true
                                                 }
                                             }
-                                        }
-                                        .padding(horizontal = if (isSelected) 16.dp else 8.dp, vertical = 12.dp)
-                                        .animateContentSize(),
-                                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = screen.icon,
-                                        contentDescription = screen.title,
-                                        tint = if (isSelected) androidx.compose.ui.graphics.Color.White else androidx.compose.ui.graphics.Color(0xFF2C3E50)
-                                    )
-                                    if (isSelected) {
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            text = screen.title,
-                                            color = androidx.compose.ui.graphics.Color.White,
-                                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                                            fontSize = 14.sp
-                                        )
-                                    }
-                                }
-
-                                if (screen == Screen.More) {
-                                    DropdownMenu(
-                                        expanded = showMoreMenu,
-                                        onDismissRequest = { showMoreMenu = false }
+                                            .onGloballyPositioned { coordinates ->
+                                                if (isSelected) {
+                                                    indicatorOffsetX = coordinates.positionInParent().x
+                                                    indicatorWidth = coordinates.size.width.toFloat()
+                                                    indicatorHeight = coordinates.size.height.toFloat()
+                                                }
+                                            }
+                                            .padding(horizontal = if (isSelected) 16.dp else 8.dp, vertical = 12.dp)
+                                            .animateContentSize(animationSpec = androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioLowBouncy, stiffness = androidx.compose.animation.core.Spring.StiffnessLow)),
+                                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                                     ) {
-                                        DropdownMenuItem(
-                                            text = { Text("Master") },
-                                            leadingIcon = { Icon(Screen.Master.icon, contentDescription = "Master") },
-                                            onClick = {
-                                                showMoreMenu = false
-                                                navController.navigate(Screen.Master.route) {
-                                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                                    launchSingleTop = true
-                                                    restoreState = true
-                                                }
-                                            }
+                                        Icon(
+                                            imageVector = screen.icon,
+                                            contentDescription = screen.title,
+                                            tint = if (isSelected) androidx.compose.ui.graphics.Color.White else androidx.compose.ui.graphics.Color(0xFF2C3E50)
                                         )
-                                        DropdownMenuItem(
-                                            text = { Text("Pengaturan Users") },
-                                            leadingIcon = { Icon(Screen.Settings.icon, contentDescription = "Pengaturan") },
-                                            onClick = {
-                                                showMoreMenu = false
-                                                navController.navigate(Screen.Settings.route) {
-                                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                                    launchSingleTop = true
-                                                    restoreState = true
+                                        if (isSelected) {
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = screen.title,
+                                                color = androidx.compose.ui.graphics.Color.White,
+                                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                                fontSize = 14.sp,
+                                                maxLines = 1
+                                            )
+                                        }
+                                    }
+
+                                    if (screen == Screen.More) {
+                                        DropdownMenu(
+                                            expanded = showMoreMenu,
+                                            onDismissRequest = { showMoreMenu = false }
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = { Text("Master") },
+                                                leadingIcon = { Icon(Screen.Master.icon, contentDescription = "Master") },
+                                                onClick = {
+                                                    showMoreMenu = false
+                                                    navController.navigate(Screen.Master.route) {
+                                                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                                        launchSingleTop = true
+                                                        restoreState = true
+                                                    }
                                                 }
-                                            }
-                                        )
+                                            )
+                                            DropdownMenuItem(
+                                                text = { Text("Pengaturan Users") },
+                                                leadingIcon = { Icon(Screen.Settings.icon, contentDescription = "Pengaturan") },
+                                                onClick = {
+                                                    showMoreMenu = false
+                                                    navController.navigate(Screen.Settings.route) {
+                                                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                                        launchSingleTop = true
+                                                        restoreState = true
+                                                    }
+                                                }
+                                            )
+                                        }
                                     }
                                 }
                             }
