@@ -192,14 +192,14 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
 
                             Column {
                                 Text(
-                                    "Nama Toko",
+                                    text = state.storeName,
                                     fontSize = 24.sp,
                                     fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                                     color = MaterialTheme.colorScheme.primary
                                 )
                                 Divider(color = Color.Black, modifier = Modifier.padding(vertical = 4.dp))
                                 Text(
-                                    "alamat toko",
+                                    text = state.storeAddress,
                                     fontSize = 12.sp,
                                     fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
                                 )

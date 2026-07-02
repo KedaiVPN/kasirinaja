@@ -95,7 +95,8 @@ fun MainScreen() {
         factory = com.kasirinaja.store.ui.viewmodels.DashboardViewModel.Factory(
             database.transactionDao(),
             database.productDao(),
-            transactionRepository
+            transactionRepository,
+            tokenManager
         )
     )
 
@@ -221,8 +222,8 @@ fun MainScreen() {
                     androidx.compose.foundation.layout.Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 8.dp),
-                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceAround,
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp, androidx.compose.ui.Alignment.CenterHorizontally),
                         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                     ) {
                         bottomBarScreens.forEach { screen ->
