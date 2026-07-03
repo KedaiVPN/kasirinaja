@@ -402,7 +402,20 @@ fun MainScreen() {
                     }
                 )
             }
-            composable(Screen.Dashboard.route) { DashboardScreen(dashboardViewModel) }
+            composable(Screen.Dashboard.route) {
+                DashboardScreen(
+                    viewModel = dashboardViewModel,
+                    onNavigateToSettings = {
+                        navController.navigate(Screen.Settings.route)
+                    },
+                    onLogout = {
+                        tokenManager.clearToken()
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
+            }
             composable(Screen.Stock.route) {
                 StockScreen(
                     onNavigateToAddProduct = {
