@@ -410,8 +410,9 @@ fun MainScreen() {
                     },
                     onLogout = {
                         tokenManager.clearToken()
+                        startDest = Screen.Login.route
                         navController.navigate(Screen.Login.route) {
-                            popUpTo(0) { inclusive = true }
+                            popUpTo(navController.graph.id) { inclusive = true }
                         }
                     }
                 )
