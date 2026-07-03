@@ -27,7 +27,11 @@ import androidx.compose.ui.zIndex
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardScreen(viewModel: DashboardViewModel) {
+fun DashboardScreen(
+    viewModel: DashboardViewModel,
+    onNavigateToSettings: () -> Unit = {},
+    onLogout: () -> Unit = {}
+) {
     val state by viewModel.state.collectAsState()
     Scaffold(
         topBar = {
@@ -131,7 +135,7 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
                 ) {
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         IconButton(
-                            onClick = { /* TODO */ },
+                            onClick = { onNavigateToSettings() },
                             modifier = Modifier
                                 .size(40.dp)
                                 .background(Color.Black, CircleShape)
@@ -139,7 +143,7 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
                             Icon(Icons.Filled.Person, contentDescription = "Profile", tint = Color.White)
                         }
                         IconButton(
-                            onClick = { /* TODO */ },
+                            onClick = { onLogout() },
                             modifier = Modifier
                                 .size(40.dp)
                                 .background(Color(0xFFE53935), CircleShape)
@@ -153,7 +157,11 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
                             .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
                             .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
-                        Text("Owner", color = Color.White, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = state.role.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() },
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
