@@ -411,6 +411,7 @@ fun MainScreen() {
                     onLogout = {
                         tokenManager.clearToken()
                         startDest = Screen.Login.route
+                        authViewModel.resetState()
                         navController.navigate(Screen.Login.route) {
                             popUpTo(navController.graph.id) { inclusive = true }
                         }
