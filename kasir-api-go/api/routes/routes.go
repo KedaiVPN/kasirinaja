@@ -15,6 +15,7 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 	transactionHandler := handlers.NewTransactionHandler(queries, pool)
 	authHandler := handlers.NewAuthHandler(queries, pool)
 	adminHandler := handlers.NewAdminHandler(queries)
+	storeHandler := handlers.NewStoreHandler(queries)
 
 	// Root route to prevent 404 on base domain
 	router.GET("/", func(c *gin.Context) {
@@ -68,6 +69,14 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 			transactions.POST("/", transactionHandler.CreateTransaction)
 			transactions.GET("/dashboard", transactionHandler.GetDashboardStats)
 			transactions.GET("/", transactionHandler.GetAllTransactions)
+		}
+
+		// Store routes
+		stores := api.Group("/stores")
+		stores.Use(handlers.AuthMiddleware())
+		{
+			stores.PUT("/update", storeHandler.UpdateStore)
+			stores.POST("/upload-logo", storeHandler.UploadStoreLogo)
 		}
 
 		// WebSocket routes

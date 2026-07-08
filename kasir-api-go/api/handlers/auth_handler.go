@@ -209,6 +209,7 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 			"store_id":      store.ID,
 			"store_name":    store.StoreName,
 			"store_address": store.Address.String,
+			"logo_url":      store.LogoUrl.String,
 		},
 	})
 }
@@ -294,12 +295,13 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	var storeName, storeAddress string
+	var storeName, storeAddress, storeLogoUrl string
 	if user.StoreID.Valid {
 		store, err := h.queries.GetStore(c.Request.Context(), user.StoreID)
 		if err == nil {
 			storeName = store.StoreName
 			storeAddress = store.Address.String
+			storeLogoUrl = store.LogoUrl.String
 		}
 	}
 
@@ -313,6 +315,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 			"store_id":      user.StoreID,
 			"store_name":    storeName,
 			"store_address": storeAddress,
+			"logo_url":      storeLogoUrl,
 		},
 	})
 }
@@ -436,12 +439,13 @@ func (h *AuthHandler) SwitchUser(c *gin.Context) {
 		return
 	}
 
-	var storeName, storeAddress string
+	var storeName, storeAddress, storeLogoUrl string
 	if targetUser.StoreID.Valid {
 		store, err := h.queries.GetStore(c.Request.Context(), targetUser.StoreID)
 		if err == nil {
 			storeName = store.StoreName
 			storeAddress = store.Address.String
+			storeLogoUrl = store.LogoUrl.String
 		}
 	}
 
@@ -456,6 +460,7 @@ func (h *AuthHandler) SwitchUser(c *gin.Context) {
 			"store_id":      targetUser.StoreID,
 			"store_name":    storeName,
 			"store_address": storeAddress,
+			"logo_url":      storeLogoUrl,
 		},
 	})
 }

@@ -20,6 +20,7 @@ class AuthRepository(
                 val storeName = user?.get("store_name")?.toString()
                 val storeAddress = user?.get("store_address")?.toString()
                 val role = user?.get("role")?.toString()
+                val logoUrl = user?.get("logo_url")?.toString()
                 if (token != null) {
                     tokenManager.saveToken(token)
                     if (storeId != null) {
@@ -33,6 +34,9 @@ class AuthRepository(
                     }
                     if (role != null) {
                         tokenManager.saveRole(role)
+                    }
+                    if (logoUrl != null) {
+                        tokenManager.saveStoreLogoUrl(logoUrl)
                     }
                     Result.success(token)
                 } else {
@@ -78,6 +82,7 @@ class AuthRepository(
                 val storeName = user?.get("store_name")?.toString()
                 val storeAddress = user?.get("store_address")?.toString()
                 val role = user?.get("role")?.toString()
+                val logoUrl = user?.get("logo_url")?.toString()
                 if (token != null) {
                     tokenManager.saveToken(token)
                     if (storeId != null) {
@@ -91,6 +96,9 @@ class AuthRepository(
                     }
                     if (role != null) {
                         tokenManager.saveRole(role)
+                    }
+                    if (logoUrl != null) {
+                        tokenManager.saveStoreLogoUrl(logoUrl)
                     }
                 }
                 val message = response["message"]?.toString() ?: "Success"
@@ -128,6 +136,7 @@ class AuthRepository(
                 val storeName = user?.get("store_name")?.toString()
                 val storeAddress = user?.get("store_address")?.toString()
                 val role = user?.get("role")?.toString()
+                val logoUrl = user?.get("logo_url")?.toString()
                 if (token != null) {
                     tokenManager.saveToken(token)
                     if (storeId != null) {
@@ -141,6 +150,9 @@ class AuthRepository(
                     }
                     if (role != null) {
                         tokenManager.saveRole(role)
+                    }
+                    if (logoUrl != null) {
+                        tokenManager.saveStoreLogoUrl(logoUrl)
                     }
                     Result.success(token)
                 } else {

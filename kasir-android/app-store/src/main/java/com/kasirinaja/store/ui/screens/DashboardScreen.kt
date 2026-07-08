@@ -24,15 +24,22 @@ import com.kasirinaja.store.ui.viewmodels.DashboardViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.ui.zIndex
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.kasirinaja.core.network.RetrofitClient
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
+    onNavigateToEditStore: () -> Unit = {},
     viewModel: DashboardViewModel,
     onNavigateToSettings: () -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
     Scaffold(
         topBar = {
         }
@@ -193,7 +200,19 @@ fun DashboardScreen(
                                     .padding(8.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text("logo\ntoko", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                                if (!state.logoUrl.isNullOrEmpty()) {
+                                    AsyncImage(
+                                        model = ImageRequest.Builder(context)
+                                            .data("${RetrofitClient.IMAGE_BASE_URL}${state.logoUrl}")
+                                            .crossfade(true)
+                                            .build(),
+                                        contentDescription = "Store Logo",
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                } else {
+                                    Text("logo\ntoko", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                                }
                             }
 
                             Spacer(modifier = Modifier.width(16.dp))
@@ -215,17 +234,19 @@ fun DashboardScreen(
                         }
                     }
 
-                    IconButton(
-                        onClick = { /* TODO */ },
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .offset(x = 12.dp, y = (-12).dp)
-                            .size(32.dp)
-                            .background(MaterialTheme.colorScheme.primary, CircleShape)
-                            .border(2.dp, Color.White, CircleShape)
-                            .zIndex(1f)
-                    ) {
-                        Icon(Icons.Filled.Edit, contentDescription = "Edit", tint = Color.White, modifier = Modifier.size(16.dp))
+                    if (state.role.lowercase() == "owner") {
+                        IconButton(
+                            onClick = { onNavigateToEditStore() },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .offset(x = 12.dp, y = (-12).dp)
+                                .size(32.dp)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape)
+                                .border(2.dp, Color.White, CircleShape)
+                                .zIndex(1f)
+                        ) {
+                            Icon(Icons.Filled.Edit, contentDescription = "Edit", tint = Color.White, modifier = Modifier.size(16.dp))
+                        }
                     }
                 }
             }

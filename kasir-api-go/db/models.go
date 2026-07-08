@@ -79,6 +79,7 @@ type Store struct {
 	IsActive  pgtype.Bool      `json:"is_active"`
 	CreatedAt pgtype.Timestamp `json:"created_at"`
 	UpdatedAt pgtype.Timestamp `json:"updated_at"`
+	LogoUrl   pgtype.Text      `json:"logo_url"`
 }
 
 type StoreProduct struct {

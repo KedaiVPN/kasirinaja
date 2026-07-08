@@ -28,6 +28,9 @@ import com.kasirinaja.store.ui.screens.AddProductScreen
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.kasirinaja.store.ui.viewmodels.ReceiptViewModel
 import com.kasirinaja.store.ui.screens.DashboardScreen
+import com.kasirinaja.store.ui.screens.EditStoreScreen
+import com.kasirinaja.store.ui.viewmodels.EditStoreViewModel
+import com.kasirinaja.store.data.repository.StoreRepository
 import com.kasirinaja.store.presentation.auth.RegisterStoreScreen
 import com.kasirinaja.store.ui.screens.PaymentScreen
 import com.kasirinaja.store.ui.screens.HistoryScreen
@@ -405,6 +408,7 @@ fun MainScreen() {
             composable(Screen.Dashboard.route) {
                 DashboardScreen(
                     viewModel = dashboardViewModel,
+                    onNavigateToEditStore = { navController.navigate("edit_store") },
                     onNavigateToSettings = {
                         navController.navigate(Screen.Settings.route)
                     },
@@ -416,6 +420,16 @@ fun MainScreen() {
                             popUpTo(navController.graph.id) { inclusive = true }
                         }
                     }
+                )
+            }
+            composable("edit_store") {
+                val storeRepository = com.kasirinaja.store.data.repository.StoreRepository(com.kasirinaja.core.network.RetrofitClient.storeApi)
+                val editStoreViewModel: com.kasirinaja.store.ui.viewmodels.EditStoreViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                    factory = com.kasirinaja.store.ui.viewmodels.EditStoreViewModel.Factory(storeRepository, tokenManager)
+                )
+                com.kasirinaja.store.ui.screens.EditStoreScreen(
+                    viewModel = editStoreViewModel,
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
             composable(Screen.Stock.route) {

@@ -17,7 +17,7 @@ INSERT INTO stores (
 ) VALUES (
   $1, $2, $3, $4, $5
 )
-RETURNING id, owner_id, store_code, store_name, address, phone, is_active, created_at, updated_at
+RETURNING id, owner_id, store_code, store_name, address, phone, is_active, created_at, updated_at, logo_url
 `
 
 type CreateStoreParams struct {
@@ -47,12 +47,13 @@ func (q *Queries) CreateStore(ctx context.Context, arg CreateStoreParams) (Store
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LogoUrl,
 	)
 	return i, err
 }
 
 const getStore = `-- name: GetStore :one
-SELECT id, owner_id, store_code, store_name, address, phone, is_active, created_at, updated_at FROM stores
+SELECT id, owner_id, store_code, store_name, address, phone, is_active, created_at, updated_at, logo_url FROM stores
 WHERE id = $1 LIMIT 1
 `
 
@@ -69,6 +70,50 @@ func (q *Queries) GetStore(ctx context.Context, id pgtype.UUID) (Store, error) {
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LogoUrl,
+	)
+	return i, err
+}
+
+const updateStore = `-- name: UpdateStore :one
+UPDATE stores
+SET store_name = COALESCE($2, store_name),
+    address = COALESCE($3, address),
+    phone = COALESCE($4, phone),
+    logo_url = COALESCE($5, logo_url),
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING id, owner_id, store_code, store_name, address, phone, is_active, created_at, updated_at, logo_url
+`
+
+type UpdateStoreParams struct {
+	ID        pgtype.UUID `json:"id"`
+	StoreName string      `json:"store_name"`
+	Address   pgtype.Text `json:"address"`
+	Phone     pgtype.Text `json:"phone"`
+	LogoUrl   pgtype.Text `json:"logo_url"`
+}
+
+func (q *Queries) UpdateStore(ctx context.Context, arg UpdateStoreParams) (Store, error) {
+	row := q.db.QueryRow(ctx, updateStore,
+		arg.ID,
+		arg.StoreName,
+		arg.Address,
+		arg.Phone,
+		arg.LogoUrl,
+	)
+	var i Store
+	err := row.Scan(
+		&i.ID,
+		&i.OwnerID,
+		&i.StoreCode,
+		&i.StoreName,
+		&i.Address,
+		&i.Phone,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.LogoUrl,
 	)
 	return i, err
 }
