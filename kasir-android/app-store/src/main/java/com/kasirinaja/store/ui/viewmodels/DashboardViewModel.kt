@@ -29,6 +29,7 @@ data class DashboardState(
     val netProfit: Double = 0.0,
     val storeName: String = "Nama Toko",
     val storeAddress: String = "Alamat Toko",
+    val logoUrl: String? = null,
     val role: String = "Owner",
     val recentTransactions: List<LocalTransactionEntity> = emptyList()
 )
@@ -67,6 +68,7 @@ class DashboardViewModel(
             netProfit = profit ?: 0.0,
             storeName = tokenManager?.getStoreName() ?: "Nama Toko",
             storeAddress = tokenManager?.getStoreAddress() ?: "Alamat Toko",
+            logoUrl = tokenManager?.getStoreLogoUrl(),
             role = tokenManager?.getRole() ?: "Owner",
             recentTransactions = recentTxs
         )

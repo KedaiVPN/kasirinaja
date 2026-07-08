@@ -34,6 +34,14 @@ class TokenManager(context: Context) {
         return prefs.getString("store_address", null)
     }
 
+    fun saveStoreLogoUrl(logoUrl: String) {
+        prefs.edit().putString("store_logo_url", logoUrl).apply()
+    }
+
+    fun getStoreLogoUrl(): String? {
+        return prefs.getString("store_logo_url", null)
+    }
+
     fun saveRole(role: String) {
         prefs.edit().putString("role", role).apply()
     }

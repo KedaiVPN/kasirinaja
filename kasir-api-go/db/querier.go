@@ -45,6 +45,7 @@ type Querier interface {
 	ListUsers(ctx context.Context) ([]User, error)
 	ListUsersByStore(ctx context.Context, storeID pgtype.UUID) ([]User, error)
 	UpdatePendingProduct(ctx context.Context, arg UpdatePendingProductParams) error
+	UpdateStore(ctx context.Context, arg UpdateStoreParams) (Store, error)
 	UpdateStoreProduct(ctx context.Context, arg UpdateStoreProductParams) error
 	UpdateStoreProductStock(ctx context.Context, arg UpdateStoreProductStockParams) error
 	UpdateUserStoreID(ctx context.Context, arg UpdateUserStoreIDParams) error
