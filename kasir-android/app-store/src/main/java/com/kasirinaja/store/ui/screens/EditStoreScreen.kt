@@ -25,6 +25,10 @@ import coil.request.ImageRequest
 import com.kasirinaja.store.ui.viewmodels.EditStoreViewModel
 import java.io.File
 import java.io.FileOutputStream
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import android.webkit.MimeTypeMap
 import com.kasirinaja.core.network.RetrofitClient
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,14 +47,18 @@ fun EditStoreScreen(
     ) { uri: Uri? ->
         uri?.let {
             selectedImageUri = it
-            // Copy to temp file
-            val inputStream = context.contentResolver.openInputStream(it)
-            val file = File(context.cacheDir, "temp_logo.jpg")
-            val outputStream = FileOutputStream(file)
-            inputStream?.copyTo(outputStream)
-            inputStream?.close()
-            outputStream.close()
-            tempImageFile = file
+            // Copy to temp file in background
+            kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                val inputStream = context.contentResolver.openInputStream(it)
+                val mimeType = context.contentResolver.getType(it)
+                val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ?: "jpg"
+                val file = File(context.cacheDir, "temp_logo.${extension}")
+                val outputStream = FileOutputStream(file)
+                inputStream?.copyTo(outputStream)
+                inputStream?.close()
+                outputStream.close()
+                tempImageFile = file
+            }
         }
     }
 
