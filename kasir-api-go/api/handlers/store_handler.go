@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -111,6 +112,10 @@ func (h *StoreHandler) UploadStoreLogo(c *gin.Context) {
 		// logo url format is usually /uploads/id/filename
 		// we strip the leading slash to make it a relative path
 		oldPath := strings.TrimPrefix(store.LogoUrl.String, "/")
+		// Strip query parameters from old path if they exist
+		if idx := strings.Index(oldPath, "?"); idx != -1 {
+			oldPath = oldPath[:idx]
+		}
 		if oldPath != "" {
 			_ = os.Remove(oldPath) // Ignore error if file doesn't exist
 		}
@@ -135,7 +140,7 @@ func (h *StoreHandler) UploadStoreLogo(c *gin.Context) {
 		return
 	}
 
-	imageURL := fmt.Sprintf("/uploads/%s/%s", storeIdString, filename)
+	imageURL := fmt.Sprintf("/uploads/%s/%s?t=%d", storeIdString, filename, time.Now().Unix())
 
 	// Update store with logo URL
 	arg := db.UpdateStoreParams{

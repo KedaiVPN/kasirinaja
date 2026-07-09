@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -40,6 +41,11 @@ fun DashboardScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
+
+    // Refresh token values every time the screen becomes active
+    LaunchedEffect(Unit) {
+        viewModel.refreshStoreInfo()
+    }
     Scaffold(
         topBar = {
         }

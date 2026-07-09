@@ -13,14 +13,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.flow
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import java.util.Locale
 import kotlinx.coroutines.flow.StateFlow
 import java.text.SimpleDateFormat
 import androidx.lifecycle.ViewModelProvider
 import com.kasirinaja.core.network.TokenManager
-
-
-
 
 data class DashboardState(
     val totalRevenue: Double = 0.0,
@@ -31,10 +29,9 @@ data class DashboardState(
     val storeAddress: String = "Alamat Toko",
     val logoUrl: String? = null,
     val role: String = "Owner",
-    val recentTransactions: List<LocalTransactionEntity> = emptyList()
+    val recentTransactions: List<LocalTransactionEntity> = emptyList(),
+    val triggerRefresh: Long = 0L // Helper to force UI refresh
 )
-
-
 
 class DashboardViewModel(
     private val transactionDao: TransactionDao,
@@ -42,6 +39,8 @@ class DashboardViewModel(
     private val transactionRepository: TransactionRepository? = null,
     private val tokenManager: TokenManager? = null
 ) : ViewModel() {
+
+    private val refreshTrigger = MutableStateFlow(0L)
 
     init {
         fetchServerStats()
@@ -53,29 +52,44 @@ class DashboardViewModel(
         }
     }
 
-    val state: StateFlow<DashboardState> = combine(
-        transactionDao.getTotalRevenueFlow(),
-        transactionDao.getTotalTransactionsFlow(),
-        productDao.getTotalProductsFlow(),
-        transactionDao.getNetProfitFlow(),
-        transactionDao.getRecentTransactionsFlow(5)
-    ) { revenue, txCount, productCount, profit, recentTxs ->
+    fun refreshStoreInfo() {
+        refreshTrigger.update { it + 1 }
+    }
 
-        DashboardState(
-            totalRevenue = revenue ?: 0.0,
-            totalTransactions = txCount ?: 0,
-            totalProducts = productCount ?: 0,
-            netProfit = profit ?: 0.0,
+        val state: StateFlow<DashboardState> = combine(
+        combine(
+            transactionDao.getTotalRevenueFlow(),
+            transactionDao.getTotalTransactionsFlow(),
+            productDao.getTotalProductsFlow(),
+            transactionDao.getNetProfitFlow(),
+            transactionDao.getRecentTransactionsFlow(5)
+        ) { revenue, txCount, productCount, profit, recentTxs ->
+            DashboardState(
+                totalRevenue = revenue ?: 0.0,
+                totalTransactions = txCount ?: 0,
+                totalProducts = productCount ?: 0,
+                netProfit = profit ?: 0.0,
+                recentTransactions = recentTxs
+            )
+        },
+        refreshTrigger
+    ) { baseState, refreshTriggerVal ->
+        baseState.copy(
             storeName = tokenManager?.getStoreName() ?: "Nama Toko",
             storeAddress = tokenManager?.getStoreAddress() ?: "Alamat Toko",
             logoUrl = tokenManager?.getStoreLogoUrl(),
             role = tokenManager?.getRole() ?: "Owner",
-            recentTransactions = recentTxs
+            triggerRefresh = refreshTriggerVal
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = DashboardState()
+        initialValue = DashboardState(
+            storeName = tokenManager?.getStoreName() ?: "Nama Toko",
+            storeAddress = tokenManager?.getStoreAddress() ?: "Alamat Toko",
+            logoUrl = tokenManager?.getStoreLogoUrl(),
+            role = tokenManager?.getRole() ?: "Owner"
+        )
     )
 
     class Factory(
