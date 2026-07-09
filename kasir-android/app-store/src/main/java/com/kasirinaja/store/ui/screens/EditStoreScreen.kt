@@ -29,6 +29,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import android.webkit.MimeTypeMap
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import com.kasirinaja.core.network.RetrofitClient
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,17 +49,36 @@ fun EditStoreScreen(
     ) { uri: Uri? ->
         uri?.let {
             selectedImageUri = it
-            // Copy to temp file in background
+            // Copy and compress to temp file in background
             kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
                 val inputStream = context.contentResolver.openInputStream(it)
-                val mimeType = context.contentResolver.getType(it)
-                val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ?: "jpg"
-                val file = File(context.cacheDir, "temp_logo.${extension}")
-                val outputStream = FileOutputStream(file)
-                inputStream?.copyTo(outputStream)
-                inputStream?.close()
-                outputStream.close()
-                tempImageFile = file
+                if (inputStream != null) {
+                    val originalBitmap = BitmapFactory.decodeStream(inputStream)
+                    inputStream.close()
+
+                    if (originalBitmap != null) {
+                        // Downscale if needed
+                        val maxDim = 512f
+                        val ratio = Math.min(maxDim / originalBitmap.width, maxDim / originalBitmap.height)
+                        val scaledBitmap = if (ratio < 1.0f) {
+                            Bitmap.createScaledBitmap(
+                                originalBitmap,
+                                (originalBitmap.width * ratio).toInt(),
+                                (originalBitmap.height * ratio).toInt(),
+                                true
+                            )
+                        } else {
+                            originalBitmap
+                        }
+
+                        val file = File(context.cacheDir, "temp_logo_compressed.jpg")
+                        val outputStream = FileOutputStream(file)
+                        // Compress to JPEG to save space
+                        scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+                        outputStream.close()
+                        tempImageFile = file
+                    }
+                }
             }
         }
     }

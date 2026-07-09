@@ -107,6 +107,13 @@ func (h *StoreHandler) UploadStoreLogo(c *gin.Context) {
 		return
 	}
 
+	// Restrict file size to 3MB
+	const MaxFileSize = 3 * 1024 * 1024
+	if file.Size > MaxFileSize {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File terlalu besar, maksimal 3MB"})
+		return
+	}
+
 	// Delete old logo if exists
 	if store.LogoUrl.Valid && store.LogoUrl.String != "" {
 		// logo url format is usually /uploads/id/filename
