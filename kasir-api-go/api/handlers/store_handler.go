@@ -2,11 +2,9 @@ package handlers
 
 import (
 	"fmt"
-	"regexp"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -107,18 +105,13 @@ func (h *StoreHandler) UploadStoreLogo(c *gin.Context) {
 		return
 	}
 
-	// Sanitize store name for folder creation
-	reg, _ := regexp.Compile("[^a-zA-Z0-9]+")
-	safeStoreName := reg.ReplaceAllString(store.StoreName, "_")
-	safeStoreName = strings.ToLower(safeStoreName)
-	if safeStoreName == "" || safeStoreName == "_" {
-		safeStoreName = "store_" + uid.String()
-	}
+	// Use store ID for folder creation to ensure consistency even if store name changes
+	storeIdString := uid.String()
 
 	extension := filepath.Ext(file.Filename)
 	filename := "logo" + extension
 
-	dirPath := filepath.Join("uploads", safeStoreName)
+	dirPath := filepath.Join("uploads", storeIdString)
 	if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create upload directory"})
 		return
@@ -131,7 +124,7 @@ func (h *StoreHandler) UploadStoreLogo(c *gin.Context) {
 		return
 	}
 
-	imageURL := fmt.Sprintf("/uploads/%s/%s", safeStoreName, filename)
+	imageURL := fmt.Sprintf("/uploads/%s/%s", storeIdString, filename)
 
 	// Update store with logo URL
 	arg := db.UpdateStoreParams{
