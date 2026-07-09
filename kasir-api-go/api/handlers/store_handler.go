@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -103,6 +104,16 @@ func (h *StoreHandler) UploadStoreLogo(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to upload logo: " + err.Error()})
 		return
+	}
+
+	// Delete old logo if exists
+	if store.LogoUrl.Valid && store.LogoUrl.String != "" {
+		// logo url format is usually /uploads/id/filename
+		// we strip the leading slash to make it a relative path
+		oldPath := strings.TrimPrefix(store.LogoUrl.String, "/")
+		if oldPath != "" {
+			_ = os.Remove(oldPath) // Ignore error if file doesn't exist
+		}
 	}
 
 	// Use store ID for folder creation to ensure consistency even if store name changes
