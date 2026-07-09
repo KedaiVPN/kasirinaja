@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"regexp"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -107,8 +108,12 @@ func (h *StoreHandler) UploadStoreLogo(c *gin.Context) {
 	}
 
 	// Sanitize store name for folder creation
-	safeStoreName := strings.ReplaceAll(store.StoreName, " ", "_")
+	reg, _ := regexp.Compile("[^a-zA-Z0-9]+")
+	safeStoreName := reg.ReplaceAllString(store.StoreName, "_")
 	safeStoreName = strings.ToLower(safeStoreName)
+	if safeStoreName == "" || safeStoreName == "_" {
+		safeStoreName = "store_" + uid.String()
+	}
 
 	extension := filepath.Ext(file.Filename)
 	filename := "logo" + extension
