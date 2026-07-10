@@ -56,12 +56,30 @@ class DashboardViewModel(
         refreshTrigger.update { it + 1 }
     }
 
-        val state: StateFlow<DashboardState> = combine(
+    private fun getStartOfDay(): Long {
+        val calendar = java.util.Calendar.getInstance()
+        calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
+        calendar.set(java.util.Calendar.MINUTE, 0)
+        calendar.set(java.util.Calendar.SECOND, 0)
+        calendar.set(java.util.Calendar.MILLISECOND, 0)
+        return calendar.timeInMillis
+    }
+
+    private fun getEndOfDay(): Long {
+        val calendar = java.util.Calendar.getInstance()
+        calendar.set(java.util.Calendar.HOUR_OF_DAY, 23)
+        calendar.set(java.util.Calendar.MINUTE, 59)
+        calendar.set(java.util.Calendar.SECOND, 59)
+        calendar.set(java.util.Calendar.MILLISECOND, 999)
+        return calendar.timeInMillis
+    }
+
+    val state: StateFlow<DashboardState> = combine(
         combine(
-            transactionDao.getTotalRevenueFlow(),
-            transactionDao.getTotalTransactionsFlow(),
+            transactionDao.getTodayTotalRevenueFlow(getStartOfDay(), getEndOfDay()),
+            transactionDao.getTodayTotalTransactionsFlow(getStartOfDay(), getEndOfDay()),
             productDao.getTotalProductsFlow(),
-            transactionDao.getNetProfitFlow(),
+            transactionDao.getTodayNetProfitFlow(getStartOfDay(), getEndOfDay()),
             transactionDao.getRecentTransactionsFlow(5)
         ) { revenue, txCount, productCount, profit, recentTxs ->
             DashboardState(

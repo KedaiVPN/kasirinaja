@@ -52,11 +52,20 @@ interface TransactionDao {
     @Query("SELECT SUM(totalAmount) FROM transactions")
     fun getTotalRevenueFlow(): kotlinx.coroutines.flow.Flow<Double?>
 
+    @Query("SELECT SUM(totalAmount) FROM transactions WHERE transactionTime >= :startOfDay AND transactionTime <= :endOfDay")
+    fun getTodayTotalRevenueFlow(startOfDay: Long, endOfDay: Long): kotlinx.coroutines.flow.Flow<Double?>
+
     @Query("SELECT COUNT(id) FROM transactions")
     fun getTotalTransactionsFlow(): kotlinx.coroutines.flow.Flow<Int?>
 
+    @Query("SELECT COUNT(id) FROM transactions WHERE transactionTime >= :startOfDay AND transactionTime <= :endOfDay")
+    fun getTodayTotalTransactionsFlow(startOfDay: Long, endOfDay: Long): kotlinx.coroutines.flow.Flow<Int?>
+
     @Query("SELECT SUM(subtotal - (buyPrice * quantity)) FROM transaction_items")
     fun getNetProfitFlow(): kotlinx.coroutines.flow.Flow<Double?>
+
+    @Query("SELECT SUM(ti.subtotal - (ti.buyPrice * ti.quantity)) FROM transaction_items ti INNER JOIN transactions t ON ti.transactionId = t.id WHERE t.transactionTime >= :startOfDay AND t.transactionTime <= :endOfDay")
+    fun getTodayNetProfitFlow(startOfDay: Long, endOfDay: Long): kotlinx.coroutines.flow.Flow<Double?>
 
     @Query("SELECT * FROM transactions ORDER BY transactionTime DESC LIMIT :limit")
     fun getRecentTransactionsFlow(limit: Int): kotlinx.coroutines.flow.Flow<List<LocalTransactionEntity>>
