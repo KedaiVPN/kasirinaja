@@ -64,6 +64,9 @@ interface TransactionDao {
     @Query("SELECT SUM(subtotal - (buyPrice * quantity)) FROM transaction_items")
     fun getNetProfitFlow(): kotlinx.coroutines.flow.Flow<Double?>
 
+    @Query("SELECT SUM(ti.quantity) FROM transaction_items ti INNER JOIN transactions t ON ti.transactionId = t.id WHERE t.transactionTime >= :startOfDay AND t.transactionTime <= :endOfDay")
+    fun getTodayTotalProductsSoldFlow(startOfDay: Long, endOfDay: Long): kotlinx.coroutines.flow.Flow<Int?>
+
     @Query("SELECT SUM(ti.subtotal - (ti.buyPrice * ti.quantity)) FROM transaction_items ti INNER JOIN transactions t ON ti.transactionId = t.id WHERE t.transactionTime >= :startOfDay AND t.transactionTime <= :endOfDay")
     fun getTodayNetProfitFlow(startOfDay: Long, endOfDay: Long): kotlinx.coroutines.flow.Flow<Double?>
 

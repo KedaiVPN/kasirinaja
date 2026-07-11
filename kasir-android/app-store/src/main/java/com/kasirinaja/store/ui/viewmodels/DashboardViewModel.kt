@@ -25,6 +25,7 @@ data class DashboardState(
     val totalTransactions: Int = 0,
     val totalProducts: Int = 0,
     val netProfit: Double = 0.0,
+    val todayProductsSold: Int = 0,
     val storeName: String = "Nama Toko",
     val storeAddress: String = "Alamat Toko",
     val logoUrl: String? = null,
@@ -80,14 +81,24 @@ class DashboardViewModel(
             transactionDao.getTodayTotalTransactionsFlow(getStartOfDay(), getEndOfDay()),
             productDao.getTotalProductsFlow(),
             transactionDao.getTodayNetProfitFlow(getStartOfDay(), getEndOfDay()),
-            transactionDao.getRecentTransactionsFlow(5)
-        ) { revenue, txCount, productCount, profit, recentTxs ->
+            transactionDao.getRecentTransactionsFlow(5),
+            transactionDao.getTodayTotalProductsSoldFlow(getStartOfDay(), getEndOfDay())
+        ) { arr ->
+            @Suppress("UNCHECKED_CAST")
+            val revenue = arr[0] as Double?
+            val txCount = arr[1] as Int?
+            val productCount = arr[2] as Int?
+            val profit = arr[3] as Double?
+            val recentTxs = arr[4] as List<LocalTransactionEntity>
+            val productsSold = arr[5] as Int?
+
             DashboardState(
                 totalRevenue = revenue ?: 0.0,
                 totalTransactions = txCount ?: 0,
                 totalProducts = productCount ?: 0,
                 netProfit = profit ?: 0.0,
-                recentTransactions = recentTxs
+                recentTransactions = recentTxs,
+                todayProductsSold = productsSold ?: 0
             )
         },
         refreshTrigger
