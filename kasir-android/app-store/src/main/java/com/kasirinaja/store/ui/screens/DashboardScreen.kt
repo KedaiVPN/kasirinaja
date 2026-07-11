@@ -11,6 +11,8 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -34,6 +36,10 @@ import com.kasirinaja.core.network.RetrofitClient
 import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.Logout
 import androidx.compose.material.icons.rounded.ReceiptLong
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,10 +50,25 @@ fun DashboardScreen(
     onLogout: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
 
     // Refresh token values every time the screen becomes active
     LaunchedEffect(Unit) {
         viewModel.refreshStoreInfo()
+    }
+
+    // Refresh data automatically at midnight if the app is open
+    val currentViewModel by rememberUpdatedState(viewModel)
+    DisposableEffect(context) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent?.action == Intent.ACTION_TIME_TICK || intent?.action == Intent.ACTION_DATE_CHANGED) {
+                    currentViewModel.refreshStoreInfo()
+                }
+            }
+        }
+        context.registerReceiver(receiver, IntentFilter(Intent.ACTION_DATE_CHANGED))
+        onDispose { context.unregisterReceiver(receiver) }
     }
 
     Scaffold(
@@ -414,7 +435,7 @@ fun FinancialSummaryCard(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Text(
-                    text = "Total Penjualan",
+                    text = "Penjualan Hari Ini",
                     color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -447,7 +468,7 @@ fun FinancialSummaryCard(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Total Keuntungan",
+                                text = "Keuntungan Hari Ini",
                                 color = MaterialTheme.colorScheme.onPrimary,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Medium
