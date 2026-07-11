@@ -256,9 +256,48 @@ fun DashboardScreen(
                     }
                 }
             }
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    DashboardStatCard(
+                        modifier = Modifier.weight(1f),
+                        icon = {
+                            Icon(
+                                Icons.Filled.ShoppingCart,
+                                contentDescription = "Transactions",
+                                tint = Color(0xFF1E293B),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        },
+                        title = "Hari Ini",
+                        value = "${state.todayProductsSold}",
+                        subtitle = "Produk terjual"
+                    )
+                    DashboardStatCard(
+                        modifier = Modifier.weight(1f),
+                        icon = {
+                            Icon(
+                                Icons.Filled.Inventory,
+                                contentDescription = "Total Produk",
+                                tint = Color(0xFF1E293B),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        },
+                        title = "Total Produk",
+                        value = "${state.totalProducts}",
+                        subtitle = "Produk di toko"
+                    )
+                }
+            }
 
             item {
                 Spacer(modifier = Modifier.height(24.dp))
+
                 Text(
                     text = "Transaksi Terakhir",
                     style = MaterialTheme.typography.titleLarge,
@@ -311,6 +350,50 @@ fun TransactionItem(id: String, amount: String, time: String) {
                 Text(text = time, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
             }
             Text(text = amount, fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50), fontSize = 16.sp)
+        }
+    }
+}
+
+@Composable
+fun DashboardStatCard(
+    modifier: Modifier = Modifier,
+    icon: @Composable () -> Unit,
+    title: String,
+    value: String,
+    subtitle: String
+) {
+    Card(
+        modifier = modifier,
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                icon()
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = title.uppercase(),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1E293B)
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = value,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.Black
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = subtitle,
+                fontSize = 12.sp,
+                color = Color(0xFF64748B)
+            )
         }
     }
 }
