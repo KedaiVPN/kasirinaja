@@ -96,12 +96,29 @@ fun DashboardScreen(
                 actions = {
                     var showMenu by remember { mutableStateOf(false) }
                     Box {
-                        IconButton(onClick = { showMenu = !showMenu }) {
-                            Icon(
-                                Icons.Rounded.AccountCircle,
-                                contentDescription = "Profile Menu",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
+                        IconButton(
+                            onClick = { showMenu = !showMenu },
+                            modifier = Modifier.padding(end = 8.dp).size(36.dp)
+                        ) {
+                            if (!state.userPhotoUrl.isNullOrEmpty()) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(context)
+                                        .data("${RetrofitClient.IMAGE_BASE_URL}${state.userPhotoUrl}")
+                                        .crossfade(true)
+                                        .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                                        .build(),
+                                    contentDescription = "Profile Photo",
+                                    modifier = Modifier.fillMaxSize().clip(CircleShape).border(1.dp, MaterialTheme.colorScheme.primary, CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Icon(
+                                    Icons.Rounded.AccountCircle,
+                                    contentDescription = "Profile Menu",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(36.dp)
+                                )
+                            }
                         }
                         DropdownMenu(
                             expanded = showMenu,

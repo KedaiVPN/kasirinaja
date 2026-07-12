@@ -45,10 +45,6 @@ fun EditProfileScreen(
         selectedImageUri = uri
     }
 
-    LaunchedEffect(Unit) {
-        viewModel.loadProfileData()
-    }
-
     LaunchedEffect(state.isSuccess) {
         if (state.isSuccess) {
             viewModel.resetState()
