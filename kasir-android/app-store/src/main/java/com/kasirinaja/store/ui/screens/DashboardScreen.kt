@@ -329,6 +329,7 @@ fun StoreProfileCard(
                             model = ImageRequest.Builder(context)
                                 .data("${RetrofitClient.IMAGE_BASE_URL}${logoUrl}")
                                 .crossfade(true)
+                                .diskCachePolicy(coil.request.CachePolicy.ENABLED)
                                 .build(),
                             contentDescription = "Store Logo",
                             modifier = Modifier.fillMaxSize(),

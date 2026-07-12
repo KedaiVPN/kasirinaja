@@ -3,6 +3,8 @@ package handlers
 import (
 	"net/http"
 	"os"
+	"fmt"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -224,7 +226,7 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 			return
 		}
 
-		photoURL := "/uploads/" + storeIDStr.(string) + "/" + filename
+		photoURL := fmt.Sprintf("/uploads/%s/%s?t=%d", storeIDStr.(string), filename, time.Now().Unix())
 		arg.PhotoUrl = pgtype.Text{String: photoURL, Valid: true}
 	}
 
