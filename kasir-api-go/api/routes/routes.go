@@ -41,6 +41,7 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 			usersAuth.Use(handlers.AuthMiddleware())
 			usersAuth.GET("/", userHandler.ListStoreUsers)
 			usersAuth.POST("/add-employee", userHandler.AddStoreEmployee)
+			usersAuth.PUT("/profile", userHandler.UpdateProfile)
 		}
 
 		// Product routes

@@ -160,8 +160,8 @@ fun DashboardScreen(
             item {
                 Spacer(modifier = Modifier.height(24.dp))
                 FinancialSummaryCard(
-                    totalRevenue = state.todayRevenue.toLong(),
-                    netProfit = state.todayProfit.toLong()
+                    totalRevenue = state.totalRevenue.toLong(),
+                    netProfit = state.netProfit.toLong()
                 )
             }
 

@@ -409,8 +409,8 @@ fun MainScreen() {
                 DashboardScreen(
                     viewModel = dashboardViewModel,
                     onNavigateToEditStore = { navController.navigate("edit_store") },
-                    onNavigateToSettings = {
-                        navController.navigate(Screen.Settings.route)
+                    onNavigateToEditProfile = {
+                        navController.navigate("edit_profile")
                     },
                     onLogout = {
                         tokenManager.clearToken()
@@ -484,6 +484,12 @@ fun MainScreen() {
             }
             composable(Screen.Master.route) { MasterScreen() }
             composable(Screen.Settings.route) { SettingsScreen() }
+            composable("edit_profile") {
+                val editProfileViewModel: com.kasirinaja.store.ui.viewmodels.EditProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                    factory = com.kasirinaja.store.ui.viewmodels.EditProfileViewModel.Factory(tokenManager)
+                )
+                com.kasirinaja.store.ui.screens.EditProfileScreen(viewModel = editProfileViewModel, onNavigateBack = { navController.popBackStack() })
+            }
             composable(
                 route = "${Screen.AddProduct.route}?productId={productId}",
                 arguments = listOf(androidx.navigation.navArgument("productId") {

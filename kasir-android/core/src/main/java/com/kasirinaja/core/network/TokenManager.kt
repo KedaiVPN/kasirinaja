@@ -58,4 +58,20 @@ class TokenManager(context: Context) {
         prefs.edit().remove("jwt_token").apply()
         prefs.edit().remove("role").apply()
     }
+
+    fun getUserName(): String {
+        return prefs.getString("user_name", "") ?: ""
+    }
+
+    fun getPhotoUrl(): String? {
+        return prefs.getString("user_photo_url", null)
+    }
+
+    fun saveUserProfile(name: String?, photoUrl: String?) {
+        prefs.edit().apply {
+            if (name != null) putString("user_name", name)
+            if (photoUrl != null) putString("user_photo_url", photoUrl)
+            apply()
+        }
+    }
 }

@@ -17,7 +17,7 @@ INSERT INTO users (
 ) VALUES (
   $1, $2, $3, $4, $5, $6
 )
-RETURNING id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at
+RETURNING id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at, photo_url
 `
 
 type CreateUserParams struct {
@@ -50,12 +50,13 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.PhotoUrl,
 	)
 	return i, err
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at FROM users
+SELECT id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at, photo_url FROM users
 WHERE id = $1 LIMIT 1
 `
 
@@ -73,12 +74,13 @@ func (q *Queries) GetUser(ctx context.Context, id pgtype.UUID) (User, error) {
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.PhotoUrl,
 	)
 	return i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at FROM users
+SELECT id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at, photo_url FROM users
 WHERE email = $1 LIMIT 1
 `
 
@@ -96,12 +98,13 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email pgtype.Text) (User, 
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.PhotoUrl,
 	)
 	return i, err
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at FROM users
+SELECT id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at, photo_url FROM users
 ORDER BY id
 `
 
@@ -125,6 +128,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 			&i.IsActive,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.PhotoUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -137,7 +141,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 }
 
 const listUsersByStore = `-- name: ListUsersByStore :many
-SELECT id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at FROM users
+SELECT id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at, photo_url FROM users
 WHERE store_id = $1
 ORDER BY created_at ASC
 `
@@ -162,6 +166,7 @@ func (q *Queries) ListUsersByStore(ctx context.Context, storeID pgtype.UUID) ([]
 			&i.IsActive,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.PhotoUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -171,6 +176,41 @@ func (q *Queries) ListUsersByStore(ctx context.Context, storeID pgtype.UUID) ([]
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateUserProfile = `-- name: UpdateUserProfile :one
+UPDATE users
+SET
+  full_name = COALESCE($2, full_name),
+  photo_url = COALESCE($3, photo_url),
+  updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at, photo_url
+`
+
+type UpdateUserProfileParams struct {
+	ID       pgtype.UUID `json:"id"`
+	FullName pgtype.Text `json:"full_name"`
+	PhotoUrl pgtype.Text `json:"photo_url"`
+}
+
+func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserProfile, arg.ID, arg.FullName, arg.PhotoUrl)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.FullName,
+		&i.Email,
+		&i.Phone,
+		&i.PasswordHash,
+		&i.Role,
+		&i.StoreID,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.PhotoUrl,
+	)
+	return i, err
 }
 
 const updateUserStoreID = `-- name: UpdateUserStoreID :exec

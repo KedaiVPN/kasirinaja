@@ -24,3 +24,12 @@ UPDATE users SET store_id = $2 WHERE id = $1;
 SELECT * FROM users
 WHERE store_id = $1
 ORDER BY created_at ASC;
+
+-- name: UpdateUserProfile :one
+UPDATE users
+SET
+  full_name = COALESCE(sqlc.narg('full_name'), full_name),
+  photo_url = COALESCE(sqlc.narg('photo_url'), photo_url),
+  updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING *;
