@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -164,4 +165,74 @@ func (h *UserHandler) AddStoreEmployee(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, user)
+}
+
+type UpdateProfileRequest struct {
+	FullName string `form:"full_name"`
+	// photo is handled as a file upload
+}
+
+func (h *UserHandler) UpdateProfile(c *gin.Context) {
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID missing from token"})
+		return
+	}
+
+	storeIDStr, exists := c.Get("store_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Store ID missing from token"})
+		return
+	}
+
+	userIDUUID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	var req UpdateProfileRequest
+	if err := c.ShouldBind(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	arg := db.UpdateUserProfileParams{
+		ID: pgtype.UUID{Bytes: userIDUUID, Valid: true},
+	}
+
+	if req.FullName != "" {
+		arg.FullName = pgtype.Text{String: req.FullName, Valid: true}
+	}
+
+	file, err := c.FormFile("photo")
+	if err == nil {
+		// user uploaded a file
+		// Sanitize file path just like in upload_handler
+		uploadDir := "./uploads/" + storeIDStr.(string)
+
+		if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create directory"})
+			return
+		}
+
+		filename := userIDStr.(string) + ".png"
+		filePath := uploadDir + "/" + filename
+
+		if err := c.SaveUploadedFile(file, filePath); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+			return
+		}
+
+		photoURL := "/uploads/" + storeIDStr.(string) + "/" + filename
+		arg.PhotoUrl = pgtype.Text{String: photoURL, Valid: true}
+	}
+
+	updatedUser, err := h.queries.UpdateUserProfile(c.Request.Context(), arg)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, updatedUser)
 }
