@@ -34,16 +34,13 @@ class EditProfileViewModel(private val tokenManager: TokenManager) : ViewModel()
     private val _state = MutableStateFlow(EditProfileState())
     val state: StateFlow<EditProfileState> = _state.asStateFlow()
 
-    fun loadProfileData() {
+    init {
         _state.update {
             it.copy(
                 fullName = tokenManager.getUserName(),
                 photoUrl = tokenManager.getPhotoUrl()
             )
         }
-    }
-    init {
-        loadProfileData()
     }
 
     fun onFullNameChange(name: String) {

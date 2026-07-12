@@ -9,7 +9,6 @@ import com.kasirinaja.store.data.local.LocalTransactionEntity
 import com.kasirinaja.store.data.local.TransactionDao
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.flow
 import androidx.lifecycle.viewModelScope
@@ -33,7 +32,6 @@ data class DashboardState(
     val storeAddress: String = "Alamat Toko",
     val logoUrl: String? = null,
     val role: String = "Owner",
-    val userPhotoUrl: String? = null,
     val recentTransactions: List<LocalTransactionEntity> = emptyList(),
     val triggerRefresh: Long = 0L // Helper to force UI refresh
 )
@@ -79,9 +77,7 @@ class DashboardViewModel(
         return calendar.timeInMillis
     }
 
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    val state: StateFlow<DashboardState> = refreshTrigger.flatMapLatest { refreshTriggerVal ->
-        combine(
+    val state: StateFlow<DashboardState> = combine(
         combine(
             transactionDao.getTodayTotalRevenueFlow(getStartOfDay(), getEndOfDay()),
             transactionDao.getTodayTotalTransactionsFlow(getStartOfDay(), getEndOfDay()),
@@ -109,17 +105,15 @@ class DashboardViewModel(
                 todayProductsSold = productsSold ?: 0
             )
         },
-        flow { emit(refreshTriggerVal) }
-    ) { baseState, _ ->
+        refreshTrigger
+    ) { baseState, refreshTriggerVal ->
         baseState.copy(
             storeName = tokenManager?.getStoreName() ?: "Nama Toko",
             storeAddress = tokenManager?.getStoreAddress() ?: "Alamat Toko",
             logoUrl = tokenManager?.getStoreLogoUrl(),
             role = tokenManager?.getRole() ?: "Owner",
-            triggerRefresh = refreshTriggerVal,
-            userPhotoUrl = tokenManager?.getPhotoUrl()
+            triggerRefresh = refreshTriggerVal
         )
-    }
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -127,8 +121,7 @@ class DashboardViewModel(
             storeName = tokenManager?.getStoreName() ?: "Nama Toko",
             storeAddress = tokenManager?.getStoreAddress() ?: "Alamat Toko",
             logoUrl = tokenManager?.getStoreLogoUrl(),
-            role = tokenManager?.getRole() ?: "Owner",
-            userPhotoUrl = tokenManager?.getPhotoUrl()
+            role = tokenManager?.getRole() ?: "Owner"
         )
     )
 

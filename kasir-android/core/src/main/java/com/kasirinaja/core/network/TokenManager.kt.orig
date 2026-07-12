@@ -59,10 +59,6 @@ class TokenManager(context: Context) {
         prefs.edit().remove("role").apply()
         prefs.edit().remove("user_name").apply()
         prefs.edit().remove("user_photo_url").apply()
-        prefs.edit().remove("store_id").apply()
-        prefs.edit().remove("store_name").apply()
-        prefs.edit().remove("store_address").apply()
-        prefs.edit().remove("store_logo_url").apply()
     }
 
     fun getUserName(): String {
@@ -76,7 +72,7 @@ class TokenManager(context: Context) {
     fun saveUserProfile(name: String?, photoUrl: String?) {
         prefs.edit().apply {
             if (name != null) putString("user_name", name)
-            if (!photoUrl.isNullOrBlank()) putString("user_photo_url", photoUrl)
+            if (photoUrl != null) putString("user_photo_url", photoUrl)
             apply()
         }
     }
