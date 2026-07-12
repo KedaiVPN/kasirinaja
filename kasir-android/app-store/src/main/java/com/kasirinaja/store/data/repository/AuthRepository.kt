@@ -21,6 +21,8 @@ class AuthRepository(
                 val storeAddress = user?.get("store_address")?.toString()
                 val role = user?.get("role")?.toString()
                 val logoUrl = user?.get("logo_url")?.toString()
+                val fullName = user?.get("full_name")?.toString()
+                val photoUrl = user?.get("photo_url")?.toString()
                 if (token != null) {
                     tokenManager.saveToken(token)
                     if (storeId != null) {
@@ -38,6 +40,7 @@ class AuthRepository(
                     if (logoUrl != null) {
                         tokenManager.saveStoreLogoUrl(logoUrl)
                     }
+                    tokenManager.saveUserProfile(fullName, photoUrl)
                     Result.success(token)
                 } else {
                     Result.failure(Exception("Token not found in response"))
@@ -137,6 +140,8 @@ class AuthRepository(
                 val storeAddress = user?.get("store_address")?.toString()
                 val role = user?.get("role")?.toString()
                 val logoUrl = user?.get("logo_url")?.toString()
+                val fullName = user?.get("full_name")?.toString()
+                val photoUrl = user?.get("photo_url")?.toString()
                 if (token != null) {
                     tokenManager.saveToken(token)
                     if (storeId != null) {
@@ -154,6 +159,7 @@ class AuthRepository(
                     if (logoUrl != null) {
                         tokenManager.saveStoreLogoUrl(logoUrl)
                     }
+                    tokenManager.saveUserProfile(fullName, photoUrl)
                     Result.success(token)
                 } else {
                     Result.failure(Exception("Token not found in response"))
