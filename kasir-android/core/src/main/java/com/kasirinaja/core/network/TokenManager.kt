@@ -76,7 +76,11 @@ class TokenManager(context: Context) {
     fun saveUserProfile(name: String?, photoUrl: String?) {
         prefs.edit().apply {
             if (name != null) putString("user_name", name)
-            if (!photoUrl.isNullOrBlank()) putString("user_photo_url", photoUrl)
+            if (!photoUrl.isNullOrBlank()) {
+                putString("user_photo_url", photoUrl)
+            } else {
+                remove("user_photo_url")
+            }
             apply()
         }
     }
