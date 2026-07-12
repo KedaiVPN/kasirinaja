@@ -63,7 +63,11 @@ class EditProfileViewModel(private val tokenManager: TokenManager) : ViewModel()
                     }
                 }
 
-                val fullNameBody = _state.value.fullName.toRequestBody("text/plain".toMediaTypeOrNull())
+                val fullNameBody = if (_state.value.fullName.isNotBlank()) {
+                    _state.value.fullName.toRequestBody("text/plain".toMediaTypeOrNull())
+                } else {
+                    null
+                }
 
                 val response = RetrofitClient.userApi.updateProfile(fullNameBody, photoPart)
                 if (response.isSuccessful) {

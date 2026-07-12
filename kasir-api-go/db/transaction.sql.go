@@ -246,14 +246,14 @@ func (q *Queries) GetRecentStoreTransactions(ctx context.Context, storeID pgtype
 
 const getStoreDashboardStats = `-- name: GetStoreDashboardStats :one
 SELECT
-    COALESCE(SUM(total_amount), 0)::BIGINT AS total_revenue,
-    COUNT(id)::INT AS total_transactions,
+    COALESCE(SUM(CASE WHEN DATE(transaction_time) = CURRENT_DATE THEN total_amount ELSE 0 END), 0)::BIGINT AS total_revenue,
+    COUNT(CASE WHEN DATE(transaction_time) = CURRENT_DATE THEN id ELSE NULL END)::INT AS total_transactions,
     (SELECT COUNT(store_products.id)::INT FROM store_products WHERE store_products.store_id = $1 AND store_products.is_active = true) AS total_products,
     COALESCE(
         (SELECT SUM(ti.subtotal - (ti.buy_price * ti.quantity))
          FROM transaction_items ti
          JOIN transactions t ON ti.transaction_id = t.id
-         WHERE t.store_id = $1), 0
+         WHERE t.store_id = $1 AND DATE(t.transaction_time) = CURRENT_DATE), 0
     )::BIGINT AS net_profit
 FROM transactions
 WHERE transactions.store_id = $1

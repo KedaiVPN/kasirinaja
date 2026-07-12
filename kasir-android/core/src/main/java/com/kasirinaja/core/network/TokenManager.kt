@@ -57,6 +57,8 @@ class TokenManager(context: Context) {
     fun clearToken() {
         prefs.edit().remove("jwt_token").apply()
         prefs.edit().remove("role").apply()
+        prefs.edit().remove("user_name").apply()
+        prefs.edit().remove("user_photo_url").apply()
     }
 
     fun getUserName(): String {

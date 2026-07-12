@@ -164,7 +164,7 @@ fun EditProfileScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
-                    enabled = !state.isLoading && state.fullName.isNotBlank(),
+                    enabled = !state.isLoading && (state.fullName.isNotBlank() || selectedImageUri != null),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     if (state.isLoading) {
