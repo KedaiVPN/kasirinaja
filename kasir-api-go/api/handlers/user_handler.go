@@ -209,6 +209,27 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 
 	file, err := c.FormFile("photo")
 	if err == nil {
+			currentUser, errGet := h.queries.GetUser(c.Request.Context(), pgtype.UUID{Bytes: userIDUUID, Valid: true})
+			if errGet == nil && currentUser.PhotoUrl.Valid && currentUser.PhotoUrl.String != "" {
+				oldPath := currentUser.PhotoUrl.String
+				if len(oldPath) > 0 && oldPath[0] == '/' {
+					oldPath = oldPath[1:]
+				}
+				if idx := -1; true {
+					for i, ch := range oldPath {
+						if ch == '?' {
+							idx = i
+							break
+						}
+					}
+					if idx != -1 {
+						oldPath = oldPath[:idx]
+					}
+				}
+				if oldPath != "" {
+					_ = os.Remove(oldPath)
+				}
+			}
 		// user uploaded a file
 		// Sanitize file path just like in upload_handler
 		uploadDir := "./uploads/" + storeIDStr.(string)
