@@ -210,6 +210,7 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 			"store_name":    store.StoreName,
 			"store_address": store.Address.String,
 			"logo_url":      store.LogoUrl.String,
+				"photo_url":     user.PhotoUrl.String,
 		},
 	})
 }
@@ -316,6 +317,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 			"store_name":    storeName,
 			"store_address": storeAddress,
 			"logo_url":      storeLogoUrl,
+				"photo_url":     user.PhotoUrl.String,
 		},
 	})
 }
@@ -461,6 +463,7 @@ func (h *AuthHandler) SwitchUser(c *gin.Context) {
 			"store_name":    storeName,
 			"store_address": storeAddress,
 			"logo_url":      storeLogoUrl,
+				"photo_url":     targetUser.PhotoUrl.String,
 		},
 	})
 }

@@ -90,6 +90,8 @@ fun EditProfileScreen(
                             model = ImageRequest.Builder(context)
                                 .data(selectedImageUri)
                                 .crossfade(true)
+                                .memoryCachePolicy(coil.request.CachePolicy.DISABLED)
+                                .diskCachePolicy(coil.request.CachePolicy.ENABLED)
                                 .build(),
                             contentDescription = "Selected Photo",
                             modifier = Modifier.fillMaxSize(),
@@ -100,6 +102,8 @@ fun EditProfileScreen(
                             model = ImageRequest.Builder(context)
                                 .data("${RetrofitClient.IMAGE_BASE_URL}${state.photoUrl}")
                                 .crossfade(true)
+                                .memoryCachePolicy(coil.request.CachePolicy.DISABLED)
+                                .diskCachePolicy(coil.request.CachePolicy.ENABLED)
                                 .build(),
                             contentDescription = "Current Photo",
                             modifier = Modifier.fillMaxSize(),
