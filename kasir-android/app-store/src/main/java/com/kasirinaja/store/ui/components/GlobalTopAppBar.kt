@@ -13,6 +13,7 @@ import androidx.compose.material.icons.rounded.Logout
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -36,6 +37,7 @@ fun GlobalTopAppBar(
     val userPhotoUrl = tokenManager.getPhotoUrl()
 
     CenterAlignedTopAppBar(
+        modifier = Modifier.shadow(elevation = 4.dp),
         title = {
             Text(
                 text = title,
