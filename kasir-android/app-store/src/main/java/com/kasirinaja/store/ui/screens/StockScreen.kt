@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -73,6 +74,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.ui.draw.clip
 import androidx.compose.material3.Surface
+
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
+
 
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -154,11 +162,23 @@ fun StockScreen(
                 onLogout = onLogout
             )
         },
-        floatingActionButton = {
+
+        bottomBar = {
             if (currentRole != "kasir") {
-            FloatingActionButton(onClick = onNavigateToAddProduct) {
-                Icon(Icons.Filled.Add, contentDescription = "Tambah Produk")
-            }
+                Box(modifier = Modifier.padding(16.dp)) {
+                    Button(
+                        onClick = onNavigateToAddProduct,
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Filled.Add, contentDescription = "Tambah Produk")
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Tambah Produk", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
