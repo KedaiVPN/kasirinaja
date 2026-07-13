@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
+import com.kasirinaja.store.ui.components.GlobalTopAppBar
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,7 +36,9 @@ import com.kasirinaja.core.network.TokenManager
 @Composable
 fun MasterScreen(
     onNavigateToScanner: () -> Unit = {},
-    initialSearchQuery: String = ""
+    initialSearchQuery: String = "",
+    onNavigateToEditProfile: () -> Unit = {},
+    onLogout: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val database = AppDatabase.getDatabase(context)
@@ -71,7 +74,16 @@ fun MasterScreen(
         viewModel.fetchMasterProducts()
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Scaffold(
+        topBar = {
+            GlobalTopAppBar(
+                title = "Master",
+                onNavigateToEditProfile = onNavigateToEditProfile,
+                onLogout = onLogout
+            )
+        }
+    ) { paddingValues ->
+        Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
         // Search Bar
         Row(
             modifier = Modifier
@@ -115,6 +127,7 @@ fun MasterScreen(
             }
         }
     }
+    } // End of Scaffold
 
     productToEdit?.let { product ->
         AddStoreProductModal(

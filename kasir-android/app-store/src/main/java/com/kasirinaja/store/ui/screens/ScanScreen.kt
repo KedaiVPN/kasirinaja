@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
+import com.kasirinaja.store.ui.components.GlobalTopAppBar
 import android.widget.Toast
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.*
@@ -56,7 +57,9 @@ import androidx.compose.runtime.DisposableEffect
 @Composable
 fun ScanScreen(
     viewModel: ScanViewModel,
-    onNavigateToPayment: () -> Unit
+    onNavigateToPayment: () -> Unit,
+    onNavigateToEditProfile: () -> Unit = {},
+    onLogout: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -114,6 +117,13 @@ fun ScanScreen(
         }
 
         BottomSheetScaffold(
+            topBar = {
+                GlobalTopAppBar(
+                    title = "Transaksi",
+                    onNavigateToEditProfile = onNavigateToEditProfile,
+                    onLogout = onLogout
+                )
+            },
             sheetContent = {
                 if (cartItems.isNotEmpty()) {
                     Column(
