@@ -1,11 +1,14 @@
 package com.kasirinaja.store.ui.components
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.rounded.AccountCircle
@@ -84,30 +87,68 @@ fun GlobalTopAppBar(
                         )
                     }
                 }
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false }
+                MaterialTheme(
+                    shapes = MaterialTheme.shapes.copy(extraSmall = RoundedCornerShape(16.dp))
                 ) {
-                    DropdownMenuItem(
-                        text = { Text("Profil") },
-                        leadingIcon = {
-                            Icon(Icons.Rounded.AccountCircle, contentDescription = "Profil")
-                        },
-                        onClick = {
-                            showMenu = false
-                            onNavigateToEditProfile()
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Logout", color = MaterialTheme.colorScheme.error) },
-                        leadingIcon = {
-                            Icon(Icons.Rounded.Logout, contentDescription = "Logout", tint = MaterialTheme.colorScheme.error)
-                        },
-                        onClick = {
-                            showMenu = false
-                            onLogout()
-                        }
-                    )
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false },
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.surface)
+                            .padding(vertical = 8.dp)
+                    ) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = "Profil",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Rounded.AccountCircle,
+                                    contentDescription = "Profil",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            },
+                            onClick = {
+                                showMenu = false
+                                onNavigateToEditProfile()
+                            },
+                            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
+                        )
+
+                        Divider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                        )
+
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = "Logout",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Rounded.Logout,
+                                    contentDescription = "Logout",
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            },
+                            onClick = {
+                                showMenu = false
+                                onLogout()
+                            },
+                            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
+                        )
+                    }
                 }
             }
         },
