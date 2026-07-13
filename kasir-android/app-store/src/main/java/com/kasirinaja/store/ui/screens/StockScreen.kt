@@ -66,6 +66,14 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.clip
+import androidx.compose.material3.Surface
+
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ArrowDropDown
 
@@ -167,40 +175,54 @@ fun StockScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = { Text("Cari nama atau barcode...") },
-                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
-                singleLine = true
+                placeholder = { Text("Cari produk...", style = MaterialTheme.typography.bodyMedium) },
+                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search", modifier = Modifier.size(20.dp)) },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                textStyle = MaterialTheme.typography.bodyMedium,
             )
 
-            // Filters
+            // Compact Filters
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Category Dropdown
+                // Category Filter Chip
                 var categoryExpanded by remember { mutableStateOf(false) }
                 Box(modifier = Modifier.weight(1f)) {
-                    OutlinedTextField(
-                        value = selectedCategory,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Kategori") },
-                        trailingIcon = {
-                            IconButton(onClick = { categoryExpanded = true }) {
-                                Icon(Icons.Filled.ArrowDropDown, contentDescription = "Kategori")
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                            .clickable { categoryExpanded = true }
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = if (selectedCategory == "Semua") "Kategori" else selectedCategory,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1
+                        )
+                        Icon(
+                            Icons.Filled.ArrowDropDown,
+                            contentDescription = "Kategori",
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     DropdownMenu(
                         expanded = categoryExpanded,
                         onDismissRequest = { categoryExpanded = false }
                     ) {
                         categories.forEach { cat ->
                             DropdownMenuItem(
-                                text = { Text(cat) },
+                                text = { Text(cat, style = MaterialTheme.typography.bodyMedium) },
                                 onClick = {
                                     viewModel.onCategoryChange(cat)
                                     categoryExpanded = false
@@ -210,29 +232,40 @@ fun StockScreen(
                     }
                 }
 
-                // Sort Dropdown
+                // Sort Filter Chip
                 var sortExpanded by remember { mutableStateOf(false) }
                 val sortOptions = listOf("Nama (A-Z)", "Terbaru ditambahkan")
                 Box(modifier = Modifier.weight(1f)) {
-                    OutlinedTextField(
-                        value = sortOption,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Urutkan") },
-                        trailingIcon = {
-                            IconButton(onClick = { sortExpanded = true }) {
-                                Icon(Icons.Filled.ArrowDropDown, contentDescription = "Urutkan")
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                            .clickable { sortExpanded = true }
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = sortOption,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1
+                        )
+                        Icon(
+                            Icons.Filled.ArrowDropDown,
+                            contentDescription = "Urutkan",
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     DropdownMenu(
                         expanded = sortExpanded,
                         onDismissRequest = { sortExpanded = false }
                     ) {
                         sortOptions.forEach { sort ->
                             DropdownMenuItem(
-                                text = { Text(sort) },
+                                text = { Text(sort, style = MaterialTheme.typography.bodyMedium) },
                                 onClick = {
                                     viewModel.onSortOptionChange(sort)
                                     sortExpanded = false
