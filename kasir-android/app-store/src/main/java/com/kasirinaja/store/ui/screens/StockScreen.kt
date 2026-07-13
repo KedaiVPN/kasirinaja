@@ -165,17 +165,17 @@ fun StockScreen(
 
         bottomBar = {
             if (currentRole != "kasir") {
-                Box(modifier = Modifier.padding(16.dp)) {
+                Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                     Button(
                         onClick = onNavigateToAddProduct,
-                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        modifier = Modifier.fillMaxWidth().height(44.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(8.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Filled.Add, contentDescription = "Tambah Produk")
+                            Icon(Icons.Filled.Add, contentDescription = "Tambah Produk", modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Tambah Produk", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Text("Tambah Produk", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
