@@ -281,6 +281,7 @@ type StoreProductResponse struct {
 	Barcode         string `json:"barcode"`
 	ImageUrl        string `json:"image_url"`
 	CategoryName    string `json:"category_name"`
+	CreatedAt       string `json:"created_at"`
 }
 
 func (h *ProductHandler) ListStoreProducts(c *gin.Context) {
@@ -337,6 +338,7 @@ func (h *ProductHandler) ListStoreProducts(c *gin.Context) {
 			Barcode:         barcodeStr,
 			ImageUrl:        imageUrlStr,
 			CategoryName:    categoryNameStr,
+			CreatedAt:       p.CreatedAt.Time.Format("2006-01-02T15:04:05Z07:00"),
 		})
 	}
 

@@ -63,6 +63,13 @@ import kotlinx.coroutines.withContext
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ArrowDropDown
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StockScreen(
@@ -80,6 +87,10 @@ fun StockScreen(
 
     val viewModel: StockViewModel = viewModel(factory = StockViewModelFactory(repository))
     val products by viewModel.products.collectAsState(initial = emptyList())
+    val categories by viewModel.categories.collectAsState(initial = listOf("Semua"))
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val selectedCategory by viewModel.selectedCategory.collectAsState()
+    val sortOption by viewModel.sortOption.collectAsState()
     val currentRole = remember { com.kasirinaja.core.network.TokenManager(context).getRole() ?: "owner" }
     val actionState by viewModel.actionState.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -144,23 +155,108 @@ fun StockScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        if (products.isEmpty()) {
-            Box(
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            // Search Bar
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = viewModel::onSearchQueryChange,
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                placeholder = { Text("Cari nama atau barcode...") },
+                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
+                singleLine = true
+            )
+
+            // Filters
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(text = "Daftar Produk Kosong")
+                // Category Dropdown
+                var categoryExpanded by remember { mutableStateOf(false) }
+                Box(modifier = Modifier.weight(1f)) {
+                    OutlinedTextField(
+                        value = selectedCategory,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Kategori") },
+                        trailingIcon = {
+                            IconButton(onClick = { categoryExpanded = true }) {
+                                Icon(Icons.Filled.ArrowDropDown, contentDescription = "Kategori")
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    DropdownMenu(
+                        expanded = categoryExpanded,
+                        onDismissRequest = { categoryExpanded = false }
+                    ) {
+                        categories.forEach { cat ->
+                            DropdownMenuItem(
+                                text = { Text(cat) },
+                                onClick = {
+                                    viewModel.onCategoryChange(cat)
+                                    categoryExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // Sort Dropdown
+                var sortExpanded by remember { mutableStateOf(false) }
+                val sortOptions = listOf("Nama (A-Z)", "Terbaru ditambahkan")
+                Box(modifier = Modifier.weight(1f)) {
+                    OutlinedTextField(
+                        value = sortOption,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Urutkan") },
+                        trailingIcon = {
+                            IconButton(onClick = { sortExpanded = true }) {
+                                Icon(Icons.Filled.ArrowDropDown, contentDescription = "Urutkan")
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    DropdownMenu(
+                        expanded = sortExpanded,
+                        onDismissRequest = { sortExpanded = false }
+                    ) {
+                        sortOptions.forEach { sort ->
+                            DropdownMenuItem(
+                                text = { Text(sort) },
+                                onClick = {
+                                    viewModel.onSortOptionChange(sort)
+                                    sortExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+
+            if (products.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "Daftar Produk Kosong")
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                 items(products) { product ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -253,4 +349,6 @@ fun StockScreen(
             }
         }
     }
+}
+
 }
