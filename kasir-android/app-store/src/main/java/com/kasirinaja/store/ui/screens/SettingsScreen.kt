@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
+import com.kasirinaja.store.ui.components.GlobalTopAppBar
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,7 +27,10 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(
+    onNavigateToEditProfile: () -> Unit = {},
+    onLogout: () -> Unit = {}
+) {
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context) }
     val authRepository = remember { AuthRepository(RetrofitClient.authApi, tokenManager) }
@@ -53,6 +57,13 @@ fun SettingsScreen() {
     }
 
     Scaffold(
+        topBar = {
+            GlobalTopAppBar(
+                title = "Pengaturan Users",
+                onNavigateToEditProfile = onNavigateToEditProfile,
+                onLogout = onLogout
+            )
+        },
         floatingActionButton = {
             if (currentRole == "owner") {
                 FloatingActionButton(onClick = { showAddEmployeeDialog = true }) {
@@ -67,11 +78,7 @@ fun SettingsScreen() {
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            Text(
-                text = "Pengaturan Users",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
+
 
             if (isLoading && users.isEmpty()) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))

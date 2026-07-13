@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material3.*
+import com.kasirinaja.store.ui.components.GlobalTopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -24,13 +25,19 @@ import java.util.Locale
 @Composable
 fun HistoryScreen(
     viewModel: HistoryViewModel,
-    onNavigateToReceipt: (String) -> Unit
+    onNavigateToReceipt: (String) -> Unit,
+    onNavigateToEditProfile: () -> Unit = {},
+    onLogout: () -> Unit = {}
 ) {
     val transactions by viewModel.transactions.collectAsState(initial = emptyList())
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Riwayat Transaksi") })
+            GlobalTopAppBar(
+                title = "Riwayat Transaksi",
+                onNavigateToEditProfile = onNavigateToEditProfile,
+                onLogout = onLogout
+            )
         }
     ) { paddingValues ->
         if (transactions.isEmpty()) {

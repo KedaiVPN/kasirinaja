@@ -439,6 +439,17 @@ fun MainScreen() {
                     },
                     onNavigateToEditProduct = { productId ->
                         navController.navigate("${Screen.AddProduct.route}?productId=$productId")
+                    },
+                    onNavigateToEditProfile = {
+                        navController.navigate("edit_profile")
+                    },
+                    onLogout = {
+                        tokenManager.clearToken()
+                        startDest = Screen.Login.route
+                        authViewModel.resetState()
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(navController.graph.id) { inclusive = true }
+                        }
                     }
                 )
             }
@@ -447,13 +458,35 @@ fun MainScreen() {
                     viewModel = historyViewModel,
                     onNavigateToReceipt = { transactionId ->
                         navController.navigate("${Screen.Receipt.route}/$transactionId")
+                    },
+                    onNavigateToEditProfile = {
+                        navController.navigate("edit_profile")
+                    },
+                    onLogout = {
+                        tokenManager.clearToken()
+                        startDest = Screen.Login.route
+                        authViewModel.resetState()
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(navController.graph.id) { inclusive = true }
+                        }
                     }
                 )
             }
                         composable(Screen.Scan.route) {
                 ScanScreen(
                     viewModel = scanViewModel,
-                    onNavigateToPayment = { navController.navigate(Screen.Payment.route) }
+                    onNavigateToPayment = { navController.navigate(Screen.Payment.route) },
+                    onNavigateToEditProfile = {
+                        navController.navigate("edit_profile")
+                    },
+                    onLogout = {
+                        tokenManager.clearToken()
+                        startDest = Screen.Login.route
+                        authViewModel.resetState()
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(navController.graph.id) { inclusive = true }
+                        }
+                    }
                 )
             }
 
@@ -482,8 +515,36 @@ fun MainScreen() {
                     }
                 )
             }
-            composable(Screen.Master.route) { MasterScreen() }
-            composable(Screen.Settings.route) { SettingsScreen() }
+            composable(Screen.Master.route) {
+                MasterScreen(
+                    onNavigateToEditProfile = {
+                        navController.navigate("edit_profile")
+                    },
+                    onLogout = {
+                        tokenManager.clearToken()
+                        startDest = Screen.Login.route
+                        authViewModel.resetState()
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(navController.graph.id) { inclusive = true }
+                        }
+                    }
+                )
+            }
+            composable(Screen.Settings.route) {
+                SettingsScreen(
+                    onNavigateToEditProfile = {
+                        navController.navigate("edit_profile")
+                    },
+                    onLogout = {
+                        tokenManager.clearToken()
+                        startDest = Screen.Login.route
+                        authViewModel.resetState()
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(navController.graph.id) { inclusive = true }
+                        }
+                    }
+                )
+            }
             composable("edit_profile") {
                 val editProfileViewModel: com.kasirinaja.store.ui.viewmodels.EditProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
                     factory = com.kasirinaja.store.ui.viewmodels.EditProfileViewModel.Factory(tokenManager)

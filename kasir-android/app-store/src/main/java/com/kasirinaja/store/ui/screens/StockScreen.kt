@@ -34,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.material3.TopAppBar
+import com.kasirinaja.store.ui.components.GlobalTopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -66,7 +67,9 @@ import androidx.compose.material3.SnackbarHostState
 @Composable
 fun StockScreen(
     onNavigateToAddProduct: () -> Unit,
-    onNavigateToEditProduct: (String) -> Unit
+    onNavigateToEditProduct: (String) -> Unit,
+    onNavigateToEditProfile: () -> Unit = {},
+    onLogout: () -> Unit = {}
 ) {
     val context = LocalContext.current
 
@@ -126,7 +129,11 @@ fun StockScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Produk & Stok") })
+            GlobalTopAppBar(
+                title = "Produk & Stok",
+                onNavigateToEditProfile = onNavigateToEditProfile,
+                onLogout = onLogout
+            )
         },
         floatingActionButton = {
             if (currentRole != "kasir") {
