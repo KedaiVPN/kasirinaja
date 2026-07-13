@@ -67,6 +67,17 @@ class ProductRepository(
                     ""
                 }
                 val description = if (product.get("description") != null && !product.get("description").isJsonNull) product.get("description").asString else ""
+                val createdAtStr = if (product.get("created_at") != null && !product.get("created_at").isJsonNull) product.get("created_at").asString else ""
+                val createdAtMillis = try {
+                    if (createdAtStr.isNotEmpty()) {
+                        val format = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", java.util.Locale.getDefault())
+                        format.parse(createdAtStr)?.time ?: System.currentTimeMillis()
+                    } else {
+                        System.currentTimeMillis()
+                    }
+                } catch (e: Exception) {
+                    System.currentTimeMillis()
+                }
 
                 val entity = ProductEntity(
                     id = id,
@@ -79,7 +90,8 @@ class ProductRepository(
                     barcode = barcode,
                     imageUrl = imageUrl,
                     isSynced = true,
-                    pendingSync = false
+                    pendingSync = false,
+                    createdAt = createdAtMillis
                 )
                 productDao.insertProduct(entity)
             }
