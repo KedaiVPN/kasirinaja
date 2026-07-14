@@ -182,19 +182,36 @@ fun StockScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 32.dp, end = 32.dp, top = 8.dp, bottom = 4.dp),
+                        .padding(start = 32.dp, end = 32.dp, top = 8.dp, bottom = 16.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Button(
-                        onClick = onNavigateToAddProduct,
-                        modifier = Modifier.fillMaxWidth().height(40.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                        shape = RoundedCornerShape(20.dp)
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = androidx.compose.ui.graphics.Color.White,
+                        shadowElevation = 4.dp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp)
+                            .clickable { onNavigateToAddProduct() }
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Filled.Add, contentDescription = "Tambah Produk", modifier = Modifier.size(18.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Icon(
+                                Icons.Filled.Add,
+                                contentDescription = "Tambah Produk",
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Tambah Produk", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                            Text(
+                                "Tambah Produk",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
                 }
@@ -207,75 +224,83 @@ fun StockScreen(
                 modifier = Modifier.fillMaxSize()
             ) {
             // Search Bar
-            androidx.compose.foundation.text.BasicTextField(
-                value = searchQuery,
-                onValueChange = viewModel::onSearchQueryChange,
+            Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
-                    .padding(horizontal = 12.dp, vertical = 8.dp), // Inner padding makes it smaller than OutlinedTextField
-                textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface),
-                singleLine = true,
-                decorationBox = { innerTextField ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Search,
-                            contentDescription = "Search",
-                            modifier = Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Box(modifier = Modifier.weight(1f)) {
-                            if (searchQuery.isEmpty()) {
-                                Text(
-                                    text = "Cari produk...",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = androidx.compose.ui.graphics.Color.White,
+                shadowElevation = 4.dp
+            ) {
+                androidx.compose.foundation.text.BasicTextField(
+                    value = searchQuery,
+                    onValueChange = viewModel::onSearchQueryChange,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 12.dp),
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface),
+                    singleLine = true,
+                    decorationBox = { innerTextField ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Search,
+                                contentDescription = "Search",
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Box(modifier = Modifier.weight(1f)) {
+                                if (searchQuery.isEmpty()) {
+                                    Text(
+                                        text = "Cari produk...",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                innerTextField()
                             }
-                            innerTextField()
                         }
                     }
-                }
-            )
+                )
+            }
 
             // Compact Filters
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 4.dp)
-                    .padding(bottom = 8.dp),
+                    .padding(bottom = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // Category Filter Chip
                 var categoryExpanded by remember { mutableStateOf(false) }
                 Box(modifier = Modifier.weight(1f)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.primary)
-                            .clickable { categoryExpanded = true }
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = androidx.compose.ui.graphics.Color.White,
+                        shadowElevation = 3.dp,
+                        modifier = Modifier.fillMaxWidth().clickable { categoryExpanded = true }
                     ) {
-                        Text(
-                            text = if (selectedCategory == "Semua") "Kategori" else selectedCategory,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            maxLines = 1
-                        )
-                        Icon(
-                            Icons.Filled.ArrowDropDown,
-                            contentDescription = "Kategori",
-                            modifier = Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.onPrimary
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+                        ) {
+                            Text(
+                                text = if (selectedCategory == "Semua") "Kategori" else selectedCategory,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1
+                            )
+                            Icon(
+                                Icons.Filled.ArrowDropDown,
+                                contentDescription = "Kategori",
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
                     DropdownMenu(
                         expanded = categoryExpanded,
@@ -297,28 +322,30 @@ fun StockScreen(
                 var sortExpanded by remember { mutableStateOf(false) }
                 val sortOptions = listOf("Nama (A-Z)", "Terbaru ditambahkan")
                 Box(modifier = Modifier.weight(1f)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.primary)
-                            .clickable { sortExpanded = true }
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = androidx.compose.ui.graphics.Color.White,
+                        shadowElevation = 3.dp,
+                        modifier = Modifier.fillMaxWidth().clickable { sortExpanded = true }
                     ) {
-                        Text(
-                            text = sortOption,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            maxLines = 1
-                        )
-                        Icon(
-                            Icons.Filled.ArrowDropDown,
-                            contentDescription = "Urutkan",
-                            modifier = Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.onPrimary
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+                        ) {
+                            Text(
+                                text = sortOption,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1
+                            )
+                            Icon(
+                                Icons.Filled.ArrowDropDown,
+                                contentDescription = "Urutkan",
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
                     DropdownMenu(
                         expanded = sortExpanded,
