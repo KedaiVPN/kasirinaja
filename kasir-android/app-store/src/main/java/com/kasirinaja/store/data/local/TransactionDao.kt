@@ -72,4 +72,10 @@ interface TransactionDao {
 
     @Query("SELECT * FROM transactions ORDER BY transactionTime DESC LIMIT :limit")
     fun getRecentTransactionsFlow(limit: Int): kotlinx.coroutines.flow.Flow<List<LocalTransactionEntity>>
+
+    @Query("SELECT * FROM transactions WHERE invoiceNumber LIKE '%' || :searchQuery || '%' ORDER BY transactionTime DESC LIMIT :limit OFFSET :offset")
+    fun getTransactionsPagedFlow(limit: Int, offset: Int, searchQuery: String): kotlinx.coroutines.flow.Flow<List<LocalTransactionEntity>>
+
+    @Query("SELECT COUNT(id) FROM transactions WHERE invoiceNumber LIKE '%' || :searchQuery || '%'")
+    fun getTotalTransactionsCountFlow(searchQuery: String): kotlinx.coroutines.flow.Flow<Int>
 }
