@@ -333,7 +333,8 @@ fun StockScreen(
                 items(products) { product ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color.White)
                     ) {
                         Column(
                             modifier = Modifier.fillMaxWidth()
@@ -432,7 +433,7 @@ fun StockScreen(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .clickable { onNavigateToEditProduct(product.id) },
-                                            colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color.White),
+                                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
                                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                                             shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
                                         ) {
@@ -446,13 +447,13 @@ fun StockScreen(
                                                 Icon(
                                                     imageVector = Icons.Filled.Edit,
                                                     contentDescription = "Edit",
-                                                    tint = androidx.compose.ui.graphics.Color(0xFF4CAF50), // Hijau
+                                                    tint = androidx.compose.ui.graphics.Color.White,
                                                     modifier = Modifier.size(16.dp)
                                                 )
                                                 Spacer(modifier = Modifier.width(8.dp))
                                                 Text(
                                                     text = "Edit",
-                                                    color = androidx.compose.ui.graphics.Color(0xFF4CAF50), // Hijau
+                                                    color = androidx.compose.ui.graphics.Color.White,
                                                     style = MaterialTheme.typography.labelLarge,
                                                     fontWeight = FontWeight.Bold
                                                 )
@@ -467,7 +468,7 @@ fun StockScreen(
                                                     productToDelete = product
                                                     showDeleteDialog = true
                                                 },
-                                            colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color.White),
+                                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error),
                                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                                             shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
                                         ) {
@@ -481,13 +482,13 @@ fun StockScreen(
                                                 Icon(
                                                     imageVector = Icons.Filled.Delete,
                                                     contentDescription = "Delete",
-                                                    tint = androidx.compose.ui.graphics.Color(0xFFF44336), // Merah
+                                                    tint = androidx.compose.ui.graphics.Color.White,
                                                     modifier = Modifier.size(16.dp)
                                                 )
                                                 Spacer(modifier = Modifier.width(8.dp))
                                                 Text(
                                                     text = "Delete",
-                                                    color = androidx.compose.ui.graphics.Color(0xFFF44336), // Merah
+                                                    color = androidx.compose.ui.graphics.Color.White,
                                                     style = MaterialTheme.typography.labelLarge,
                                                     fontWeight = FontWeight.Bold
                                                 )
