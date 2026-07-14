@@ -7,6 +7,8 @@ import com.kasirinaja.store.data.local.LocalTransactionEntity
 import com.kasirinaja.store.data.local.TransactionDao
 import com.kasirinaja.store.data.repository.TransactionRepository
 import kotlinx.coroutines.flow.Flow
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.launch
 
 class HistoryViewModel(
@@ -15,11 +17,6 @@ class HistoryViewModel(
 ) : ViewModel() {
     val transactions: Flow<List<LocalTransactionEntity>> = transactionDao.getAllTransactionsFlow()
 
-    init {
-        viewModelScope.launch {
-            transactionRepository.fetchAndSaveAllTransactions()
-        }
-    }
 }
 
 class HistoryViewModelFactory(

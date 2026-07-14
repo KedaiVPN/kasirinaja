@@ -79,20 +79,13 @@ class StockViewModel(private val repository: ProductRepository) : ViewModel() {
         _actionState.value = null
     }
 
-    init {
-        startSyncLoop()
-    }
-
-    private fun startSyncLoop() {
+    fun syncData() {
         viewModelScope.launch {
-            while (true) {
-                try {
-                    repository.syncStoreProducts()
-                    break
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    delay(60_000)
-                }
+            try {
+                repository.syncStoreProducts()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _actionState.value = "Gagal memperbarui data"
             }
         }
     }

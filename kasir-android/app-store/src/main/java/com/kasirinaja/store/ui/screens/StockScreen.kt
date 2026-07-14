@@ -75,6 +75,13 @@ import androidx.compose.foundation.border
 import androidx.compose.ui.draw.clip
 import androidx.compose.material3.Surface
 
+
+
+
+
+
+
+
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.foundation.layout.Spacer
@@ -112,6 +119,10 @@ fun StockScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var productToDelete by remember { mutableStateOf<com.kasirinaja.store.data.local.ProductEntity?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
+
+
+
+
 
     LaunchedEffect(actionState) {
         actionState?.let { msg ->
@@ -188,11 +199,10 @@ fun StockScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+        Box(modifier = Modifier.padding(paddingValues)) {
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
             // Search Bar
             OutlinedTextField(
                 value = searchQuery,
@@ -406,7 +416,8 @@ fun StockScreen(
                 }
             }
         }
-    }
-}
 
+}
+}
+}
 }
