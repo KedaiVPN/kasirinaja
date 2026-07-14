@@ -37,7 +37,7 @@ fun HistoryScreen(
     onNavigateToEditProfile: () -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
-    val transactions by viewModel.transactions.collectAsState(initial = emptyList())
+    val transactions by viewModel.transactions.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val currentPage by viewModel.currentPage.collectAsState()
     val hasNextPage by viewModel.hasNextPage.collectAsState()
@@ -96,14 +96,21 @@ fun HistoryScreen(
                 }
             }
 
-            if (transactions.isEmpty() && searchQuery.isEmpty()) {
+            if (transactions == null) {
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else if (transactions!!.isEmpty() && searchQuery.isEmpty()) {
                 Box(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(text = "Belum ada riwayat transaksi", style = MaterialTheme.typography.bodyLarge)
                 }
-            } else if (transactions.isEmpty() && searchQuery.isNotEmpty()) {
+            } else if (transactions!!.isEmpty() && searchQuery.isNotEmpty()) {
                 Box(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                     contentAlignment = Alignment.Center
@@ -116,7 +123,7 @@ fun HistoryScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(transactions.distinctBy { it.id }) { transaction ->
+                    items(transactions!!.distinctBy { it.id }) { transaction ->
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()

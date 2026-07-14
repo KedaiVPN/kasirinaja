@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -37,7 +39,7 @@ class HistoryViewModel(
     val PAGE_SIZE = 10
 
     @OptIn(kotlinx.coroutines.FlowPreview::class)
-    val transactions: Flow<List<LocalTransactionEntity>> = combine(
+    val transactions: StateFlow<List<LocalTransactionEntity>?> = combine(
         _searchQuery.debounce(300),
         _currentPage
     ) { query, page ->
@@ -45,7 +47,7 @@ class HistoryViewModel(
     }.flatMapLatest { (query, page) ->
         val offset = page * PAGE_SIZE
         transactionDao.getTransactionsPagedFlow(PAGE_SIZE, offset, query)
-    }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     init {
         viewModelScope.launch {
