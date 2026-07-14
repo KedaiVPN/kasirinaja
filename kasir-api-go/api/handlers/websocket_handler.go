@@ -18,17 +18,23 @@ var upgrader = websocket.Upgrader{
 }
 
 type WebSocketManager struct {
-	clients map[*websocket.Conn]bool
+	clients map[string]map[*websocket.Conn]bool
 	mu      sync.Mutex
 }
 
 func NewWebSocketManager() *WebSocketManager {
 	return &WebSocketManager{
-		clients: make(map[*websocket.Conn]bool),
+		clients: make(map[string]map[*websocket.Conn]bool),
 	}
 }
 
 func (wm *WebSocketManager) HandleConnections(c *gin.Context) {
+	storeID := c.Query("store_id")
+	// If no store_id is provided, use a default "admin" group for backward compatibility
+	if storeID == "" {
+		storeID = "admin"
+	}
+
 	ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Println("WebSocket upgrade error:", err)
@@ -37,19 +43,23 @@ func (wm *WebSocketManager) HandleConnections(c *gin.Context) {
 	defer ws.Close()
 
 	wm.mu.Lock()
-	wm.clients[ws] = true
+	if wm.clients[storeID] == nil {
+		wm.clients[storeID] = make(map[*websocket.Conn]bool)
+	}
+	wm.clients[storeID][ws] = true
 	wm.mu.Unlock()
 
-	log.Println("Client connected to WebSocket")
+	log.Println("Client connected to WebSocket for store:", storeID)
 
 	for {
-		// Listen for messages (we don't strictly need to process incoming messages for this MVP,
-		// but we need to read to detect disconnects)
 		_, _, err := ws.ReadMessage()
 		if err != nil {
 			log.Println("Client disconnected:", err)
 			wm.mu.Lock()
-			delete(wm.clients, ws)
+			delete(wm.clients[storeID], ws)
+			if len(wm.clients[storeID]) == 0 {
+				delete(wm.clients, storeID)
+			}
 			wm.mu.Unlock()
 			break
 		}
@@ -76,12 +86,40 @@ func (wm *WebSocketManager) BroadcastNewPendingProduct(product db.PendingProduct
 		return
 	}
 
-	for client := range wm.clients {
-		err := client.WriteMessage(websocket.TextMessage, message)
-		if err != nil {
-			log.Println("WebSocket write error:", err)
-			client.Close()
-			delete(wm.clients, client)
+	if adminClients, ok := wm.clients["admin"]; ok {
+		for client := range adminClients {
+			err := client.WriteMessage(websocket.TextMessage, message)
+			if err != nil {
+				log.Println("WebSocket write error:", err)
+				client.Close()
+				delete(wm.clients["admin"], client)
+			}
+		}
+	}
+}
+
+func (wm *WebSocketManager) BroadcastSyncProduct(storeID string) {
+	wm.mu.Lock()
+	defer wm.mu.Unlock()
+
+	notification := map[string]string{
+		"type": "SYNC_PRODUCT",
+	}
+
+	message, err := json.Marshal(notification)
+	if err != nil {
+		log.Println("Failed to marshal notification:", err)
+		return
+	}
+
+	if clients, ok := wm.clients[storeID]; ok {
+		for client := range clients {
+			err := client.WriteMessage(websocket.TextMessage, message)
+			if err != nil {
+				log.Println("WebSocket write error:", err)
+				client.Close()
+				delete(wm.clients[storeID], client)
+			}
 		}
 	}
 }

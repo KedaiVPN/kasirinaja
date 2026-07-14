@@ -47,10 +47,6 @@ class DashboardViewModel(
 
     private val refreshTrigger = MutableStateFlow(0L)
 
-    init {
-        fetchServerStats()
-    }
-
     fun fetchServerStats() {
         viewModelScope.launch {
             transactionRepository?.fetchAndSaveAllTransactions()

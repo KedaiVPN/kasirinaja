@@ -41,6 +41,10 @@ import androidx.compose.foundation.layout.size
 import com.kasirinaja.store.presentation.auth.AuthViewModel
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
+
+import com.kasirinaja.core.network.WebSocketManager
+import kotlinx.coroutines.launch
+
 import androidx.compose.runtime.setValue
 import com.kasirinaja.store.presentation.auth.AuthViewModelFactory
 import com.kasirinaja.store.ui.screens.ScanScreen
@@ -93,6 +97,46 @@ fun MainScreen() {
     val productDao = AppDatabase.getDatabase(context).productDao()
     val transactionDao = AppDatabase.getDatabase(context).transactionDao()
     val productRepository = ProductRepository(productDao, transactionDao, context)
+
+    val webSocketManager = remember {
+        WebSocketManager(
+            onSyncProduct = {
+                coroutineScope.launch {
+                    try {
+                        productRepository.syncStoreProducts()
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        )
+    }
+
+    val isUserLoggedIn = tokenManager.getToken() != null
+    LaunchedEffect(isUserLoggedIn) {
+        if (isUserLoggedIn) {
+            tokenManager.getStoreId()?.let {
+                webSocketManager.connect(it)
+            }
+
+            // Perform one-time initial sync on startup/login
+            coroutineScope.launch {
+                try {
+                    productRepository.syncStoreProducts()
+                    val transactionRepository = com.kasirinaja.store.data.repository.TransactionRepository(
+                        com.kasirinaja.store.data.local.AppDatabase.getDatabase(context).transactionDao(),
+                        com.kasirinaja.core.network.RetrofitClient.transactionApi
+                    )
+                    transactionRepository.fetchAndSaveAllTransactions()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        } else {
+            webSocketManager.disconnect()
+        }
+    }
+
     val database = com.kasirinaja.store.data.local.AppDatabase.getDatabase(context)
     val transactionRepository = com.kasirinaja.store.data.repository.TransactionRepository(
         database.transactionDao(),

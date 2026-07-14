@@ -39,12 +39,11 @@ class ProductRepository(
         if (response.isSuccessful) {
             val remoteProducts = response.body() ?: emptyList()
 
-            // Delete previously synced products before inserting new ones
-            // This prevents duplicates from lingering.
-            productDao.deleteSyncedProducts()
+            val remoteIds = mutableListOf<String>()
 
             remoteProducts.forEach { product ->
                 val id = product.get("id")?.asString ?: return@forEach
+                remoteIds.add(id)
                 val name = product.get("local_name")?.asString ?: ""
 
                 // If a pending product with the same name exists locally (and just got approved), remove it
@@ -94,6 +93,13 @@ class ProductRepository(
                     createdAt = createdAtMillis
                 )
                 productDao.insertProduct(entity)
+            }
+
+            // Cleanup local products that were deleted on the server
+            val localSyncedIds = productDao.getSyncedProductIds()
+            val idsToDelete = localSyncedIds.filterNot { it in remoteIds }
+            if (idsToDelete.isNotEmpty()) {
+                productDao.deleteProductsByIds(idsToDelete)
             }
 
             // Queue image downloads using WorkManager
