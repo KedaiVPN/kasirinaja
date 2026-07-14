@@ -25,6 +25,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 
@@ -56,14 +57,18 @@ fun HistoryScreen(
                 .padding(paddingValues)
         ) {
             // Search Bar
-            Box(
+            Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = Color.White,
+                shadowElevation = 4.dp
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Icon(
                         imageVector = Icons.Filled.Search,
                         contentDescription = "Search",
@@ -116,7 +121,9 @@ fun HistoryScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { onNavigateToReceipt(transaction.id) },
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                         ) {
                             Row(
                                 modifier = Modifier
@@ -159,28 +166,43 @@ fun HistoryScreen(
                 }
 
                 // Pagination Row
-                Row(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    contentAlignment = Alignment.Center
                 ) {
-                    IconButton(
-                        onClick = { viewModel.previousPage() },
-                        enabled = currentPage > 0
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = Color.White,
+                        shadowElevation = 4.dp
                     ) {
-                        Icon(imageVector = Icons.Filled.ChevronLeft, contentDescription = "Sebelumnya")
-                    }
-                    Text(
-                        text = "Halaman ${currentPage + 1}",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    IconButton(
-                        onClick = { viewModel.nextPage() },
-                        enabled = hasNextPage
-                    ) {
-                        Icon(imageVector = Icons.Filled.ChevronRight, contentDescription = "Selanjutnya")
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            IconButton(
+                                onClick = { viewModel.previousPage() },
+                                enabled = currentPage > 0,
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(imageVector = Icons.Filled.ChevronLeft, contentDescription = "Sebelumnya")
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Halaman ${currentPage + 1}",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            IconButton(
+                                onClick = { viewModel.nextPage() },
+                                enabled = hasNextPage,
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(imageVector = Icons.Filled.ChevronRight, contentDescription = "Selanjutnya")
+                            }
+                        }
                     }
                 }
             }
