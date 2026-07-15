@@ -320,43 +320,42 @@ fun ScanScreen(
                                 }
                             }
                         }
-                    }
 
-                    // Floating Bottom Scan Button
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.BottomCenter)
-                            .padding(start = 32.dp, end = 32.dp, bottom = 100.dp), // Replaced sheetPeekHeight with 100.dp to ensure visibility above BottomSheet
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            color = androidx.compose.ui.graphics.Color.White,
-                            shadowElevation = 4.dp,
+                        // Fixed Bottom Scan Button
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(44.dp)
-                                .clickable { showCamera = true }
+                                .padding(start = 32.dp, end = 32.dp, top = 8.dp, bottom = 16.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center,
-                                modifier = Modifier.fillMaxSize()
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = androidx.compose.ui.graphics.Color.White,
+                                shadowElevation = 4.dp,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(44.dp)
+                                    .clickable { showCamera = true }
                             ) {
-                                Icon(
-                                    Icons.Filled.QrCodeScanner,
-                                    contentDescription = "Scan Barcode",
-                                    modifier = Modifier.size(18.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    "SCAN",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center,
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    Icon(
+                                        Icons.Filled.QrCodeScanner,
+                                        contentDescription = "Scan Barcode",
+                                        modifier = Modifier.size(18.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        "SCAN",
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                             }
                         }
                     }
