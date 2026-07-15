@@ -283,7 +283,8 @@ fun ScanScreen(
                             items(filteredProducts) { product ->
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                                    colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color.White)
                                 ) {
                                     Row(
                                         modifier = Modifier
@@ -334,7 +335,13 @@ fun ScanScreen(
                                                 color = MaterialTheme.colorScheme.primary
                                             )
                                         }
-                                        Button(onClick = { viewModel.addProductToCart(product) }) {
+                                        Button(
+                                            onClick = { viewModel.addProductToCart(product) },
+                                            elevation = ButtonDefaults.buttonElevation(
+                                                defaultElevation = 4.dp,
+                                                pressedElevation = 8.dp
+                                            )
+                                        ) {
                                             Text("Beli")
                                         }
                                     }
