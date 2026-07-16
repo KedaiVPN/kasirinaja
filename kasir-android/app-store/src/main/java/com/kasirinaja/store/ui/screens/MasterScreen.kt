@@ -1,8 +1,10 @@
 package com.kasirinaja.store.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.QrCodeScanner
@@ -91,17 +93,67 @@ fun MasterScreen(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                modifier = Modifier.weight(1f),
-                placeholder = { Text("Cari nama atau barcode...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
-                singleLine = true
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            IconButton(onClick = onNavigateToScanner) {
-                Icon(Icons.Default.QrCodeScanner, contentDescription = "Scan Barcode")
+            Surface(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(vertical = 4.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = androidx.compose.ui.graphics.Color.White,
+                shadowElevation = 4.dp
+            ) {
+                androidx.compose.foundation.text.BasicTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 12.dp),
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface),
+                    singleLine = true,
+                    decorationBox = { innerTextField ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Search",
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Box(modifier = Modifier.weight(1f)) {
+                                if (searchQuery.isEmpty()) {
+                                    Text(
+                                        text = "Cari nama atau barcode...",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                innerTextField()
+                            }
+                        }
+                    }
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = androidx.compose.ui.graphics.Color.White,
+                shadowElevation = 4.dp,
+                modifier = Modifier
+                    .size(44.dp)
+                    .clickable { onNavigateToScanner() }
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.QrCodeScanner,
+                        contentDescription = "Scan Barcode",
+                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         }
 
@@ -171,7 +223,8 @@ fun MasterProductItem(product: JsonObject, onAddClick: () -> Unit, currentRole: 
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color.White)
     ) {
         Row(
             modifier = Modifier
@@ -215,9 +268,18 @@ fun MasterProductItem(product: JsonObject, onAddClick: () -> Unit, currentRole: 
 
             // Add Button
             if (currentRole != "kasir") {
-            IconButton(onClick = onAddClick) {
-                Icon(Icons.Default.Add, contentDescription = "Tambah Produk")
-            }
+                Button(
+                    onClick = onAddClick,
+                    shape = RoundedCornerShape(12.dp),
+                    elevation = ButtonDefaults.buttonElevation(
+                        defaultElevation = 4.dp,
+                        pressedElevation = 8.dp
+                    ),
+                    contentPadding = PaddingValues(0.dp),
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Tambah Produk")
+                }
             }
         }
     }
