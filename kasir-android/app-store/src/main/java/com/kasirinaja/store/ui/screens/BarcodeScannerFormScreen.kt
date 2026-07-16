@@ -132,7 +132,7 @@ private class BarcodeAnalyzer(private val onBarcodeScanned: (String) -> Unit) : 
             scanner.process(image)
                 .addOnSuccessListener { barcodes ->
                     if (barcodes.isNotEmpty()) {
-                        val displayValue = barcodes[0].displayValue
+                        val displayValue = barcodes[0].rawValue
                         if (!displayValue.isNullOrEmpty()) {
                             onBarcodeScanned(displayValue)
                         }
