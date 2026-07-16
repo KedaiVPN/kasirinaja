@@ -100,13 +100,11 @@ fun MasterScreen(
 
     Scaffold(
         topBar = {
-            if (!showCamera) {
-                GlobalTopAppBar(
-                    title = "Master",
-                    onNavigateToEditProfile = onNavigateToEditProfile,
-                    onLogout = onLogout
-                )
-            }
+            GlobalTopAppBar(
+                title = "Master",
+                onNavigateToEditProfile = onNavigateToEditProfile,
+                onLogout = onLogout
+            )
         }
     ) { paddingValues ->
         if (showCamera) {
@@ -149,7 +147,6 @@ fun MasterScreen(
                                     .build()
 
                                 imageAnalyzer.setAnalyzer(cameraExecutor, MasterContinuousBarcodeAnalyzer { barcodeValue ->
-                                    provider.unbindAll()
                                     searchQuery = barcodeValue
                                     showCamera = false
                                 })
