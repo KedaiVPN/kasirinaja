@@ -643,7 +643,8 @@ fun MainScreen() {
                     onBarcodeScanned = { barcode ->
                         navController.previousBackStackEntry?.savedStateHandle?.set("scanned_barcode", barcode)
                         navController.popBackStack()
-                    }
+                    },
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
         }
