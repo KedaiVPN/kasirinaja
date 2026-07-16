@@ -1,5 +1,14 @@
 package com.kasirinaja.store.ui.screens
 
+import android.annotation.SuppressLint
+import android.util.Log
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageProxy
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -7,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -14,12 +24,20 @@ import com.kasirinaja.store.ui.components.GlobalTopAppBar
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.common.InputImage
 import com.kasirinaja.store.utils.FileUtil
 import java.io.File
 import androidx.compose.runtime.LaunchedEffect
@@ -28,6 +46,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.concurrent.Executors
 import com.google.gson.JsonObject
 import com.kasirinaja.store.data.local.AppDatabase
 import com.kasirinaja.store.data.repository.ProductRepository
@@ -37,12 +56,12 @@ import com.kasirinaja.core.network.TokenManager
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MasterScreen(
-    onNavigateToScanner: () -> Unit = {},
     initialSearchQuery: String = "",
     onNavigateToEditProfile: () -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val database = AppDatabase.getDatabase(context)
     val repository = remember { ProductRepository(database.productDao(), database.transactionDao(), context) }
     val viewModel: MasterViewModel = viewModel(factory = MasterViewModel.Factory(repository))
@@ -53,12 +72,15 @@ fun MasterScreen(
 
     var searchQuery by remember { mutableStateOf(initialSearchQuery) }
     var productToEdit by remember { mutableStateOf<JsonObject?>(null) }
+    var showCamera by remember { mutableStateOf(false) }
 
     LaunchedEffect(initialSearchQuery) {
         if (initialSearchQuery.isNotEmpty()) {
             searchQuery = initialSearchQuery
         }
     }
+
+    val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
 
     // Derived state for filtered products
     val currentRole = remember { com.kasirinaja.core.network.TokenManager(context).getRole() ?: "owner" }
@@ -78,22 +100,100 @@ fun MasterScreen(
 
     Scaffold(
         topBar = {
-            GlobalTopAppBar(
-                title = "Master",
-                onNavigateToEditProfile = onNavigateToEditProfile,
-                onLogout = onLogout
-            )
+            if (!showCamera) {
+                GlobalTopAppBar(
+                    title = "Master",
+                    onNavigateToEditProfile = onNavigateToEditProfile,
+                    onLogout = onLogout
+                )
+            }
         }
     ) { paddingValues ->
-        Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-        // Search Bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
+        if (showCamera) {
+            var cameraProvider by remember { mutableStateOf<androidx.camera.lifecycle.ProcessCameraProvider?>(null) }
+
+            DisposableEffect(lifecycleOwner) {
+                onDispose {
+                    cameraProvider?.unbindAll()
+                }
+            }
+
+            Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+                @OptIn(ExperimentalMaterial3Api::class)
+                TopAppBar(
+                    title = { Text("Scan Barcode") },
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            cameraProvider?.unbindAll()
+                            showCamera = false
+                        }) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Kembali")
+                        }
+                    }
+                )
+                Box(modifier = Modifier.fillMaxSize().padding(16.dp).clip(RoundedCornerShape(16.dp))) {
+                    AndroidView(
+                        factory = { ctx ->
+                            val previewView = PreviewView(ctx)
+                            val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
+
+                            cameraProviderFuture.addListener({
+                                val provider = cameraProviderFuture.get()
+                                cameraProvider = provider
+                                val preview = Preview.Builder().build().also {
+                                    it.setSurfaceProvider(previewView.surfaceProvider)
+                                }
+
+                                val imageAnalyzer = ImageAnalysis.Builder()
+                                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                                    .build()
+
+                                imageAnalyzer.setAnalyzer(cameraExecutor, MasterContinuousBarcodeAnalyzer { barcodeValue ->
+                                    provider.unbindAll()
+                                    searchQuery = barcodeValue
+                                    showCamera = false
+                                })
+
+                                val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+
+                                try {
+                                    provider.unbindAll()
+                                    provider.bindToLifecycle(
+                                        lifecycleOwner,
+                                        cameraSelector,
+                                        preview,
+                                        imageAnalyzer
+                                    )
+                                } catch (exc: Exception) {
+                                    Log.e("MasterScreen", "Use case binding failed", exc)
+                                }
+                            }, ContextCompat.getMainExecutor(ctx))
+
+                            previewView
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    Text(
+                        text = "Arahkan barcode ke area ini",
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 32.dp)
+                            .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                            .padding(16.dp),
+                        color = Color.White
+                    )
+                }
+            }
+        } else {
+            Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            // Search Bar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
                 modifier = Modifier
                     .weight(1f)
                     .padding(vertical = 4.dp),
@@ -134,51 +234,52 @@ fun MasterScreen(
                     }
                 )
             }
-            Spacer(modifier = Modifier.width(12.dp))
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = androidx.compose.ui.graphics.Color.White,
-                shadowElevation = 4.dp,
-                modifier = Modifier
-                    .size(44.dp)
-                    .clickable { onNavigateToScanner() }
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                Spacer(modifier = Modifier.width(12.dp))
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = androidx.compose.ui.graphics.Color.White,
+                    shadowElevation = 4.dp,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clickable { showCamera = true }
                 ) {
-                    Icon(
-                        Icons.Default.QrCodeScanner,
-                        contentDescription = "Scan Barcode",
-                        modifier = Modifier.size(24.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.QrCodeScanner,
+                            contentDescription = "Scan Barcode",
+                            modifier = Modifier.size(24.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
-        }
 
-        if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        } else if (!errorMessage.isNullOrEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(text = "Error: $errorMessage", color = MaterialTheme.colorScheme.error)
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(filteredProducts) { product ->
-                    MasterProductItem(product = product, currentRole = currentRole, onAddClick = {
-                        productToEdit = product
-                    })
+            if (isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else if (!errorMessage.isNullOrEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(text = "Error: $errorMessage", color = MaterialTheme.colorScheme.error)
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(filteredProducts) { product ->
+                        MasterProductItem(product = product, currentRole = currentRole, onAddClick = {
+                            productToEdit = product
+                        })
+                    }
                 }
             }
         }
-    }
+        }
     } // End of Scaffold
 
     productToEdit?.let { product ->
@@ -281,6 +382,37 @@ fun MasterProductItem(product: JsonObject, onAddClick: () -> Unit, currentRole: 
                     Icon(Icons.Default.Add, contentDescription = "Tambah Produk")
                 }
             }
+        }
+    }
+}
+
+private class MasterContinuousBarcodeAnalyzer(private val onBarcodeScanned: (String) -> Unit) : ImageAnalysis.Analyzer {
+    private val scanner = BarcodeScanning.getClient(
+        BarcodeScannerOptions.Builder().build()
+    )
+
+    @SuppressLint("UnsafeOptInUsageError")
+    override fun analyze(imageProxy: ImageProxy) {
+        val mediaImage = imageProxy.image
+        if (mediaImage != null) {
+            val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+            scanner.process(image)
+                .addOnSuccessListener { barcodes ->
+                    if (barcodes.isNotEmpty()) {
+                        val displayValue = barcodes[0].rawValue
+                        if (!displayValue.isNullOrEmpty()) {
+                            onBarcodeScanned(displayValue)
+                        }
+                    }
+                }
+                .addOnFailureListener {
+                    // Handle failure
+                }
+                .addOnCompleteListener {
+                    imageProxy.close()
+                }
+        } else {
+            imageProxy.close()
         }
     }
 }
