@@ -559,8 +559,14 @@ fun MainScreen() {
                     }
                 )
             }
-            composable(Screen.Master.route) {
+            composable(Screen.Master.route) { backStackEntry ->
+                val scannedBarcode = backStackEntry.savedStateHandle.get<String>("scanned_barcode") ?: ""
+
                 MasterScreen(
+                    onNavigateToScanner = {
+                        navController.navigate(Screen.BarcodeScannerForm.route)
+                    },
+                    initialSearchQuery = scannedBarcode,
                     onNavigateToEditProfile = {
                         navController.navigate("edit_profile")
                     },
