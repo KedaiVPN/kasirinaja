@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.PointOfSale
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.People
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
@@ -18,7 +19,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object History : Screen("history", "Riwayat", Icons.Filled.History)
     object Scan : Screen("scan", "Transaksi", Icons.Filled.PointOfSale)
     object Master : Screen("master", "Master", Icons.Filled.List)
-    object Settings : Screen("settings", "Pengaturan Users", Icons.Filled.Settings)
+    object Settings : Screen("settings", "Karyawan", Icons.Filled.People)
     object More : Screen("more", "Lainnya", Icons.Filled.Menu)
     object AddProduct : Screen("add_product", "Tambah Produk", Icons.Filled.Add)
     object CameraCapture : Screen("camera_capture", "Kamera", Icons.Filled.Add) // Not in bottom bar

@@ -376,8 +376,8 @@ fun MainScreen() {
                                                 }
                                             )
                                             DropdownMenuItem(
-                                                text = { Text("Pengaturan Users") },
-                                                leadingIcon = { Icon(Screen.Settings.icon, contentDescription = "Pengaturan") },
+                                                text = { Text("Karyawan") },
+                                                leadingIcon = { Icon(Screen.Settings.icon, contentDescription = "Karyawan") },
                                                 onClick = {
                                                     showMoreMenu = false
                                                     navController.navigate(Screen.Settings.route) {
