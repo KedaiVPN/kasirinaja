@@ -376,8 +376,8 @@ fun MainScreen() {
                                                 }
                                             )
                                             DropdownMenuItem(
-                                                text = { Text("Karyawan") },
-                                                leadingIcon = { Icon(Screen.Settings.icon, contentDescription = "Karyawan") },
+                                                text = { Text("Pengaturan Users") },
+                                                leadingIcon = { Icon(Screen.Settings.icon, contentDescription = "Pengaturan") },
                                                 onClick = {
                                                     showMoreMenu = false
                                                     navController.navigate(Screen.Settings.route) {
@@ -585,6 +585,11 @@ fun MainScreen() {
                         authViewModel.resetState()
                         navController.navigate(Screen.Login.route) {
                             popUpTo(navController.graph.id) { inclusive = true }
+                        }
+                    },
+                    onSwitchSuccess = {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(0) { inclusive = true }
                         }
                     }
                 )

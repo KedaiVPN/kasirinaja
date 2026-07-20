@@ -37,7 +37,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(
     onNavigateToEditProfile: () -> Unit = {},
-    onLogout: () -> Unit = {}
+    onLogout: () -> Unit = {},
+    onSwitchSuccess: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context) }
@@ -52,6 +53,7 @@ fun SettingsScreen(
 
     var showAddEmployeeDialog by remember { mutableStateOf(false) }
     var showPasswordDialog by remember { mutableStateOf<Map<String, Any>?>(null) }
+    var showConfirmSwitchDialog by remember { mutableStateOf<Map<String, Any>?>(null) }
     val currentRole = tokenManager.getRole() ?: "owner"
 
     LaunchedEffect(Unit) {
@@ -136,13 +138,8 @@ fun SettingsScreen(
                                 .clickable {
                                     if (role == "owner" && currentRole == "kasir") {
                                         showPasswordDialog = user
-                                    } else if (currentRole != role || role != currentRole) {
-                                        viewModel.switchUser(id, null) {
-                                            viewModel.clearMessages()
-                                            showAddEmployeeDialog = false
-                                            viewModel.fetchUsers()
-                                            // Optional: Show success, or reload context
-                                        }
+                                    } else if (currentRole != role) {
+                                        showConfirmSwitchDialog = user
                                     }
                                 },
                             colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -215,17 +212,64 @@ fun SettingsScreen(
         )
     }
 
+    if (showConfirmSwitchDialog != null) {
+        val targetUser = showConfirmSwitchDialog!!
+        val targetName = targetUser["full_name"]?.toString() ?: ""
+        val targetId = targetUser["id"]?.toString() ?: ""
+
+        AlertDialog(
+            onDismissRequest = { showConfirmSwitchDialog = null },
+            title = { Text("Konfirmasi Perpindahan") },
+            text = { Text("Apakah Anda yakin ingin beralih ke akun $targetName?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showConfirmSwitchDialog = null
+                        viewModel.switchUser(
+                            targetUserId = targetId,
+                            password = null,
+                            onSuccess = {
+                                viewModel.clearMessages()
+                                android.widget.Toast.makeText(context, "Berhasil beralih ke $targetName", android.widget.Toast.LENGTH_SHORT).show()
+                                onSwitchSuccess()
+                            },
+                            onFailure = { errorMsg ->
+                                android.widget.Toast.makeText(context, "Gagal beralih: $errorMsg", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                    }
+                ) {
+                    Text("Beralih")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showConfirmSwitchDialog = null }) {
+                    Text("Batal")
+                }
+            }
+        )
+    }
+
     if (showPasswordDialog != null) {
         val user = showPasswordDialog!!
+        val targetName = user["full_name"]?.toString() ?: ""
         PasswordDialog(
-            userName = user["full_name"]?.toString() ?: "",
+            userName = targetName,
             onDismiss = { showPasswordDialog = null },
             onSubmit = { password ->
-                viewModel.switchUser(user["id"]?.toString() ?: "", password) {
-                    viewModel.clearMessages()
-                    viewModel.fetchUsers()
-                    showPasswordDialog = null
-                }
+                viewModel.switchUser(
+                    targetUserId = user["id"]?.toString() ?: "",
+                    password = password,
+                    onSuccess = {
+                        viewModel.clearMessages()
+                        android.widget.Toast.makeText(context, "Berhasil beralih ke $targetName", android.widget.Toast.LENGTH_SHORT).show()
+                        showPasswordDialog = null
+                        onSwitchSuccess()
+                    },
+                    onFailure = { errorMsg ->
+                        android.widget.Toast.makeText(context, "Gagal beralih: $errorMsg", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                )
             }
         )
     }

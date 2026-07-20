@@ -55,7 +55,7 @@ class SettingsViewModel(
         }
     }
 
-    fun switchUser(targetUserId: String, password: String? = null, onSuccess: () -> Unit) {
+    fun switchUser(targetUserId: String, password: String? = null, onSuccess: () -> Unit, onFailure: (String) -> Unit = {}) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
@@ -63,7 +63,9 @@ class SettingsViewModel(
             result.onSuccess {
                 onSuccess()
             }.onFailure {
-                _error.value = it.message ?: "Gagal beralih akun"
+                val errorMsg = it.message ?: "Gagal beralih akun"
+                _error.value = errorMsg
+                onFailure(errorMsg)
             }
             _isLoading.value = false
         }
