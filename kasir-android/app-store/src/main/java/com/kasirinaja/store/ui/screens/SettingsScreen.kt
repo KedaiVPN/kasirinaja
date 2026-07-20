@@ -16,7 +16,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -70,10 +72,43 @@ fun SettingsScreen(
                 onLogout = onLogout
             )
         },
-        floatingActionButton = {
+        bottomBar = {
             if (currentRole == "owner") {
-                FloatingActionButton(onClick = { showAddEmployeeDialog = true }) {
-                    Icon(Icons.Default.Add, contentDescription = "Tambah Karyawan")
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 32.dp, end = 32.dp, top = 8.dp, bottom = 16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color.White,
+                        shadowElevation = 4.dp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp)
+                            .clickable { showAddEmployeeDialog = true }
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Icon(
+                                Icons.Filled.Add,
+                                contentDescription = "Tambah Karyawan",
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "Tambah Karyawan",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -109,7 +144,9 @@ fun SettingsScreen(
                                             // Optional: Show success, or reload context
                                         }
                                     }
-                                }
+                                },
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                         ) {
                             Row(
                                 modifier = Modifier
