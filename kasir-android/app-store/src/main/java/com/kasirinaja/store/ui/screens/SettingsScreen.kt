@@ -136,7 +136,8 @@ fun SettingsScreen(
                             modifier = Modifier
                                 .fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = Color.White),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                            shape = RoundedCornerShape(16.dp)
                         ) {
                             Column(
                                 modifier = Modifier
@@ -156,34 +157,64 @@ fun SettingsScreen(
                                                 .build(),
                                             contentDescription = "Foto Karyawan",
                                             modifier = Modifier
-                                                .size(50.dp)
-                                                .clip(RoundedCornerShape(8.dp))
+                                                .size(56.dp)
+                                                .clip(RoundedCornerShape(12.dp))
                                                 .background(MaterialTheme.colorScheme.surfaceVariant),
                                             contentScale = ContentScale.Crop
                                         )
                                     } else {
                                         Surface(
                                             modifier = Modifier
-                                                .size(50.dp)
-                                                .clip(RoundedCornerShape(8.dp)),
+                                                .size(56.dp)
+                                                .clip(RoundedCornerShape(12.dp)),
                                             color = MaterialTheme.colorScheme.surfaceVariant
                                         ) {
                                             Box(contentAlignment = Alignment.Center) {
                                                 Icon(
                                                     imageVector = Icons.Default.Person,
                                                     contentDescription = "Default Profile",
-                                                    modifier = Modifier.size(32.dp),
+                                                    modifier = Modifier.size(36.dp),
                                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
                                             }
                                         }
                                     }
                                     Spacer(modifier = Modifier.width(16.dp))
-                                    Column {
-                                        Text(text = name, style = MaterialTheme.typography.titleMedium)
-                                        Text(text = role.replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.bodyMedium)
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = name,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+
+                                        // Role Chip Kustom yang indah
+                                        val (chipBg, chipText, roleLabel) = if (role == "owner") {
+                                            Triple(Color(0xFFFFF9C4), Color(0xFFF57F17), "Owner")
+                                        } else {
+                                            Triple(Color(0xFFE3F2FD), Color(0xFF0D47A1), "Kasir")
+                                        }
+
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = chipBg,
+                                            modifier = Modifier.wrapContentSize()
+                                        ) {
+                                            Text(
+                                                text = roleLabel,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = chipText,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                            )
+                                        }
                                     }
                                 }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
                                 Spacer(modifier = Modifier.height(12.dp))
 
@@ -231,14 +262,14 @@ fun SettingsScreen(
                                         Button(
                                             onClick = { showDeleteConfirm = true },
                                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
-                                            shape = RoundedCornerShape(8.dp),
-                                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                                            modifier = Modifier.height(36.dp)
+                                            shape = RoundedCornerShape(12.dp),
+                                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                                            modifier = Modifier.height(38.dp)
                                         ) {
-                                            Text("Hapus", color = Color.White, style = MaterialTheme.typography.labelMedium)
+                                            Text("Hapus", color = Color.White, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                                         }
 
-                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Spacer(modifier = Modifier.width(12.dp))
                                     }
 
                                     // Tombol Masuk / Saat ini
@@ -248,14 +279,14 @@ fun SettingsScreen(
                                             onClick = {},
                                             enabled = false,
                                             colors = ButtonDefaults.buttonColors(
-                                                disabledContainerColor = Color.LightGray,
-                                                disabledContentColor = Color.DarkGray
+                                                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                                disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                                             ),
-                                            shape = RoundedCornerShape(8.dp),
-                                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
-                                            modifier = Modifier.height(36.dp)
+                                            shape = RoundedCornerShape(12.dp),
+                                            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 6.dp),
+                                            modifier = Modifier.height(38.dp)
                                         ) {
-                                            Text("Saat ini", style = MaterialTheme.typography.labelMedium)
+                                            Text("Saat ini", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                                         }
                                     } else {
                                         Button(
@@ -266,12 +297,12 @@ fun SettingsScreen(
                                                     showConfirmSwitchDialog = user
                                                 }
                                             },
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
-                                            shape = RoundedCornerShape(8.dp),
-                                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
-                                            modifier = Modifier.height(36.dp)
+                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                            shape = RoundedCornerShape(12.dp),
+                                            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 6.dp),
+                                            modifier = Modifier.height(38.dp)
                                         ) {
-                                            Text("Masuk", color = Color.White, style = MaterialTheme.typography.labelMedium)
+                                            Text("Masuk", color = Color.White, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                                         }
                                     }
                                 }
