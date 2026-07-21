@@ -28,6 +28,7 @@ type Querier interface {
 	DeleteStoreProduct(ctx context.Context, id pgtype.UUID) error
 	DeleteStoreProductsByMasterID(ctx context.Context, masterProductID pgtype.UUID) error
 	DeleteTransactionItemsByMasterProduct(ctx context.Context, masterProductID pgtype.UUID) error
+	DeleteUser(ctx context.Context, id pgtype.UUID) error
 	GetAllStoreTransactions(ctx context.Context, storeID pgtype.UUID) ([]Transaction, error)
 	GetCategoryByName(ctx context.Context, name string) (Category, error)
 	GetMasterProduct(ctx context.Context, id pgtype.UUID) (MasterProduct, error)

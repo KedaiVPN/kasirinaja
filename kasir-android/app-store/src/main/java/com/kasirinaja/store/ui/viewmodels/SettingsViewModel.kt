@@ -40,6 +40,24 @@ class SettingsViewModel(
         }
     }
 
+    fun deleteEmployee(id: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            val result = userRepository.deleteStoreEmployee(id)
+            result.onSuccess {
+                _successMessage.value = "Karyawan berhasil dihapus"
+                fetchUsers()
+                onSuccess()
+            }.onFailure {
+                val errorMsg = it.message ?: "Gagal menghapus karyawan"
+                _error.value = errorMsg
+                onFailure(errorMsg)
+            }
+            _isLoading.value = false
+        }
+    }
+
     fun addEmployee(name: String, phone: String, role: String, password: String) {
         viewModelScope.launch {
             _isLoading.value = true

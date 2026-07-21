@@ -32,4 +32,20 @@ class UserRepository(private val userApi: UserApi) {
             }
         }
     }
+
+    suspend fun deleteStoreEmployee(id: String): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = userApi.deleteStoreEmployee(id)
+                if (response.isSuccessful) {
+                    Result.success(Unit)
+                } else {
+                    val errorMsg = response.errorBody()?.string() ?: "Gagal menghapus karyawan"
+                    Result.failure(Exception(errorMsg))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
 }
