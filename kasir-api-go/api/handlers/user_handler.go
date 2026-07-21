@@ -303,6 +303,28 @@ func (h *UserHandler) DeleteStoreEmployee(c *gin.Context) {
 		return
 	}
 
+	// Hapus foto profil fisik di server jika ada
+	if targetUser.PhotoUrl.Valid && targetUser.PhotoUrl.String != "" {
+		photoPath := targetUser.PhotoUrl.String
+		if len(photoPath) > 0 && photoPath[0] == '/' {
+			photoPath = photoPath[1:]
+		}
+		// Hapus timestamp query parameter jika ada (misal ?t=1700000)
+		idx := -1
+		for i, ch := range photoPath {
+			if ch == '?' {
+				idx = i
+				break
+			}
+		}
+		if idx != -1 {
+			photoPath = photoPath[:idx]
+		}
+		if photoPath != "" {
+			_ = os.Remove(photoPath)
+		}
+	}
+
 	// Hapus user
 	err = h.queries.DeleteUser(c.Request.Context(), pgtype.UUID{Bytes: targetID, Valid: true})
 	if err != nil {
