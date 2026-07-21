@@ -259,3 +259,56 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 
 	c.JSON(http.StatusOK, updatedUser)
 }
+
+func (h *UserHandler) DeleteStoreEmployee(c *gin.Context) {
+	// Cek role yang melakukan request (harus owner)
+	role, exists := c.Get("role")
+	if !exists || role != "owner" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Hanya owner yang dapat menghapus karyawan"})
+		return
+	}
+
+	// Dapatkan store_id milik requestor
+	storeIDStr, exists := c.Get("store_id")
+	if !exists || storeIDStr == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Store ID missing from token"})
+		return
+	}
+
+	idParam := c.Param("id")
+	targetID, err := uuid.Parse(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID karyawan tidak valid"})
+		return
+	}
+
+	// Cari user target
+	targetUser, err := h.queries.GetUser(c.Request.Context(), pgtype.UUID{Bytes: targetID, Valid: true})
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Karyawan tidak ditemukan"})
+		return
+	}
+
+	// Verifikasi store_id yang sama
+	targetStoreUUID := targetUser.StoreID
+	requestorStoreUUID, _ := uuid.Parse(storeIDStr.(string))
+	if !targetStoreUUID.Valid || targetStoreUUID.Bytes != requestorStoreUUID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Anda tidak memiliki akses untuk menghapus karyawan dari store lain"})
+		return
+	}
+
+	// Cegah menghapus owner
+	if targetUser.Role == "owner" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "User dengan role owner tidak dapat dihapus"})
+		return
+	}
+
+	// Hapus user
+	err = h.queries.DeleteUser(c.Request.Context(), pgtype.UUID{Bytes: targetID, Valid: true})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Karyawan berhasil dihapus"})
+}

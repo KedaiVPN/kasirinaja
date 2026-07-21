@@ -42,6 +42,7 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 			usersAuth.GET("/", userHandler.ListStoreUsers)
 			usersAuth.POST("/add-employee", userHandler.AddStoreEmployee)
 			usersAuth.PUT("/profile", userHandler.UpdateProfile)
+			usersAuth.DELETE("/employees/:id", userHandler.DeleteStoreEmployee)
 		}
 
 		// Product routes

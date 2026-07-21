@@ -134,58 +134,146 @@ fun SettingsScreen(
 
                         Card(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    if (role == "owner" && currentRole == "kasir") {
-                                        showPasswordDialog = user
-                                    } else if (currentRole != role) {
-                                        showConfirmSwitchDialog = user
-                                    }
-                                },
+                                .fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = Color.White),
                             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                         ) {
-                            Row(
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                    .padding(16.dp)
                             ) {
-                                val photoUrl = user["photo_url"]?.toString()
-                                if (!photoUrl.isNullOrEmpty()) {
-                                    AsyncImage(
-                                        model = ImageRequest.Builder(context)
-                                            .data("${RetrofitClient.IMAGE_BASE_URL}$photoUrl")
-                                            .crossfade(true)
-                                            .build(),
-                                        contentDescription = "Foto Karyawan",
-                                        modifier = Modifier
-                                            .size(50.dp)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                                        contentScale = ContentScale.Crop
-                                    )
-                                } else {
-                                    Surface(
-                                        modifier = Modifier
-                                            .size(50.dp)
-                                            .clip(RoundedCornerShape(8.dp)),
-                                        color = MaterialTheme.colorScheme.surfaceVariant
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Icon(
-                                                imageVector = Icons.Default.Person,
-                                                contentDescription = "Default Profile",
-                                                modifier = Modifier.size(32.dp),
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    val photoUrl = user["photo_url"]?.toString()
+                                    if (!photoUrl.isNullOrEmpty()) {
+                                        AsyncImage(
+                                            model = ImageRequest.Builder(context)
+                                                .data("${RetrofitClient.IMAGE_BASE_URL}$photoUrl")
+                                                .crossfade(true)
+                                                .build(),
+                                            contentDescription = "Foto Karyawan",
+                                            modifier = Modifier
+                                                .size(50.dp)
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    } else {
+                                        Surface(
+                                            modifier = Modifier
+                                                .size(50.dp)
+                                                .clip(RoundedCornerShape(8.dp)),
+                                            color = MaterialTheme.colorScheme.surfaceVariant
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Person,
+                                                    contentDescription = "Default Profile",
+                                                    modifier = Modifier.size(32.dp),
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
                                         }
                                     }
+                                    Spacer(modifier = Modifier.width(16.dp))
+                                    Column {
+                                        Text(text = name, style = MaterialTheme.typography.titleMedium)
+                                        Text(text = role.replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.bodyMedium)
+                                    }
                                 }
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Column {
-                                    Text(text = name, style = MaterialTheme.typography.titleMedium)
-                                    Text(text = role.replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.bodyMedium)
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.End,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    // Tombol Delete (hanya muncul untuk role "kasir" dan jika yang login adalah owner)
+                                    if (role == "kasir" && currentRole == "owner") {
+                                        var showDeleteConfirm by remember { mutableStateOf(false) }
+
+                                        if (showDeleteConfirm) {
+                                            AlertDialog(
+                                                onDismissRequest = { showDeleteConfirm = false },
+                                                title = { Text("Hapus Karyawan") },
+                                                text = { Text("Apakah Anda yakin ingin menghapus karyawan $name?") },
+                                                confirmButton = {
+                                                    Button(
+                                                        onClick = {
+                                                            showDeleteConfirm = false
+                                                            viewModel.deleteEmployee(
+                                                                id = id,
+                                                                onSuccess = {
+                                                                    android.widget.Toast.makeText(context, "Karyawan berhasil dihapus", android.widget.Toast.LENGTH_SHORT).show()
+                                                                },
+                                                                onFailure = { errorMsg ->
+                                                                    android.widget.Toast.makeText(context, "Gagal menghapus: $errorMsg", android.widget.Toast.LENGTH_SHORT).show()
+                                                                }
+                                                            )
+                                                        },
+                                                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                                                    ) {
+                                                        Text("Hapus", color = Color.White)
+                                                    }
+                                                },
+                                                dismissButton = {
+                                                    TextButton(onClick = { showDeleteConfirm = false }) {
+                                                        Text("Batal")
+                                                    }
+                                                }
+                                            )
+                                        }
+
+                                        Button(
+                                            onClick = { showDeleteConfirm = true },
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                                            shape = RoundedCornerShape(8.dp),
+                                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                            modifier = Modifier.height(36.dp)
+                                        ) {
+                                            Text("Hapus", color = Color.White, style = MaterialTheme.typography.labelMedium)
+                                        }
+
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                    }
+
+                                    // Tombol Masuk / Saat ini
+                                    val isCurrentLoggedInUser = (name == tokenManager.getUserName())
+                                    if (isCurrentLoggedInUser) {
+                                        Button(
+                                            onClick = {},
+                                            enabled = false,
+                                            colors = ButtonDefaults.buttonColors(
+                                                disabledContainerColor = Color.LightGray,
+                                                disabledContentColor = Color.DarkGray
+                                            ),
+                                            shape = RoundedCornerShape(8.dp),
+                                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                                            modifier = Modifier.height(36.dp)
+                                        ) {
+                                            Text("Saat ini", style = MaterialTheme.typography.labelMedium)
+                                        }
+                                    } else {
+                                        Button(
+                                            onClick = {
+                                                if (role == "owner" && currentRole == "kasir") {
+                                                    showPasswordDialog = user
+                                                } else {
+                                                    showConfirmSwitchDialog = user
+                                                }
+                                            },
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                                            shape = RoundedCornerShape(8.dp),
+                                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                                            modifier = Modifier.height(36.dp)
+                                        ) {
+                                            Text("Masuk", color = Color.White, style = MaterialTheme.typography.labelMedium)
+                                        }
+                                    }
                                 }
                             }
                         }
