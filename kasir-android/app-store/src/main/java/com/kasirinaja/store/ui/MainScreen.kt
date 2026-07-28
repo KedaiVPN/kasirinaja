@@ -125,7 +125,8 @@ fun MainScreen() {
                     productRepository.syncStoreProducts()
                     val transactionRepository = com.kasirinaja.store.data.repository.TransactionRepository(
                         com.kasirinaja.store.data.local.AppDatabase.getDatabase(context).transactionDao(),
-                        com.kasirinaja.core.network.RetrofitClient.transactionApi
+                        com.kasirinaja.core.network.RetrofitClient.transactionApi,
+                        com.kasirinaja.store.data.local.AppDatabase.getDatabase(context).productDao()
                     )
                     transactionRepository.fetchAndSaveAllTransactions()
                 } catch (e: Exception) {
@@ -140,7 +141,8 @@ fun MainScreen() {
     val database = com.kasirinaja.store.data.local.AppDatabase.getDatabase(context)
     val transactionRepository = com.kasirinaja.store.data.repository.TransactionRepository(
         database.transactionDao(),
-        com.kasirinaja.core.network.RetrofitClient.transactionApi
+        com.kasirinaja.core.network.RetrofitClient.transactionApi,
+        database.productDao()
     )
     val workManager = androidx.work.WorkManager.getInstance(context)
 

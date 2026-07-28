@@ -14,6 +14,8 @@ import java.util.Locale
 import java.util.TimeZone
 import java.util.UUID
 
+import com.kasirinaja.store.data.local.ProductDao
+
 object TransactionSyncState {
     private val _syncStatus = MutableSharedFlow<String>()
     val syncStatus = _syncStatus.asSharedFlow()
@@ -25,7 +27,8 @@ object TransactionSyncState {
 
 class TransactionRepository(
     private val transactionDao: TransactionDao,
-    private val transactionApi: TransactionApi
+    private val transactionApi: TransactionApi,
+    private val productDao: ProductDao? = null
 ) {
     suspend fun saveTransactionLocally(
         transaction: LocalTransactionEntity,
@@ -48,6 +51,24 @@ class TransactionRepository(
         for (localTx in pendingTransactions) {
             try {
                 val localItems = transactionDao.getTransactionItems(localTx.id)
+
+                // Check if any product in this transaction is still pending
+                var hasPendingProduct = false
+                if (productDao != null) {
+                    for (item in localItems) {
+                        val product = productDao.getProductById(item.storeProductId)
+                        if (product?.pendingSync == true || product?.isSynced == false) {
+                            hasPendingProduct = true
+                            break
+                        }
+                    }
+                }
+
+                if (hasPendingProduct) {
+                    // Skip syncing this transaction for now, it will be synced later
+                    // when the product is approved.
+                    continue
+                }
 
                 val itemsRequest = localItems.map {
                     TransactionItemRequest(

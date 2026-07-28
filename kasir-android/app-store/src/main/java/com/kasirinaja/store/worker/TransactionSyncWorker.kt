@@ -16,9 +16,10 @@ class TransactionSyncWorker(
         return try {
             val database = AppDatabase.getDatabase(applicationContext)
             val transactionDao = database.transactionDao()
+            val productDao = database.productDao()
             val transactionApi = RetrofitClient.transactionApi
 
-            val repository = TransactionRepository(transactionDao, transactionApi)
+            val repository = TransactionRepository(transactionDao, transactionApi, productDao)
             val success = repository.syncPendingTransactions()
 
             if (success) {
