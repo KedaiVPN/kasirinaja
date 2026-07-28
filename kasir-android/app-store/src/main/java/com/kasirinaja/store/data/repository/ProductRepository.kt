@@ -48,6 +48,11 @@ class ProductRepository(
 
                 // If a pending product with the same name exists locally (and just got approved), remove it
                 if (name.isNotEmpty()) {
+                    val pendingId = productDao.getPendingProductIdByName(name)
+                    if (pendingId != null) {
+                        // Update transactions referring to the temporary pending ID to use the new official ID
+                        transactionDao.updateTransactionItemProductId(pendingId, id)
+                    }
                     productDao.deletePendingProductByName(name)
                 }
                 val buyPrice = product.get("buy_price")?.asLong?.toString() ?: "0"

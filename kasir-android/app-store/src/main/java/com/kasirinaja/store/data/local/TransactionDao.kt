@@ -78,4 +78,7 @@ interface TransactionDao {
 
     @Query("SELECT COUNT(id) FROM transactions WHERE invoiceNumber LIKE '%' || :searchQuery || '%'")
     fun getTotalTransactionsCountFlow(searchQuery: String): kotlinx.coroutines.flow.Flow<Int>
+
+    @Query("UPDATE transaction_items SET storeProductId = :newStoreProductId, id = transactionId || '_' || :newStoreProductId WHERE storeProductId = :oldStoreProductId")
+    suspend fun updateTransactionItemProductId(oldStoreProductId: String, newStoreProductId: String)
 }
