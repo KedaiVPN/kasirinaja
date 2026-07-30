@@ -48,6 +48,8 @@ class TransactionRepository(
         var anyFailed = false
         var anySuccess = false
 
+        var anySkipped = false
+
         for (localTx in pendingTransactions) {
             try {
                 val localItems = transactionDao.getTransactionItems(localTx.id)
@@ -67,6 +69,7 @@ class TransactionRepository(
                 if (hasPendingProduct) {
                     // Skip syncing this transaction for now, it will be synced later
                     // when the product is approved.
+                    anySkipped = true
                     continue
                 }
 
@@ -115,7 +118,9 @@ class TransactionRepository(
 
         if (anyFailed) {
             TransactionSyncState.emit("sync_failed")
-        } else if (anySuccess) {
+        } else if (anySuccess || anySkipped) {
+            // We emit success even if skipped, to stop the UI from spinning infinitely.
+            // The un-synced transactions just remain "pending" in the DB.
             TransactionSyncState.emit("sync_success")
         }
 
