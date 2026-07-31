@@ -63,13 +63,23 @@ class ProductRepository(
                 val category = if (localCategory.isNotEmpty()) localCategory else categoryName
 
                 val barcode = if (product.get("barcode") != null && !product.get("barcode").isJsonNull) product.get("barcode").asString else ""
-                val imageUrl = if (product.get("image_url") != null && !product.get("image_url").isJsonNull && product.get("image_url").asString.isNotEmpty()) {
+                var imageUrl = if (product.get("image_url") != null && !product.get("image_url").isJsonNull && product.get("image_url").asString.isNotEmpty()) {
                     product.get("image_url").asString
                 } else if (product.get("photo_url") != null && !product.get("photo_url").isJsonNull && product.get("photo_url").asString.isNotEmpty()) {
                     product.get("photo_url").asString
                 } else {
                     ""
                 }
+
+                // Jika imageUrl dari server kosong (misal karena master product dihapus),
+                // gunakan imageUrl lokal jika ada, agar foto yang sudah terdownload tidak hilang
+                if (imageUrl.isEmpty()) {
+                    val localProduct = productDao.getProductById(id)
+                    if (localProduct != null && !localProduct.imageUrl.isNullOrEmpty()) {
+                        imageUrl = localProduct.imageUrl
+                    }
+                }
+
                 val description = if (product.get("description") != null && !product.get("description").isJsonNull) product.get("description").asString else ""
                 val createdAtStr = if (product.get("created_at") != null && !product.get("created_at").isJsonNull) product.get("created_at").asString else ""
                 val createdAtMillis = try {
