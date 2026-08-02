@@ -16,11 +16,12 @@ class UserRepository(private val userApi: UserApi) {
         }
     }
 
-    suspend fun addStoreEmployee(name: String, phone: String, role: String, password: String): Result<Map<String, Any>> {
+    suspend fun addStoreEmployee(name: String, username: String, phone: String, role: String, password: String): Result<Map<String, Any>> {
         return withContext(Dispatchers.IO) {
             try {
                 val request = mapOf(
                     "full_name" to name,
+                    "email" to username,
                     "phone" to phone,
                     "role" to role,
                     "password" to password

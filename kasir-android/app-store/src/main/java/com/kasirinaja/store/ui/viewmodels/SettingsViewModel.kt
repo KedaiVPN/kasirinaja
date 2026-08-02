@@ -58,32 +58,16 @@ class SettingsViewModel(
         }
     }
 
-    fun addEmployee(name: String, phone: String, role: String, password: String) {
+    fun addEmployee(name: String, username: String, phone: String, role: String, password: String) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            val result = userRepository.addStoreEmployee(name, phone, role, password)
+            val result = userRepository.addStoreEmployee(name, username, phone, role, password)
             result.onSuccess {
                 _successMessage.value = "Karyawan berhasil ditambahkan"
                 fetchUsers()
             }.onFailure {
                 _error.value = it.message ?: "Gagal menambahkan karyawan"
-            }
-            _isLoading.value = false
-        }
-    }
-
-    fun switchUser(targetUserId: String, password: String? = null, onSuccess: () -> Unit, onFailure: (String) -> Unit = {}) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
-            val result = authRepository.switchUser(targetUserId, password)
-            result.onSuccess {
-                onSuccess()
-            }.onFailure {
-                val errorMsg = it.message ?: "Gagal beralih akun"
-                _error.value = errorMsg
-                onFailure(errorMsg)
             }
             _isLoading.value = false
         }

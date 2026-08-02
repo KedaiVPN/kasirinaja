@@ -135,9 +135,8 @@ func (h *UserHandler) AddStoreEmployee(c *gin.Context) {
 		return
 	}
 
-	// We don't need email for cashier, but the database schema requires a unique email.
-	// Since we are not using email for login, we can generate a dummy email based on phone or name.
-	// Wait, the schema says: email VARCHAR(255) UNIQUE.
+	// We map the provided username to the database's email column.
+	// If no username (email) is provided, fallback to a dummy one just in case.
 	email := req.Email
 	if email == "" {
 		email = req.Phone + "@dummy.kasirinaja.com"

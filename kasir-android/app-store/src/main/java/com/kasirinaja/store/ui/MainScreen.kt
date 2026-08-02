@@ -599,12 +599,7 @@ fun MainScreen() {
                     onNavigateToEditProfile = {
                         navController.navigate("edit_profile")
                     },
-                    onLogout = { handleLogoutAttempt() },
-                    onSwitchSuccess = {
-                        navController.navigate(Screen.Dashboard.route) {
-                            popUpTo(0) { inclusive = true }
-                        }
-                    }
+                    onLogout = { handleLogoutAttempt() }
                 )
             }
             composable("edit_profile") {
