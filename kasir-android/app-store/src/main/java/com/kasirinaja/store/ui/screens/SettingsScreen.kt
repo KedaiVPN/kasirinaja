@@ -37,8 +37,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(
     onNavigateToEditProfile: () -> Unit = {},
-    onLogout: () -> Unit = {},
-    onSwitchSuccess: () -> Unit = {}
+    onLogout: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context) }
@@ -52,8 +51,6 @@ fun SettingsScreen(
     val successMessage by viewModel.successMessage.collectAsState()
 
     var showAddEmployeeDialog by remember { mutableStateOf(false) }
-    var showPasswordDialog by remember { mutableStateOf<Map<String, Any>?>(null) }
-    var showConfirmSwitchDialog by remember { mutableStateOf<Map<String, Any>?>(null) }
     val currentRole = tokenManager.getRole() ?: "owner"
 
     LaunchedEffect(Unit) {
@@ -269,41 +266,6 @@ fun SettingsScreen(
                                             Text("Hapus", color = Color.White, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                                         }
 
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                    }
-
-                                    // Tombol Masuk / Saat ini
-                                    val isCurrentLoggedInUser = (name == tokenManager.getUserName())
-                                    if (isCurrentLoggedInUser) {
-                                        Button(
-                                            onClick = {},
-                                            enabled = false,
-                                            colors = ButtonDefaults.buttonColors(
-                                                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                                disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                            ),
-                                            shape = RoundedCornerShape(12.dp),
-                                            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 6.dp),
-                                            modifier = Modifier.height(38.dp)
-                                        ) {
-                                            Text("Saat ini", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                                        }
-                                    } else {
-                                        Button(
-                                            onClick = {
-                                                if (role == "owner" && currentRole == "kasir") {
-                                                    showPasswordDialog = user
-                                                } else {
-                                                    showConfirmSwitchDialog = user
-                                                }
-                                            },
-                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                                            shape = RoundedCornerShape(12.dp),
-                                            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 6.dp),
-                                            modifier = Modifier.height(38.dp)
-                                        ) {
-                                            Text("Masuk", color = Color.White, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                                        }
                                     }
                                 }
                             }
@@ -324,71 +286,9 @@ fun SettingsScreen(
     if (showAddEmployeeDialog) {
         AddEmployeeDialog(
             onDismiss = { showAddEmployeeDialog = false },
-            onAdd = { name, phone, role, password ->
-                viewModel.addEmployee(name, phone, role, password)
+            onAdd = { name, username, phone, role, password ->
+                viewModel.addEmployee(name, username, phone, role, password)
                 showAddEmployeeDialog = false
-            }
-        )
-    }
-
-    if (showConfirmSwitchDialog != null) {
-        val targetUser = showConfirmSwitchDialog!!
-        val targetName = targetUser["full_name"]?.toString() ?: ""
-        val targetId = targetUser["id"]?.toString() ?: ""
-
-        AlertDialog(
-            onDismissRequest = { showConfirmSwitchDialog = null },
-            title = { Text("Konfirmasi Perpindahan") },
-            text = { Text("Apakah Anda yakin ingin beralih ke akun $targetName?") },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showConfirmSwitchDialog = null
-                        viewModel.switchUser(
-                            targetUserId = targetId,
-                            password = null,
-                            onSuccess = {
-                                viewModel.clearMessages()
-                                android.widget.Toast.makeText(context, "Berhasil beralih ke $targetName", android.widget.Toast.LENGTH_SHORT).show()
-                                onSwitchSuccess()
-                            },
-                            onFailure = { errorMsg ->
-                                android.widget.Toast.makeText(context, "Gagal beralih: $errorMsg", android.widget.Toast.LENGTH_SHORT).show()
-                            }
-                        )
-                    }
-                ) {
-                    Text("Beralih")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showConfirmSwitchDialog = null }) {
-                    Text("Batal")
-                }
-            }
-        )
-    }
-
-    if (showPasswordDialog != null) {
-        val user = showPasswordDialog!!
-        val targetName = user["full_name"]?.toString() ?: ""
-        PasswordDialog(
-            userName = targetName,
-            onDismiss = { showPasswordDialog = null },
-            onSubmit = { password ->
-                viewModel.switchUser(
-                    targetUserId = user["id"]?.toString() ?: "",
-                    password = password,
-                    onSuccess = {
-                        viewModel.clearMessages()
-                        android.widget.Toast.makeText(context, "Berhasil beralih ke $targetName", android.widget.Toast.LENGTH_SHORT).show()
-                        showPasswordDialog = null
-                        onSwitchSuccess()
-                    },
-                    onFailure = { errorMsg ->
-                        android.widget.Toast.makeText(context, "Gagal beralih: $errorMsg", android.widget.Toast.LENGTH_SHORT).show()
-                    }
-                )
             }
         )
     }
@@ -398,9 +298,10 @@ fun SettingsScreen(
 @Composable
 fun AddEmployeeDialog(
     onDismiss: () -> Unit,
-    onAdd: (String, String, String, String) -> Unit
+    onAdd: (String, String, String, String, String) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var role by remember { mutableStateOf("kasir") }
     var password by remember { mutableStateOf("") }
@@ -414,6 +315,13 @@ fun AddEmployeeDialog(
                     value = name,
                     onValueChange = { name = it },
                     label = { Text("Nama Lengkap") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = username,
+                    onValueChange = { username = it },
+                    label = { Text("Username") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -436,7 +344,7 @@ fun AddEmployeeDialog(
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
-                    label = { Text("Password") },
+                    label = { Text("Password Karyawan") },
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     singleLine = true,
@@ -447,8 +355,8 @@ fun AddEmployeeDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    if (name.isNotEmpty() && phone.isNotEmpty() && password.isNotEmpty()) {
-                        onAdd(name, phone, role, password)
+                    if (name.isNotEmpty() && username.isNotEmpty() && phone.isNotEmpty() && password.isNotEmpty()) {
+                        onAdd(name, username, phone, role, password)
                     }
                 }
             ) {
@@ -463,48 +371,3 @@ fun AddEmployeeDialog(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun PasswordDialog(
-    userName: String,
-    onDismiss: () -> Unit,
-    onSubmit: (String) -> Unit
-) {
-    var password by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Masukkan Password") },
-        text = {
-            Column {
-                Text("Beralih ke akun Owner ($userName) membutuhkan password.")
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = { Text("Password") },
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    if (password.isNotEmpty()) {
-                        onSubmit(password)
-                    }
-                }
-            ) {
-                Text("Beralih")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Batal")
-            }
-        }
-    )
-}
