@@ -42,6 +42,14 @@ class TokenManager(context: Context) {
         return prefs.getString("store_logo_url", null)
     }
 
+    fun saveUserId(userId: String) {
+        prefs.edit().putString("user_id", userId).apply()
+    }
+
+    fun getUserId(): String? {
+        return prefs.getString("user_id", null)
+    }
+
     fun saveRole(role: String) {
         prefs.edit().putString("role", role).apply()
     }
@@ -57,6 +65,7 @@ class TokenManager(context: Context) {
     fun clearToken() {
         prefs.edit().remove("jwt_token").apply()
         prefs.edit().remove("role").apply()
+        prefs.edit().remove("user_id").apply()
         prefs.edit().remove("user_name").apply()
         prefs.edit().remove("user_photo_url").apply()
         prefs.edit().remove("store_id").apply()

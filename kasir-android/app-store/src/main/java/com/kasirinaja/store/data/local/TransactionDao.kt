@@ -70,14 +70,14 @@ interface TransactionDao {
     @Query("SELECT SUM(ti.subtotal - (ti.buyPrice * ti.quantity)) FROM transaction_items ti INNER JOIN transactions t ON ti.transactionId = t.id WHERE t.transactionTime >= :startOfDay AND t.transactionTime <= :endOfDay")
     fun getTodayNetProfitFlow(startOfDay: Long, endOfDay: Long): kotlinx.coroutines.flow.Flow<Double?>
 
-    @Query("SELECT * FROM transactions ORDER BY transactionTime DESC LIMIT :limit")
-    fun getRecentTransactionsFlow(limit: Int): kotlinx.coroutines.flow.Flow<List<LocalTransactionEntity>>
+    @Query("SELECT * FROM transactions WHERE (:cashierId IS NULL OR cashierId = :cashierId) ORDER BY transactionTime DESC LIMIT :limit")
+    fun getRecentTransactionsFlow(limit: Int, cashierId: String?): kotlinx.coroutines.flow.Flow<List<LocalTransactionEntity>>
 
-    @Query("SELECT * FROM transactions WHERE invoiceNumber LIKE '%' || :searchQuery || '%' ORDER BY transactionTime DESC LIMIT :limit OFFSET :offset")
-    fun getTransactionsPagedFlow(limit: Int, offset: Int, searchQuery: String): kotlinx.coroutines.flow.Flow<List<LocalTransactionEntity>>
+    @Query("SELECT * FROM transactions WHERE invoiceNumber LIKE '%' || :searchQuery || '%' AND (:cashierId IS NULL OR cashierId = :cashierId) ORDER BY transactionTime DESC LIMIT :limit OFFSET :offset")
+    fun getTransactionsPagedFlow(limit: Int, offset: Int, searchQuery: String, cashierId: String?): kotlinx.coroutines.flow.Flow<List<LocalTransactionEntity>>
 
-    @Query("SELECT COUNT(id) FROM transactions WHERE invoiceNumber LIKE '%' || :searchQuery || '%'")
-    fun getTotalTransactionsCountFlow(searchQuery: String): kotlinx.coroutines.flow.Flow<Int>
+    @Query("SELECT COUNT(id) FROM transactions WHERE invoiceNumber LIKE '%' || :searchQuery || '%' AND (:cashierId IS NULL OR cashierId = :cashierId)")
+    fun getTotalTransactionsCountFlow(searchQuery: String, cashierId: String?): kotlinx.coroutines.flow.Flow<Int>
 
     @Query("UPDATE transaction_items SET storeProductId = :newStoreProductId, id = transactionId || '_' || :newStoreProductId WHERE storeProductId = :oldStoreProductId")
     suspend fun updateTransactionItemProductId(oldStoreProductId: String, newStoreProductId: String)

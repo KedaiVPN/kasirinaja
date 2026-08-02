@@ -20,11 +20,13 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import com.kasirinaja.core.network.TokenManager
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HistoryViewModel(
     private val transactionDao: TransactionDao,
-    private val transactionRepository: TransactionRepository
+    private val transactionRepository: TransactionRepository,
+    private val tokenManager: TokenManager? = null
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
@@ -46,7 +48,9 @@ class HistoryViewModel(
         Pair(query, page)
     }.flatMapLatest { (query, page) ->
         val offset = page * PAGE_SIZE
-        transactionDao.getTransactionsPagedFlow(PAGE_SIZE, offset, query)
+        val role = tokenManager?.getRole() ?: "owner"
+        val cashierIdFilter = if (role == "kasir") tokenManager?.getUserId() else null
+        transactionDao.getTransactionsPagedFlow(PAGE_SIZE, offset, query, cashierIdFilter)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     init {
@@ -59,7 +63,9 @@ class HistoryViewModel(
                 _currentPage
             ) { query, page -> Pair(query, page) }
                 .flatMapLatest { (query, _) ->
-                    transactionDao.getTotalTransactionsCountFlow(query)
+                    val role = tokenManager?.getRole() ?: "owner"
+                    val cashierIdFilter = if (role == "kasir") tokenManager?.getUserId() else null
+                    transactionDao.getTotalTransactionsCountFlow(query, cashierIdFilter)
                 }
                 .collect { totalCount ->
                     _hasNextPage.value = (_currentPage.value + 1) * PAGE_SIZE < totalCount
@@ -87,12 +93,13 @@ class HistoryViewModel(
 
 class HistoryViewModelFactory(
     private val transactionDao: TransactionDao,
-    private val transactionRepository: TransactionRepository
+    private val transactionRepository: TransactionRepository,
+    private val tokenManager: TokenManager? = null
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(HistoryViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return HistoryViewModel(transactionDao, transactionRepository) as T
+            return HistoryViewModel(transactionDao, transactionRepository, tokenManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
