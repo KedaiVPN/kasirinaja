@@ -6,7 +6,9 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
+
+	"kasir-api-go/db"
+	"kasir-api-go/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -14,8 +16,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
-	"kasir-api-go/db"
-	"kasir-api-go/utils"
 )
 
 type AuthHandler struct {
@@ -189,7 +189,6 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 		"user_id":  parsedID.String(),
 		"role":     user.Role,
 		"store_id": storeIDStr,
-		"exp":      time.Now().Add(time.Hour * 24).Unix(), // 24 hours
 	})
 
 	tokenString, err := token.SignedString([]byte(jwtSecret))
@@ -200,7 +199,7 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Registration successful",
-		"token": tokenString,
+		"token":   tokenString,
 		"user": gin.H{
 			"id":            user.ID,
 			"full_name":     user.FullName,
@@ -210,7 +209,7 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 			"store_name":    store.StoreName,
 			"store_address": store.Address.String,
 			"logo_url":      store.LogoUrl.String,
-				"photo_url":     user.PhotoUrl.String,
+			"photo_url":     user.PhotoUrl.String,
 		},
 	})
 }
@@ -287,7 +286,6 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		"user_id":  parsedID.String(),
 		"role":     user.Role,
 		"store_id": storeIDStr,
-		"exp":      time.Now().Add(time.Hour * 24).Unix(), // 24 hours
 	})
 
 	tokenString, err := token.SignedString([]byte(jwtSecret))
@@ -317,7 +315,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 			"store_name":    storeName,
 			"store_address": storeAddress,
 			"logo_url":      storeLogoUrl,
-				"photo_url":     user.PhotoUrl.String,
+			"photo_url":     user.PhotoUrl.String,
 		},
 	})
 }
@@ -432,7 +430,6 @@ func (h *AuthHandler) SwitchUser(c *gin.Context) {
 		"user_id":  parsedID.String(),
 		"role":     targetUser.Role,
 		"store_id": targetStoreIDStr,
-		"exp":      time.Now().Add(time.Hour * 24).Unix(), // 24 hours
 	})
 
 	tokenString, err := token.SignedString([]byte(jwtSecret))
@@ -463,7 +460,7 @@ func (h *AuthHandler) SwitchUser(c *gin.Context) {
 			"store_name":    storeName,
 			"store_address": storeAddress,
 			"logo_url":      storeLogoUrl,
-				"photo_url":     targetUser.PhotoUrl.String,
+			"photo_url":     targetUser.PhotoUrl.String,
 		},
 	})
 }
