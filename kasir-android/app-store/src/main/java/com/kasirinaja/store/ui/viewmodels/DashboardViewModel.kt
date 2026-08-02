@@ -77,13 +77,16 @@ class DashboardViewModel(
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val state: StateFlow<DashboardState> = refreshTrigger.flatMapLatest { refreshTriggerVal ->
+        val role = tokenManager?.getRole() ?: "owner"
+        val cashierIdFilter = if (role == "kasir") tokenManager?.getUserId() else null
+
         combine(
         combine(
             transactionDao.getTodayTotalRevenueFlow(getStartOfDay(), getEndOfDay()),
             transactionDao.getTodayTotalTransactionsFlow(getStartOfDay(), getEndOfDay()),
             productDao.getTotalProductsFlow(),
             transactionDao.getTodayNetProfitFlow(getStartOfDay(), getEndOfDay()),
-            transactionDao.getRecentTransactionsFlow(5),
+            transactionDao.getRecentTransactionsFlow(5, cashierIdFilter),
             transactionDao.getTodayTotalProductsSoldFlow(getStartOfDay(), getEndOfDay())
         ) { arr ->
             @Suppress("UNCHECKED_CAST")
