@@ -243,6 +243,59 @@ fun MainScreen() {
         isCheckingToken = false
     }
 
+    var showLogoutConfirmDialog by remember { mutableStateOf(false) }
+
+    fun performLogout() {
+        coroutineScope.launch {
+            // Clear local database to prevent old store data from bleeding into new login
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                database.clearAllTables()
+            }
+            tokenManager.clearToken()
+            startDest = Screen.Login.route
+            authViewModel.resetState()
+            navController.navigate(Screen.Login.route) {
+                popUpTo(navController.graph.id) { inclusive = true }
+            }
+        }
+    }
+
+    fun handleLogoutAttempt() {
+        coroutineScope.launch {
+            val pendingTx = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { transactionDao.getPendingTransactions() }
+            if (pendingTx.isNotEmpty()) {
+                showLogoutConfirmDialog = true
+            } else {
+                performLogout()
+            }
+        }
+    }
+
+    if (showLogoutConfirmDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showLogoutConfirmDialog = false },
+            title = { androidx.compose.material3.Text("Konfirmasi Logout") },
+            text = { androidx.compose.material3.Text("Ada transaksi yang belum disinkronisasi. Jika Anda keluar, data transaksi offline tersebut akan hilang. Lanjutkan?") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        showLogoutConfirmDialog = false
+                        performLogout()
+                    }
+                ) {
+                    androidx.compose.material3.Text("Lanjutkan", color = androidx.compose.material3.MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = { showLogoutConfirmDialog = false }
+                ) {
+                    androidx.compose.material3.Text("Batal")
+                }
+            }
+        )
+    }
+
     if (isCheckingToken) {
         return // Or a splash screen
     }
@@ -458,14 +511,7 @@ fun MainScreen() {
                     onNavigateToEditProfile = {
                         navController.navigate("edit_profile")
                     },
-                    onLogout = {
-                        tokenManager.clearToken()
-                        startDest = Screen.Login.route
-                        authViewModel.resetState()
-                        navController.navigate(Screen.Login.route) {
-                            popUpTo(navController.graph.id) { inclusive = true }
-                        }
-                    }
+                    onLogout = { handleLogoutAttempt() }
                 )
             }
             composable("edit_store") {
@@ -489,14 +535,7 @@ fun MainScreen() {
                     onNavigateToEditProfile = {
                         navController.navigate("edit_profile")
                     },
-                    onLogout = {
-                        tokenManager.clearToken()
-                        startDest = Screen.Login.route
-                        authViewModel.resetState()
-                        navController.navigate(Screen.Login.route) {
-                            popUpTo(navController.graph.id) { inclusive = true }
-                        }
-                    }
+                    onLogout = { handleLogoutAttempt() }
                 )
             }
             composable(Screen.History.route) {
@@ -508,14 +547,7 @@ fun MainScreen() {
                     onNavigateToEditProfile = {
                         navController.navigate("edit_profile")
                     },
-                    onLogout = {
-                        tokenManager.clearToken()
-                        startDest = Screen.Login.route
-                        authViewModel.resetState()
-                        navController.navigate(Screen.Login.route) {
-                            popUpTo(navController.graph.id) { inclusive = true }
-                        }
-                    }
+                    onLogout = { handleLogoutAttempt() }
                 )
             }
                         composable(Screen.Scan.route) {
@@ -525,14 +557,7 @@ fun MainScreen() {
                     onNavigateToEditProfile = {
                         navController.navigate("edit_profile")
                     },
-                    onLogout = {
-                        tokenManager.clearToken()
-                        startDest = Screen.Login.route
-                        authViewModel.resetState()
-                        navController.navigate(Screen.Login.route) {
-                            popUpTo(navController.graph.id) { inclusive = true }
-                        }
-                    }
+                    onLogout = { handleLogoutAttempt() }
                 )
             }
 
@@ -566,14 +591,7 @@ fun MainScreen() {
                     onNavigateToEditProfile = {
                         navController.navigate("edit_profile")
                     },
-                    onLogout = {
-                        tokenManager.clearToken()
-                        startDest = Screen.Login.route
-                        authViewModel.resetState()
-                        navController.navigate(Screen.Login.route) {
-                            popUpTo(navController.graph.id) { inclusive = true }
-                        }
-                    }
+                    onLogout = { handleLogoutAttempt() }
                 )
             }
             composable(Screen.Settings.route) {
@@ -581,14 +599,7 @@ fun MainScreen() {
                     onNavigateToEditProfile = {
                         navController.navigate("edit_profile")
                     },
-                    onLogout = {
-                        tokenManager.clearToken()
-                        startDest = Screen.Login.route
-                        authViewModel.resetState()
-                        navController.navigate(Screen.Login.route) {
-                            popUpTo(navController.graph.id) { inclusive = true }
-                        }
-                    },
+                    onLogout = { handleLogoutAttempt() },
                     onSwitchSuccess = {
                         navController.navigate(Screen.Dashboard.route) {
                             popUpTo(0) { inclusive = true }
