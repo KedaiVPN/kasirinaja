@@ -202,6 +202,52 @@ func (q *Queries) GetAllStoreTransactions(ctx context.Context, storeID pgtype.UU
 	return items, nil
 }
 
+const getAllStoreTransactionsByCashier = `-- name: GetAllStoreTransactionsByCashier :many
+SELECT id, store_id, cashier_id, invoice_number, total_amount, paid_amount, change_amount, payment_method, transaction_time, sync_status, device_id, is_active, created_at, updated_at FROM transactions
+WHERE store_id = $1 AND cashier_id = $2
+ORDER BY transaction_time DESC
+`
+
+type GetAllStoreTransactionsByCashierParams struct {
+	StoreID   pgtype.UUID `json:"store_id"`
+	CashierID pgtype.UUID `json:"cashier_id"`
+}
+
+func (q *Queries) GetAllStoreTransactionsByCashier(ctx context.Context, arg GetAllStoreTransactionsByCashierParams) ([]Transaction, error) {
+	rows, err := q.db.Query(ctx, getAllStoreTransactionsByCashier, arg.StoreID, arg.CashierID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Transaction
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.StoreID,
+			&i.CashierID,
+			&i.InvoiceNumber,
+			&i.TotalAmount,
+			&i.PaidAmount,
+			&i.ChangeAmount,
+			&i.PaymentMethod,
+			&i.TransactionTime,
+			&i.SyncStatus,
+			&i.DeviceID,
+			&i.IsActive,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getRecentStoreTransactions = `-- name: GetRecentStoreTransactions :many
 SELECT id, store_id, cashier_id, invoice_number, total_amount, paid_amount, change_amount, payment_method, transaction_time, sync_status, device_id, is_active, created_at, updated_at FROM transactions
 WHERE store_id = $1
@@ -211,6 +257,53 @@ LIMIT 5
 
 func (q *Queries) GetRecentStoreTransactions(ctx context.Context, storeID pgtype.UUID) ([]Transaction, error) {
 	rows, err := q.db.Query(ctx, getRecentStoreTransactions, storeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Transaction
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.StoreID,
+			&i.CashierID,
+			&i.InvoiceNumber,
+			&i.TotalAmount,
+			&i.PaidAmount,
+			&i.ChangeAmount,
+			&i.PaymentMethod,
+			&i.TransactionTime,
+			&i.SyncStatus,
+			&i.DeviceID,
+			&i.IsActive,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRecentStoreTransactionsByCashier = `-- name: GetRecentStoreTransactionsByCashier :many
+SELECT id, store_id, cashier_id, invoice_number, total_amount, paid_amount, change_amount, payment_method, transaction_time, sync_status, device_id, is_active, created_at, updated_at FROM transactions
+WHERE store_id = $1 AND cashier_id = $2
+ORDER BY transaction_time DESC
+LIMIT 5
+`
+
+type GetRecentStoreTransactionsByCashierParams struct {
+	StoreID   pgtype.UUID `json:"store_id"`
+	CashierID pgtype.UUID `json:"cashier_id"`
+}
+
+func (q *Queries) GetRecentStoreTransactionsByCashier(ctx context.Context, arg GetRecentStoreTransactionsByCashierParams) ([]Transaction, error) {
+	rows, err := q.db.Query(ctx, getRecentStoreTransactionsByCashier, arg.StoreID, arg.CashierID)
 	if err != nil {
 		return nil, err
 	}
@@ -269,6 +362,45 @@ type GetStoreDashboardStatsRow struct {
 func (q *Queries) GetStoreDashboardStats(ctx context.Context, storeID pgtype.UUID) (GetStoreDashboardStatsRow, error) {
 	row := q.db.QueryRow(ctx, getStoreDashboardStats, storeID)
 	var i GetStoreDashboardStatsRow
+	err := row.Scan(
+		&i.TotalRevenue,
+		&i.TotalTransactions,
+		&i.TotalProducts,
+		&i.NetProfit,
+	)
+	return i, err
+}
+
+const getStoreDashboardStatsByCashier = `-- name: GetStoreDashboardStatsByCashier :one
+SELECT
+    COALESCE(SUM(CASE WHEN DATE(transaction_time) = CURRENT_DATE THEN total_amount ELSE 0 END), 0)::BIGINT AS total_revenue,
+    COUNT(CASE WHEN DATE(transaction_time) = CURRENT_DATE THEN id ELSE NULL END)::INT AS total_transactions,
+    (SELECT COUNT(store_products.id)::INT FROM store_products WHERE store_products.store_id = $1 AND store_products.is_active = true) AS total_products,
+    COALESCE(
+        (SELECT SUM(ti.subtotal - (ti.buy_price * ti.quantity))
+         FROM transaction_items ti
+         JOIN transactions t ON ti.transaction_id = t.id
+         WHERE t.store_id = $1 AND t.cashier_id = $2 AND DATE(t.transaction_time) = CURRENT_DATE), 0
+    )::BIGINT AS net_profit
+FROM transactions
+WHERE transactions.store_id = $1 AND transactions.cashier_id = $2
+`
+
+type GetStoreDashboardStatsByCashierParams struct {
+	StoreID   pgtype.UUID `json:"store_id"`
+	CashierID pgtype.UUID `json:"cashier_id"`
+}
+
+type GetStoreDashboardStatsByCashierRow struct {
+	TotalRevenue      int64 `json:"total_revenue"`
+	TotalTransactions int32 `json:"total_transactions"`
+	TotalProducts     int32 `json:"total_products"`
+	NetProfit         int64 `json:"net_profit"`
+}
+
+func (q *Queries) GetStoreDashboardStatsByCashier(ctx context.Context, arg GetStoreDashboardStatsByCashierParams) (GetStoreDashboardStatsByCashierRow, error) {
+	row := q.db.QueryRow(ctx, getStoreDashboardStatsByCashier, arg.StoreID, arg.CashierID)
+	var i GetStoreDashboardStatsByCashierRow
 	err := row.Scan(
 		&i.TotalRevenue,
 		&i.TotalTransactions,

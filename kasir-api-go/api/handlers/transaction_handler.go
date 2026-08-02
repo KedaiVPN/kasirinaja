@@ -193,24 +193,70 @@ func (h *TransactionHandler) GetDashboardStats(c *gin.Context) {
 		return
 	}
 
-	ctx := c.Request.Context()
-
-	stats, err := h.queries.GetStoreDashboardStats(ctx, pgtype.UUID{Bytes: storeID, Valid: true})
+	userIDRaw, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user_id not found in token"})
+		return
+	}
+	userID, err := uuid.Parse(userIDRaw.(string))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch stats"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
 		return
 	}
 
-	recentTx, err := h.queries.GetRecentStoreTransactions(ctx, pgtype.UUID{Bytes: storeID, Valid: true})
-	if err != nil {
-		recentTx = []db.Transaction{}
+	role := c.GetString("role")
+
+	ctx := c.Request.Context()
+
+	var statsTotalRevenue int64
+	var statsTotalTransactions int32
+	var statsTotalProducts int32
+	var statsNetProfit int64
+	var recentTx []db.Transaction
+
+	if role == "owner" {
+		stats, err := h.queries.GetStoreDashboardStats(ctx, pgtype.UUID{Bytes: storeID, Valid: true})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch stats"})
+			return
+		}
+		statsTotalRevenue = stats.TotalRevenue
+		statsTotalTransactions = stats.TotalTransactions
+		statsTotalProducts = stats.TotalProducts
+		statsNetProfit = stats.NetProfit
+
+		recentTx, err = h.queries.GetRecentStoreTransactions(ctx, pgtype.UUID{Bytes: storeID, Valid: true})
+		if err != nil {
+			recentTx = []db.Transaction{}
+		}
+	} else {
+		stats, err := h.queries.GetStoreDashboardStatsByCashier(ctx, db.GetStoreDashboardStatsByCashierParams{
+			StoreID:   pgtype.UUID{Bytes: storeID, Valid: true},
+			CashierID: pgtype.UUID{Bytes: userID, Valid: true},
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch stats"})
+			return
+		}
+		statsTotalRevenue = stats.TotalRevenue
+		statsTotalTransactions = stats.TotalTransactions
+		statsTotalProducts = stats.TotalProducts
+		statsNetProfit = stats.NetProfit
+
+		recentTx, err = h.queries.GetRecentStoreTransactionsByCashier(ctx, db.GetRecentStoreTransactionsByCashierParams{
+			StoreID:   pgtype.UUID{Bytes: storeID, Valid: true},
+			CashierID: pgtype.UUID{Bytes: userID, Valid: true},
+		})
+		if err != nil {
+			recentTx = []db.Transaction{}
+		}
 	}
 
 	c.JSON(http.StatusOK, DashboardStatsResponse{
-		TotalRevenue:      stats.TotalRevenue,
-		TotalTransactions: stats.TotalTransactions,
-		TotalProducts:     stats.TotalProducts,
-		NetProfit:         stats.NetProfit,
+		TotalRevenue:      statsTotalRevenue,
+		TotalTransactions: statsTotalTransactions,
+		TotalProducts:     statsTotalProducts,
+		NetProfit:         statsNetProfit,
 		RecentTransactions: recentTx,
 	})
 }
@@ -245,7 +291,25 @@ func (h *TransactionHandler) GetAllTransactions(c *gin.Context) {
 		return
 	}
 
-	transactions, err := h.queries.GetAllStoreTransactions(ctx, pgtype.UUID{Bytes: storeIDBytes, Valid: true})
+	userIDStr := c.GetString("user_id")
+	userIDBytes, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		return
+	}
+
+	role := c.GetString("role")
+
+	var transactions []db.Transaction
+	if role == "owner" {
+		transactions, err = h.queries.GetAllStoreTransactions(ctx, pgtype.UUID{Bytes: storeIDBytes, Valid: true})
+	} else {
+		transactions, err = h.queries.GetAllStoreTransactionsByCashier(ctx, db.GetAllStoreTransactionsByCashierParams{
+			StoreID:   pgtype.UUID{Bytes: storeIDBytes, Valid: true},
+			CashierID: pgtype.UUID{Bytes: userIDBytes, Valid: true},
+		})
+	}
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch transactions"})
 		return

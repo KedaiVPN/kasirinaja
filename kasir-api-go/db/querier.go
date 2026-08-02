@@ -30,12 +30,15 @@ type Querier interface {
 	DeleteTransactionItemsByMasterProduct(ctx context.Context, masterProductID pgtype.UUID) error
 	DeleteUser(ctx context.Context, id pgtype.UUID) error
 	GetAllStoreTransactions(ctx context.Context, storeID pgtype.UUID) ([]Transaction, error)
+	GetAllStoreTransactionsByCashier(ctx context.Context, arg GetAllStoreTransactionsByCashierParams) ([]Transaction, error)
 	GetCategoryByName(ctx context.Context, name string) (Category, error)
 	GetMasterProduct(ctx context.Context, id pgtype.UUID) (MasterProduct, error)
 	GetPendingProduct(ctx context.Context, id pgtype.UUID) (PendingProduct, error)
 	GetRecentStoreTransactions(ctx context.Context, storeID pgtype.UUID) ([]Transaction, error)
+	GetRecentStoreTransactionsByCashier(ctx context.Context, arg GetRecentStoreTransactionsByCashierParams) ([]Transaction, error)
 	GetStore(ctx context.Context, id pgtype.UUID) (Store, error)
 	GetStoreDashboardStats(ctx context.Context, storeID pgtype.UUID) (GetStoreDashboardStatsRow, error)
+	GetStoreDashboardStatsByCashier(ctx context.Context, arg GetStoreDashboardStatsByCashierParams) (GetStoreDashboardStatsByCashierRow, error)
 	GetStoreProduct(ctx context.Context, id pgtype.UUID) (StoreProduct, error)
 	GetTransactionItemsByTransactionId(ctx context.Context, transactionID pgtype.UUID) ([]TransactionItem, error)
 	GetUser(ctx context.Context, id pgtype.UUID) (User, error)

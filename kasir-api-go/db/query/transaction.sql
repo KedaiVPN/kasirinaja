@@ -50,3 +50,28 @@ ORDER BY transaction_time DESC;
 -- name: GetTransactionItemsByTransactionId :many
 SELECT * FROM transaction_items
 WHERE transaction_id = $1;
+
+-- name: GetStoreDashboardStatsByCashier :one
+SELECT
+    COALESCE(SUM(CASE WHEN DATE(transaction_time) = CURRENT_DATE THEN total_amount ELSE 0 END), 0)::BIGINT AS total_revenue,
+    COUNT(CASE WHEN DATE(transaction_time) = CURRENT_DATE THEN id ELSE NULL END)::INT AS total_transactions,
+    (SELECT COUNT(store_products.id)::INT FROM store_products WHERE store_products.store_id = $1 AND store_products.is_active = true) AS total_products,
+    COALESCE(
+        (SELECT SUM(ti.subtotal - (ti.buy_price * ti.quantity))
+         FROM transaction_items ti
+         JOIN transactions t ON ti.transaction_id = t.id
+         WHERE t.store_id = $1 AND t.cashier_id = $2 AND DATE(t.transaction_time) = CURRENT_DATE), 0
+    )::BIGINT AS net_profit
+FROM transactions
+WHERE transactions.store_id = $1 AND transactions.cashier_id = $2;
+
+-- name: GetRecentStoreTransactionsByCashier :many
+SELECT * FROM transactions
+WHERE store_id = $1 AND cashier_id = $2
+ORDER BY transaction_time DESC
+LIMIT 5;
+
+-- name: GetAllStoreTransactionsByCashier :many
+SELECT * FROM transactions
+WHERE store_id = $1 AND cashier_id = $2
+ORDER BY transaction_time DESC;
