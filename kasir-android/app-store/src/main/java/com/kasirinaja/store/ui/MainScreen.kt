@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.paddingFromBaseline
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
@@ -21,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.animation.core.animateFloatAsState
@@ -34,6 +36,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.clickable
+import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
@@ -83,6 +86,8 @@ import androidx.compose.material3.Icon
 import com.kasirinaja.store.ui.navigation.Screen
 import androidx.compose.material3.NavigationBarItem
 import com.kasirinaja.store.presentation.auth.VerifyOtpScreen
+import com.kasirinaja.store.ui.screens.ReportsScreen
+import com.kasirinaja.store.ui.viewmodels.ReportsViewModel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import com.kasirinaja.store.data.repository.ProductRepository
@@ -434,6 +439,27 @@ fun MainScreen() {
                         }
                     }
 
+                    Divider(modifier = Modifier.padding(vertical = 16.dp))
+
+                    if (userRole == "owner") {
+                        NavigationDrawerItem(
+                            label = { Text(Screen.Reports.title) },
+                            selected = currentRoute == Screen.Reports.route,
+                            onClick = {
+                                coroutineScope.launch { drawerState.close() }
+                                navController.navigate(Screen.Reports.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            icon = { Icon(Screen.Reports.icon, contentDescription = Screen.Reports.title) },
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                    }
+
                 }
             }
         }
@@ -753,6 +779,22 @@ fun MainScreen() {
                             popUpTo(Screen.Dashboard.route) { inclusive = true }
                         }
                     }
+                }
+            }
+
+            composable(Screen.Reports.route) {
+                if (userRole == "owner") {
+                    val reportsViewModel: ReportsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                        factory = ReportsViewModel.Factory(database.transactionDao())
+                    )
+                    ReportsScreen(
+                        viewModel = reportsViewModel,
+                        onNavigateToEditProfile = { navController.navigate("edit_profile") },
+                        onLogout = { handleLogoutAttempt() },
+                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
+                    )
+                } else {
+                    androidx.compose.runtime.LaunchedEffect(Unit) { navController.popBackStack() }
                 }
             }
             composable("edit_profile") {

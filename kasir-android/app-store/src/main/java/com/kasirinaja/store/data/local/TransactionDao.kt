@@ -81,4 +81,7 @@ interface TransactionDao {
 
     @Query("UPDATE transaction_items SET storeProductId = :newStoreProductId, id = transactionId || '_' || :newStoreProductId WHERE storeProductId = :oldStoreProductId")
     suspend fun updateTransactionItemProductId(oldStoreProductId: String, newStoreProductId: String)
+
+    @Query("SELECT * FROM transactions WHERE transactionTime >= :startDate AND transactionTime <= :endDate ORDER BY transactionTime ASC")
+    fun getTransactionsBetweenDatesFlow(startDate: Long, endDate: Long): kotlinx.coroutines.flow.Flow<List<LocalTransactionEntity>>
 }

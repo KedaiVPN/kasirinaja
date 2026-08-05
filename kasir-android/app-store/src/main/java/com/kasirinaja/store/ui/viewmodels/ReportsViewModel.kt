@@ -1,0 +1,119 @@
+package com.kasirinaja.store.ui.viewmodels
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.kasirinaja.store.data.local.TransactionDao
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+
+data class ReportsState(
+    val startDate: Long,
+    val endDate: Long,
+    val transactionData: Map<String, Int> = emptyMap() // "YYYY-MM-DD" to Count
+)
+
+class ReportsViewModel(
+    private val transactionDao: TransactionDao
+) : ViewModel() {
+
+    private val _startDate = MutableStateFlow(getStartOfDefaultRange())
+    private val _endDate = MutableStateFlow(getEndOfDefaultRange())
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val state: StateFlow<ReportsState> = combine(_startDate, _endDate) { start, end ->
+        Pair(start, end)
+    }.flatMapLatest { (start, end) ->
+        transactionDao.getTransactionsBetweenDatesFlow(start, end)
+            .combine(kotlinx.coroutines.flow.flowOf(Pair(start, end))) { transactions, _ ->
+                val grouped = transactions.groupBy { tx ->
+                    val cal = Calendar.getInstance().apply { timeInMillis = tx.transactionTime }
+                    val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                    dateFormat.format(cal.time)
+                }
+
+                // Fill missing days with 0
+                val format = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                val filledData = mutableMapOf<String, Int>()
+                val calStart = Calendar.getInstance().apply { timeInMillis = start }
+                calStart.set(Calendar.HOUR_OF_DAY, 0)
+                calStart.set(Calendar.MINUTE, 0)
+                calStart.set(Calendar.SECOND, 0)
+                calStart.set(Calendar.MILLISECOND, 0)
+
+                val calEnd = Calendar.getInstance().apply { timeInMillis = end }
+                calEnd.set(Calendar.HOUR_OF_DAY, 23)
+                calEnd.set(Calendar.MINUTE, 59)
+                calEnd.set(Calendar.SECOND, 59)
+                calEnd.set(Calendar.MILLISECOND, 999)
+
+                val calCurrent = calStart.clone() as Calendar
+                while (calCurrent.before(calEnd) || calCurrent.get(Calendar.DAY_OF_YEAR) == calEnd.get(Calendar.DAY_OF_YEAR)) {
+                    val dateString = format.format(calCurrent.time)
+                    filledData[dateString] = grouped[dateString]?.size ?: 0
+                    calCurrent.add(Calendar.DAY_OF_YEAR, 1)
+                }
+
+                ReportsState(
+                    startDate = start,
+                    endDate = end,
+                    transactionData = filledData
+                )
+            }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = ReportsState(
+            startDate = getStartOfDefaultRange(),
+            endDate = getEndOfDefaultRange()
+        )
+    )
+
+    fun updateDateRange(start: Long, end: Long) {
+        viewModelScope.launch {
+            _startDate.value = start
+            _endDate.value = end
+        }
+    }
+
+    private fun getStartOfDefaultRange(): Long {
+        val cal = Calendar.getInstance()
+        cal.add(Calendar.MONTH, -1)
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        return cal.timeInMillis
+    }
+
+    private fun getEndOfDefaultRange(): Long {
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.HOUR_OF_DAY, 23)
+        cal.set(Calendar.MINUTE, 59)
+        cal.set(Calendar.SECOND, 59)
+        cal.set(Calendar.MILLISECOND, 999)
+        return cal.timeInMillis
+    }
+
+    class Factory(
+        private val transactionDao: TransactionDao
+    ) : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(ReportsViewModel::class.java)) {
+                @Suppress("UNCHECKED_CAST")
+                return ReportsViewModel(transactionDao) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class")
+        }
+    }
+}
