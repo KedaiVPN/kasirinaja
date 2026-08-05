@@ -301,16 +301,30 @@ fun MainScreen() {
     }
 
 
-    val bottomBarScreens = listOf(
-        Screen.Dashboard,
-        Screen.Stock,
-        Screen.History,
-        Screen.Scan,
-        Screen.More
-    )
+    val userRole = tokenManager.getRole() ?: "owner"
+
+    val bottomBarScreens = if (userRole == "owner") {
+        listOf(
+            Screen.Dashboard,
+            Screen.Stock,
+            Screen.History,
+            Screen.Scan,
+            Screen.More
+        )
+    } else {
+        listOf(
+            Screen.Dashboard,
+            Screen.History,
+            Screen.Scan
+        )
+    }
 
     var showMoreMenu by remember { mutableStateOf(false) }
-    val bottomBarVisibleScreens = listOf(Screen.Dashboard.route, Screen.Stock.route, Screen.History.route, Screen.Scan.route, Screen.Master.route, Screen.Settings.route)
+    val bottomBarVisibleScreens = if (userRole == "owner") {
+        listOf(Screen.Dashboard.route, Screen.Stock.route, Screen.History.route, Screen.Scan.route, Screen.Master.route, Screen.Settings.route)
+    } else {
+        listOf(Screen.Dashboard.route, Screen.History.route, Screen.Scan.route)
+    }
 
     Scaffold(
         bottomBar = {
@@ -525,18 +539,26 @@ fun MainScreen() {
                 )
             }
             composable(Screen.Stock.route) {
-                StockScreen(
-                    onNavigateToAddProduct = {
-                        navController.navigate(Screen.AddProduct.route)
-                    },
-                    onNavigateToEditProduct = { productId ->
-                        navController.navigate("${Screen.AddProduct.route}?productId=$productId")
-                    },
-                    onNavigateToEditProfile = {
-                        navController.navigate("edit_profile")
-                    },
-                    onLogout = { handleLogoutAttempt() }
-                )
+                if (userRole == "owner") {
+                    StockScreen(
+                        onNavigateToAddProduct = {
+                            navController.navigate(Screen.AddProduct.route)
+                        },
+                        onNavigateToEditProduct = { productId ->
+                            navController.navigate("${Screen.AddProduct.route}?productId=$productId")
+                        },
+                        onNavigateToEditProfile = {
+                            navController.navigate("edit_profile")
+                        },
+                        onLogout = { handleLogoutAttempt() }
+                    )
+                } else {
+                    androidx.compose.runtime.LaunchedEffect(Unit) {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Dashboard.route) { inclusive = true }
+                        }
+                    }
+                }
             }
             composable(Screen.History.route) {
                 HistoryScreen(
@@ -587,20 +609,36 @@ fun MainScreen() {
                 )
             }
             composable(Screen.Master.route) {
-                MasterScreen(
-                    onNavigateToEditProfile = {
-                        navController.navigate("edit_profile")
-                    },
-                    onLogout = { handleLogoutAttempt() }
-                )
+                if (userRole == "owner") {
+                    MasterScreen(
+                        onNavigateToEditProfile = {
+                            navController.navigate("edit_profile")
+                        },
+                        onLogout = { handleLogoutAttempt() }
+                    )
+                } else {
+                    androidx.compose.runtime.LaunchedEffect(Unit) {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Dashboard.route) { inclusive = true }
+                        }
+                    }
+                }
             }
             composable(Screen.Settings.route) {
-                SettingsScreen(
-                    onNavigateToEditProfile = {
-                        navController.navigate("edit_profile")
-                    },
-                    onLogout = { handleLogoutAttempt() }
-                )
+                if (userRole == "owner") {
+                    SettingsScreen(
+                        onNavigateToEditProfile = {
+                            navController.navigate("edit_profile")
+                        },
+                        onLogout = { handleLogoutAttempt() }
+                    )
+                } else {
+                    androidx.compose.runtime.LaunchedEffect(Unit) {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Dashboard.route) { inclusive = true }
+                        }
+                    }
+                }
             }
             composable("edit_profile") {
                 val editProfileViewModel: com.kasirinaja.store.ui.viewmodels.EditProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel(

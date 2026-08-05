@@ -193,12 +193,12 @@ func (h *TransactionHandler) GetDashboardStats(c *gin.Context) {
 		return
 	}
 
-	userIDRaw, exists := c.Get("user_id")
-	if !exists {
+	userIDStr := c.GetString("user_id")
+	if userIDStr == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "user_id not found in token"})
 		return
 	}
-	userID, err := uuid.Parse(userIDRaw.(string))
+	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
 		return
