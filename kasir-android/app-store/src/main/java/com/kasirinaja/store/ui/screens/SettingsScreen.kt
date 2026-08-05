@@ -37,7 +37,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(
     onNavigateToEditProfile: () -> Unit = {},
-    onLogout: () -> Unit = {}
+    onLogout: () -> Unit = {},
+    onOpenDrawer: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context) }
@@ -68,7 +69,8 @@ fun SettingsScreen(
             GlobalTopAppBar(
                 title = "Daftar Karyawan",
                 onNavigateToEditProfile = onNavigateToEditProfile,
-                onLogout = onLogout
+                onLogout = onLogout,
+                onOpenDrawer = onOpenDrawer
             )
         },
         bottomBar = {

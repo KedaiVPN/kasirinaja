@@ -102,7 +102,8 @@ fun StockScreen(
     onNavigateToAddProduct: () -> Unit,
     onNavigateToEditProduct: (String) -> Unit,
     onNavigateToEditProfile: () -> Unit = {},
-    onLogout: () -> Unit = {}
+    onLogout: () -> Unit = {},
+    onOpenDrawer: () -> Unit = {}
 ) {
     val context = LocalContext.current
 
@@ -173,7 +174,8 @@ fun StockScreen(
             GlobalTopAppBar(
                 title = "Produk & Stok",
                 onNavigateToEditProfile = onNavigateToEditProfile,
-                onLogout = onLogout
+                onLogout = onLogout,
+                onOpenDrawer = onOpenDrawer
             )
         },
 

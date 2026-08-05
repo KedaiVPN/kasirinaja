@@ -58,7 +58,8 @@ import com.kasirinaja.core.network.TokenManager
 fun MasterScreen(
     initialSearchQuery: String = "",
     onNavigateToEditProfile: () -> Unit = {},
-    onLogout: () -> Unit = {}
+    onLogout: () -> Unit = {},
+    onOpenDrawer: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -103,7 +104,8 @@ fun MasterScreen(
             GlobalTopAppBar(
                 title = "Master",
                 onNavigateToEditProfile = onNavigateToEditProfile,
-                onLogout = onLogout
+                onLogout = onLogout,
+                onOpenDrawer = onOpenDrawer
             )
         }
     ) { paddingValues ->

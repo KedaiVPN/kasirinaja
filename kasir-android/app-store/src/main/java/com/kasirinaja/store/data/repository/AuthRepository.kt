@@ -24,10 +24,14 @@ class AuthRepository(
                 val fullName = user?.get("full_name")?.toString()
                 val photoUrl = user?.get("photo_url")?.toString()
                 val userId = user?.get("id")?.toString()
+                val emailValue = user?.get("email")?.toString()
                 if (token != null) {
                     tokenManager.saveToken(token)
                     if (userId != null) {
                         tokenManager.saveUserId(userId)
+                    }
+                    if (emailValue != null) {
+                        tokenManager.saveEmail(emailValue)
                     }
                     if (storeId != null) {
                         tokenManager.saveStoreId(storeId)
@@ -91,10 +95,14 @@ class AuthRepository(
                 val role = user?.get("role")?.toString()
                 val logoUrl = user?.get("logo_url")?.toString()
                 val userId = user?.get("id")?.toString()
+                val emailValue = user?.get("email")?.toString()
                 if (token != null) {
                     tokenManager.saveToken(token)
                     if (userId != null) {
                         tokenManager.saveUserId(userId)
+                    }
+                    if (emailValue != null) {
+                        tokenManager.saveEmail(emailValue)
                     }
                     if (storeId != null) {
                         tokenManager.saveStoreId(storeId)
@@ -150,8 +158,12 @@ class AuthRepository(
                 val logoUrl = user?.get("logo_url")?.toString()
                 val fullName = user?.get("full_name")?.toString()
                 val photoUrl = user?.get("photo_url")?.toString()
+                val emailValue = user?.get("email")?.toString()
                 if (token != null) {
                     tokenManager.saveToken(token)
+                    if (emailValue != null) {
+                        tokenManager.saveEmail(emailValue)
+                    }
                     if (storeId != null) {
                         tokenManager.saveStoreId(storeId)
                     }
