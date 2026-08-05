@@ -359,6 +359,7 @@ fun MainScreen() {
 
     ModalNavigationDrawer(
         drawerState = drawerState,
+        gesturesEnabled = drawerState.isOpen,
         drawerContent = {
             ModalDrawerSheet {
                 Column(
@@ -369,7 +370,10 @@ fun MainScreen() {
                     // Header
                     Row(
                         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).clickable {
+                            coroutineScope.launch { drawerState.close() }
+                            navController.navigate("edit_profile")
+                        }.padding(8.dp)
                     ) {
                         if (!userPhotoUrl.isNullOrEmpty()) {
                             AsyncImage(
