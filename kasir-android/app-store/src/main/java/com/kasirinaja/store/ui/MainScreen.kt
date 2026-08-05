@@ -19,17 +19,8 @@ import coil.request.ImageRequest
 import com.kasirinaja.core.network.RetrofitClient
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Dashboard
-import androidx.compose.material.icons.filled.Inventory
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.FolderSpecial
-import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.animation.core.animateFloatAsState
@@ -439,73 +430,6 @@ fun MainScreen() {
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Divider()
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Menu Items
-                    NavigationDrawerItem(
-                        icon = { Icon(Icons.Filled.Dashboard, contentDescription = null) },
-                        label = { Text("Dashboard") },
-                        selected = currentRoute == Screen.Dashboard.route,
-                        onClick = {
-                            coroutineScope.launch { drawerState.close() }
-                            navController.navigate(Screen.Dashboard.route) { popUpTo(Screen.Dashboard.route) { inclusive = true } }
-                        }
-                    )
-
-                    if (userRole == "owner") {
-                        NavigationDrawerItem(
-                            icon = { Icon(Icons.Filled.Inventory, contentDescription = null) },
-                            label = { Text("Stok") },
-                            selected = currentRoute == Screen.Stock.route,
-                            onClick = {
-                                coroutineScope.launch { drawerState.close() }
-                                navController.navigate(Screen.Stock.route)
-                            }
-                        )
-                    }
-
-                    NavigationDrawerItem(
-                        icon = { Icon(Icons.Filled.History, contentDescription = null) },
-                        label = { Text("Riwayat") },
-                        selected = currentRoute == Screen.History.route,
-                        onClick = {
-                            coroutineScope.launch { drawerState.close() }
-                            navController.navigate(Screen.History.route)
-                        }
-                    )
-
-                    NavigationDrawerItem(
-                        icon = { Icon(Icons.Filled.QrCodeScanner, contentDescription = null) },
-                        label = { Text("Kasir") },
-                        selected = currentRoute == Screen.Scan.route,
-                        onClick = {
-                            coroutineScope.launch { drawerState.close() }
-                            navController.navigate(Screen.Scan.route)
-                        }
-                    )
-
-                    if (userRole == "owner") {
-                        NavigationDrawerItem(
-                            icon = { Icon(Icons.Filled.FolderSpecial, contentDescription = null) },
-                            label = { Text("Master") },
-                            selected = currentRoute == Screen.Master.route,
-                            onClick = {
-                                coroutineScope.launch { drawerState.close() }
-                                navController.navigate(Screen.Master.route)
-                            }
-                        )
-                        NavigationDrawerItem(
-                            icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
-                            label = { Text("Karyawan") },
-                            selected = currentRoute == Screen.Settings.route,
-                            onClick = {
-                                coroutineScope.launch { drawerState.close() }
-                                navController.navigate(Screen.Settings.route)
-                            }
-                        )
-                    }
                 }
             }
         }
@@ -882,5 +806,4 @@ fun MainScreen() {
         }
     }
 }
-
-    }
+}
