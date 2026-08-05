@@ -35,7 +35,8 @@ fun HistoryScreen(
     viewModel: HistoryViewModel,
     onNavigateToReceipt: (String) -> Unit,
     onNavigateToEditProfile: () -> Unit = {},
-    onLogout: () -> Unit = {}
+    onLogout: () -> Unit = {},
+    onOpenDrawer: () -> Unit = {}
 ) {
     val transactions by viewModel.transactions.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
@@ -47,7 +48,8 @@ fun HistoryScreen(
             GlobalTopAppBar(
                 title = "Riwayat Transaksi",
                 onNavigateToEditProfile = onNavigateToEditProfile,
-                onLogout = onLogout
+                onLogout = onLogout,
+                onOpenDrawer = onOpenDrawer
             )
         }
     ) { paddingValues ->

@@ -51,7 +51,8 @@ fun DashboardScreen(
     onNavigateToEditStore: () -> Unit = {},
     viewModel: DashboardViewModel,
     onNavigateToEditProfile: () -> Unit = {},
-    onLogout: () -> Unit = {}
+    onLogout: () -> Unit = {},
+    onOpenDrawer: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
@@ -80,7 +81,8 @@ fun DashboardScreen(
             GlobalTopAppBar(
                 title = "Dashboard",
                 onNavigateToEditProfile = onNavigateToEditProfile,
-                onLogout = onLogout
+                onLogout = onLogout,
+                onOpenDrawer = onOpenDrawer
             )
         }
     ) { paddingValues ->

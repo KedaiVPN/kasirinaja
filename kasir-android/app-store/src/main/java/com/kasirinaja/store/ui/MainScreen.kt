@@ -1,4 +1,36 @@
 package com.kasirinaja.store.ui
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.Icons
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.kasirinaja.core.network.RetrofitClient
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.NavigationDrawerItemDefaults
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.FolderSpecial
+import androidx.compose.material3.Divider
+import androidx.compose.material3.Icon
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.offset
@@ -326,12 +358,161 @@ fun MainScreen() {
         listOf(Screen.Dashboard.route, Screen.History.route, Screen.Scan.route)
     }
 
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val userEmail = tokenManager.getEmail() ?: ""
+    val userName = tokenManager.getUserName()
+    val userPhotoUrl = tokenManager.getPhotoUrl()
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp)
+                ) {
+                    // Header
+                    Row(
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (!userPhotoUrl.isNullOrEmpty()) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data("${RetrofitClient.IMAGE_BASE_URL}${userPhotoUrl}")
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = "Profile Photo",
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            androidx.compose.foundation.layout.Box(
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                                contentAlignment = androidx.compose.ui.Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Filled.Person,
+                                    contentDescription = "Profile Icon",
+                                    modifier = Modifier.size(32.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+
+                        androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(16.dp))
+
+                        Column {
+                            Text(
+                                text = if (userName.isNotEmpty()) userName else "Pengguna",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            if (userEmail.isNotEmpty()) {
+                                Text(
+                                    text = userEmail,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            androidx.compose.material3.Surface(
+                                color = if (userRole == "owner") Color(0xFFFFF9C4) else Color(0xFFE3F2FD),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp),
+                                modifier = Modifier.padding(top = 4.dp)
+                            ) {
+                                Text(
+                                    text = if (userRole == "owner") "Owner" else "Kasir",
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (userRole == "owner") Color(0xFFF57F17) else Color(0xFF1565C0)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Divider()
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Menu Items
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Filled.Dashboard, contentDescription = null) },
+                        label = { Text("Dashboard") },
+                        selected = currentRoute == Screen.Dashboard.route,
+                        onClick = {
+                            coroutineScope.launch { drawerState.close() }
+                            navController.navigate(Screen.Dashboard.route) { popUpTo(Screen.Dashboard.route) { inclusive = true } }
+                        }
+                    )
+
+                    if (userRole == "owner") {
+                        NavigationDrawerItem(
+                            icon = { Icon(Icons.Filled.Inventory, contentDescription = null) },
+                            label = { Text("Stok") },
+                            selected = currentRoute == Screen.Stock.route,
+                            onClick = {
+                                coroutineScope.launch { drawerState.close() }
+                                navController.navigate(Screen.Stock.route)
+                            }
+                        )
+                    }
+
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Filled.History, contentDescription = null) },
+                        label = { Text("Riwayat") },
+                        selected = currentRoute == Screen.History.route,
+                        onClick = {
+                            coroutineScope.launch { drawerState.close() }
+                            navController.navigate(Screen.History.route)
+                        }
+                    )
+
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Filled.QrCodeScanner, contentDescription = null) },
+                        label = { Text("Kasir") },
+                        selected = currentRoute == Screen.Scan.route,
+                        onClick = {
+                            coroutineScope.launch { drawerState.close() }
+                            navController.navigate(Screen.Scan.route)
+                        }
+                    )
+
+                    if (userRole == "owner") {
+                        NavigationDrawerItem(
+                            icon = { Icon(Icons.Filled.FolderSpecial, contentDescription = null) },
+                            label = { Text("Master") },
+                            selected = currentRoute == Screen.Master.route,
+                            onClick = {
+                                coroutineScope.launch { drawerState.close() }
+                                navController.navigate(Screen.Master.route)
+                            }
+                        )
+                        NavigationDrawerItem(
+                            icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
+                            label = { Text("Karyawan") },
+                            selected = currentRoute == Screen.Settings.route,
+                            onClick = {
+                                coroutineScope.launch { drawerState.close() }
+                                navController.navigate(Screen.Settings.route)
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    ) {
     Scaffold(
         bottomBar = {
-            val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentDestination = navBackStackEntry?.destination
-            val currentRoute = currentDestination?.route
-
             if (bottomBarVisibleScreens.contains(currentRoute)) {
                 androidx.compose.material3.Surface(
                     modifier = Modifier
@@ -525,7 +706,8 @@ fun MainScreen() {
                     onNavigateToEditProfile = {
                         navController.navigate("edit_profile")
                     },
-                    onLogout = { handleLogoutAttempt() }
+                    onLogout = { handleLogoutAttempt() },
+                    onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
                 )
             }
             composable("edit_store") {
@@ -550,7 +732,8 @@ fun MainScreen() {
                         onNavigateToEditProfile = {
                             navController.navigate("edit_profile")
                         },
-                        onLogout = { handleLogoutAttempt() }
+                        onLogout = { handleLogoutAttempt() },
+                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
                     )
                 } else {
                     androidx.compose.runtime.LaunchedEffect(Unit) {
@@ -569,7 +752,8 @@ fun MainScreen() {
                     onNavigateToEditProfile = {
                         navController.navigate("edit_profile")
                     },
-                    onLogout = { handleLogoutAttempt() }
+                    onLogout = { handleLogoutAttempt() },
+                    onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
                 )
             }
                         composable(Screen.Scan.route) {
@@ -579,7 +763,8 @@ fun MainScreen() {
                     onNavigateToEditProfile = {
                         navController.navigate("edit_profile")
                     },
-                    onLogout = { handleLogoutAttempt() }
+                    onLogout = { handleLogoutAttempt() },
+                    onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
                 )
             }
 
@@ -614,7 +799,8 @@ fun MainScreen() {
                         onNavigateToEditProfile = {
                             navController.navigate("edit_profile")
                         },
-                        onLogout = { handleLogoutAttempt() }
+                        onLogout = { handleLogoutAttempt() },
+                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
                     )
                 } else {
                     androidx.compose.runtime.LaunchedEffect(Unit) {
@@ -630,7 +816,8 @@ fun MainScreen() {
                         onNavigateToEditProfile = {
                             navController.navigate("edit_profile")
                         },
-                        onLogout = { handleLogoutAttempt() }
+                        onLogout = { handleLogoutAttempt() },
+                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
                     )
                 } else {
                     androidx.compose.runtime.LaunchedEffect(Unit) {
@@ -695,3 +882,5 @@ fun MainScreen() {
         }
     }
 }
+
+    }

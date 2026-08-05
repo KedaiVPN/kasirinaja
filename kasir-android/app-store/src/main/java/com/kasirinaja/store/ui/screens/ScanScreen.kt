@@ -60,7 +60,8 @@ fun ScanScreen(
     viewModel: ScanViewModel,
     onNavigateToPayment: () -> Unit,
     onNavigateToEditProfile: () -> Unit = {},
-    onLogout: () -> Unit = {}
+    onLogout: () -> Unit = {},
+    onOpenDrawer: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -122,8 +123,9 @@ fun ScanScreen(
                 GlobalTopAppBar(
                     title = "Transaksi",
                     onNavigateToEditProfile = onNavigateToEditProfile,
-                    onLogout = onLogout
-                )
+                    onLogout = onLogout,
+                onOpenDrawer = onOpenDrawer
+            )
             },
             sheetContent = {
                 if (cartItems.isNotEmpty()) {

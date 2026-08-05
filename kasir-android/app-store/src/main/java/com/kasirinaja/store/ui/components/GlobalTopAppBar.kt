@@ -32,7 +32,8 @@ import com.kasirinaja.core.network.TokenManager
 fun GlobalTopAppBar(
     title: String,
     onNavigateToEditProfile: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onOpenDrawer: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context) }
@@ -49,7 +50,7 @@ fun GlobalTopAppBar(
             )
         },
         navigationIcon = {
-            IconButton(onClick = { /* TODO: Open drawer/menu */ }) {
+            IconButton(onClick = { onOpenDrawer() }) {
                 Icon(
                     Icons.Filled.Menu,
                     contentDescription = "Menu",

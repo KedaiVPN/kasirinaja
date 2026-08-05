@@ -46,6 +46,14 @@ class TokenManager(context: Context) {
         prefs.edit().putString("user_id", userId).apply()
     }
 
+    fun saveEmail(email: String) {
+        prefs.edit().putString("email", email).apply()
+    }
+
+    fun getEmail(): String? {
+        return prefs.getString("email", null)
+    }
+
     fun getUserId(): String? {
         return prefs.getString("user_id", null)
     }
@@ -67,6 +75,7 @@ class TokenManager(context: Context) {
         prefs.edit().remove("role").apply()
         prefs.edit().remove("user_id").apply()
         prefs.edit().remove("user_name").apply()
+        prefs.edit().remove("email").apply()
         prefs.edit().remove("user_photo_url").apply()
         prefs.edit().remove("store_id").apply()
         prefs.edit().remove("store_name").apply()
