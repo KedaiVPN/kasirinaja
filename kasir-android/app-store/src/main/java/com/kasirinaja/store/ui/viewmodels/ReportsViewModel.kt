@@ -16,6 +16,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 data class ReportsState(
     val startDate: Long,
@@ -81,8 +82,16 @@ class ReportsViewModel(
 
     fun updateDateRange(start: Long, end: Long) {
         viewModelScope.launch {
-            _startDate.value = start
-            _endDate.value = end
+            val utcCal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+            val localCal = Calendar.getInstance()
+
+            utcCal.timeInMillis = start
+            localCal.set(utcCal.get(Calendar.YEAR), utcCal.get(Calendar.MONTH), utcCal.get(Calendar.DATE), 0, 0, 0)
+            _startDate.value = localCal.timeInMillis
+
+            utcCal.timeInMillis = end
+            localCal.set(utcCal.get(Calendar.YEAR), utcCal.get(Calendar.MONTH), utcCal.get(Calendar.DATE), 23, 59, 59)
+            _endDate.value = localCal.timeInMillis
         }
     }
 
