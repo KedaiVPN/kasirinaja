@@ -207,10 +207,11 @@ fun ReportsScreen(
                                 columns = listOf(
                                     LineComponent(
                                         color = primaryColor.toArgb(),
-                                        thicknessDp = 12f,
+                                        thicknessDp = 6f, // Thinner bar to fit more in view
                                         shape = Shapes.roundedCornerShape(allPercent = 25)
                                     )
-                                )
+                                ),
+                                spacing = 4.dp // Closer bars to fit 30 days
                             ),
                             model = chartEntryModel,
                             marker = marker,
@@ -240,6 +241,14 @@ fun ReportsScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(260.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "← Geser grafik →",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
                         )
                     } else {
                         Box(
