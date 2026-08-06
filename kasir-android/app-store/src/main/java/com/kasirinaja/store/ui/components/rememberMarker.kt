@@ -19,6 +19,9 @@ import com.patrykandpatrick.vico.core.component.shape.Shapes
 import com.patrykandpatrick.vico.core.context.MeasureContext
 import com.patrykandpatrick.vico.core.extension.copyColor
 import com.patrykandpatrick.vico.core.marker.Marker
+import com.patrykandpatrick.vico.core.marker.MarkerLabelFormatter
+import java.text.NumberFormat
+import java.util.Locale
 
 @Composable
 fun rememberMarker(): Marker {
@@ -63,6 +66,12 @@ fun rememberMarker(): Marker {
                     with(indicatorCenterComponent) {
                         color = entryColor
                         setShadow(radius = 12f, color = entryColor)
+                    }
+                }
+                labelFormatter = MarkerLabelFormatter { markedEntries, _ ->
+                    val format = NumberFormat.getNumberInstance(Locale("id", "ID"))
+                    markedEntries.joinToString(separator = ", ") {
+                        format.format(it.entry.y.toLong())
                     }
                 }
             }

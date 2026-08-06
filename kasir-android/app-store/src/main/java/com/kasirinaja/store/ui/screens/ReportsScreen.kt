@@ -131,14 +131,15 @@ fun ReportsScreen(
                         )
                     }
                     Surface(
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        shape = RoundedCornerShape(8.dp)
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = RoundedCornerShape(8.dp),
+                        shadowElevation = 4.dp
                     ) {
                         Icon(
                             imageVector = Icons.Filled.DateRange,
                             contentDescription = "Pilih Tanggal",
                             modifier = Modifier.padding(8.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = Color.White
                         )
                     }
                 }
@@ -166,14 +167,15 @@ fun ReportsScreen(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Surface(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(12.dp)
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = RoundedCornerShape(12.dp),
+                            shadowElevation = 4.dp
                         ) {
                             Text(
                                 text = "Total: $totalTransactions",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
+                                color = Color.White,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                             )
                         }
