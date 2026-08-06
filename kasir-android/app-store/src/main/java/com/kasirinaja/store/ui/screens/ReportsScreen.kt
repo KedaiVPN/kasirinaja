@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.toArgb
 import com.kasirinaja.store.ui.components.GlobalTopAppBar
 import com.kasirinaja.store.ui.viewmodels.ReportsViewModel
 import com.patrykandpatrick.vico.compose.axis.horizontal.rememberBottomAxis
@@ -35,6 +36,11 @@ import com.patrykandpatrick.vico.compose.chart.column.columnChart
 import com.patrykandpatrick.vico.compose.chart.line.lineChart
 import com.patrykandpatrick.vico.core.entry.entryModelOf
 import com.patrykandpatrick.vico.core.entry.FloatEntry
+import com.patrykandpatrick.vico.core.component.shape.LineComponent
+import com.patrykandpatrick.vico.core.component.shape.Shapes
+import com.kasirinaja.store.ui.components.rememberMarker
+import com.patrykandpatrick.vico.core.axis.vertical.VerticalAxis
+import com.patrykandpatrick.vico.core.axis.AxisItemPlacer
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -97,6 +103,8 @@ fun ReportsScreen(
                 }
 
                 val chartEntryModel = entryModelOf(chartEntries)
+                val marker = rememberMarker()
+                val primaryColor = MaterialTheme.colorScheme.primary
 
                 Text(
                     text = "Jumlah Transaksi",
@@ -106,9 +114,21 @@ fun ReportsScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Chart(
-                    chart = columnChart(),
+                    chart = columnChart(
+                        columns = listOf(
+                            LineComponent(
+                                color = primaryColor.toArgb(),
+                                thicknessDp = 12f,
+                                shape = Shapes.roundedCornerShape(allPercent = 25)
+                            )
+                        )
+                    ),
                     model = chartEntryModel,
-                    startAxis = rememberStartAxis(),
+                    marker = marker,
+                    startAxis = rememberStartAxis(
+                        valueFormatter = { value, _ -> value.toInt().toString() },
+                        itemPlacer = AxisItemPlacer.Vertical.default(maxItemCount = 6)
+                    ),
                     bottomAxis = rememberBottomAxis(
                         valueFormatter = { value, _ ->
                             val keys = state.transactionData.keys.sorted()
