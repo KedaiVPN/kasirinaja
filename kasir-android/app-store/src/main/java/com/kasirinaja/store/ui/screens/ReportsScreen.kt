@@ -184,6 +184,7 @@ fun ReportsScreen(
                     Spacer(modifier = Modifier.height(24.dp))
 
                     if (state.transactionData.isNotEmpty()) {
+                        val sortedKeys = remember(state.transactionData) { state.transactionData.keys.sorted() }
                         val chartEntries = state.transactionData.entries.sortedBy { it.key }.mapIndexed { index, entry ->
                             FloatEntry(x = index.toFloat(), y = entry.value.toFloat())
                         }
@@ -231,10 +232,9 @@ fun ReportsScreen(
                                 tick = null,
                                 guideline = null, // No vertical grid lines
                                 valueFormatter = { value, _ ->
-                                    val keys = state.transactionData.keys.sorted()
                                     val index = value.toInt()
-                                    if (index >= 0 && index < keys.size) {
-                                        keys[index].takeLast(2)
+                                    if (index >= 0 && index < sortedKeys.size) {
+                                        sortedKeys[index].takeLast(2)
                                     } else {
                                         ""
                                     }
