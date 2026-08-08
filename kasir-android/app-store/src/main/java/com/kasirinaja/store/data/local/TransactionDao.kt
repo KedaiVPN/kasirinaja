@@ -82,6 +82,13 @@ interface TransactionDao {
     @Query("UPDATE transaction_items SET storeProductId = :newStoreProductId, id = transactionId || '_' || :newStoreProductId WHERE storeProductId = :oldStoreProductId")
     suspend fun updateTransactionItemProductId(oldStoreProductId: String, newStoreProductId: String)
 
+
     @Query("SELECT * FROM transactions WHERE transactionTime >= :startDate AND transactionTime <= :endDate ORDER BY transactionTime ASC")
     fun getTransactionsBetweenDatesFlow(startDate: Long, endDate: Long): kotlinx.coroutines.flow.Flow<List<LocalTransactionEntity>>
+
+    @Query("SELECT SUM(totalAmount) FROM transactions WHERE transactionTime >= :startDate AND transactionTime <= :endDate")
+    fun getTotalRevenueBetweenDatesFlow(startDate: Long, endDate: Long): kotlinx.coroutines.flow.Flow<Double?>
+
+    @Query("SELECT SUM(ti.subtotal - (ti.buyPrice * ti.quantity)) FROM transaction_items ti INNER JOIN transactions t ON ti.transactionId = t.id WHERE t.transactionTime >= :startDate AND t.transactionTime <= :endDate")
+    fun getNetProfitBetweenDatesFlow(startDate: Long, endDate: Long): kotlinx.coroutines.flow.Flow<Double?>
 }
