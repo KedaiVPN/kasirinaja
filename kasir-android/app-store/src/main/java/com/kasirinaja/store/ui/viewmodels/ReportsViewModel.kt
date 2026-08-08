@@ -21,7 +21,9 @@ import java.util.TimeZone
 data class ReportsState(
     val startDate: Long,
     val endDate: Long,
-    val transactionData: Map<String, Int> = emptyMap() // "YYYY-MM-DD" to Count
+    val transactionData: Map<String, Int> = emptyMap(), // "YYYY-MM-DD" to Count
+    val totalRevenue: Double = 0.0,
+    val netProfit: Double = 0.0
 )
 
 class ReportsViewModel(
@@ -35,8 +37,11 @@ class ReportsViewModel(
     val state: StateFlow<ReportsState> = combine(_startDate, _endDate) { start, end ->
         Pair(start, end)
     }.flatMapLatest { (start, end) ->
-        transactionDao.getTransactionsBetweenDatesFlow(start, end)
-            .combine(kotlinx.coroutines.flow.flowOf(Pair(start, end))) { transactions, _ ->
+        combine(
+            transactionDao.getTransactionsBetweenDatesFlow(start, end),
+            transactionDao.getTotalRevenueBetweenDatesFlow(start, end),
+            transactionDao.getNetProfitBetweenDatesFlow(start, end)
+        ) { transactions, totalRevenue, netProfit ->
                 val grouped = transactions.groupBy { tx ->
                     val cal = Calendar.getInstance().apply { timeInMillis = tx.transactionTime }
                     val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -68,7 +73,9 @@ class ReportsViewModel(
                 ReportsState(
                     startDate = start,
                     endDate = end,
-                    transactionData = filledData
+                    transactionData = filledData,
+                    totalRevenue = totalRevenue ?: 0.0,
+                    netProfit = netProfit ?: 0.0
                 )
             }
     }.stateIn(
