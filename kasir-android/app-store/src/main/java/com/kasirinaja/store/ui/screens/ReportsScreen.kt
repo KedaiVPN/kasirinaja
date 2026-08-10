@@ -6,6 +6,21 @@ import androidx.compose.foundation.layout.Arrangement
 
 import java.text.NumberFormat
 import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import com.kasirinaja.store.utils.ReportExportUtil
+import com.kasirinaja.store.data.local.AppDatabase
+import com.kasirinaja.store.data.local.ReportItem
+
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -82,6 +97,18 @@ fun ReportsScreen(
         initialSelectedEndDateMillis = state.endDate
     )
 
+
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    var isExporting by remember { mutableStateOf(false) }
+    var selectedFormat by remember { mutableStateOf("PDF") }
+    val formatOptions = listOf("PDF", "XLS")
+    var formatExpanded by remember { mutableStateOf(false) }
+
+    val transactionDao = remember { AppDatabase.getDatabase(context).transactionDao() }
+
     Scaffold(
         topBar = {
             GlobalTopAppBar(
@@ -90,8 +117,10 @@ fun ReportsScreen(
                 onNavigateToEditProfile = onNavigateToEditProfile,
                 onOpenDrawer = onOpenDrawer
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -144,6 +173,123 @@ fun ReportsScreen(
                             modifier = Modifier.padding(8.dp),
                             tint = Color.White
                         )
+                    }
+                }
+            }
+
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Export Actions Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Format Selector Chip
+                Box(modifier = Modifier.weight(0.4f)) {
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color.White,
+                        shadowElevation = 4.dp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp)
+                            .clickable { formatExpanded = true }
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        ) {
+                            Text(
+                                text = selectedFormat,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1
+                            )
+                            Icon(
+                                Icons.Filled.ArrowDropDown,
+                                contentDescription = "Pilih Format",
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                    DropdownMenu(
+                        expanded = formatExpanded,
+                        onDismissRequest = { formatExpanded = false }
+                    ) {
+                        formatOptions.forEach { format ->
+                            DropdownMenuItem(
+                                text = { Text(format, style = MaterialTheme.typography.bodyMedium) },
+                                onClick = {
+                                    selectedFormat = format
+                                    formatExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // Download Button
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color.White,
+                    shadowElevation = 4.dp,
+                    modifier = Modifier
+                        .weight(0.6f)
+                        .height(44.dp)
+                        .clickable(enabled = !isExporting) {
+                            if (!isExporting) {
+                                isExporting = true
+                                coroutineScope.launch {
+                                    try {
+                                        val items = transactionDao.getReportItemsBetweenDates(state.startDate, state.endDate)
+
+                                        val success = if (selectedFormat == "PDF") {
+                                            ReportExportUtil.exportToPdf(context, items, state.startDate, state.endDate, state.totalRevenue, state.netProfit)
+                                        } else {
+                                            ReportExportUtil.exportToXlsx(context, items, state.startDate, state.endDate, state.totalRevenue, state.netProfit)
+                                        }
+
+                                        if (success) {
+                                            snackbarHostState.showSnackbar("Berhasil disimpan ke Download/pos kedai")
+                                        } else {
+                                            snackbarHostState.showSnackbar("Gagal menyimpan laporan.")
+                                        }
+                                    } catch (e: Exception) {
+                                        snackbarHostState.showSnackbar("Gagal menyimpan laporan: ${e.message}")
+                                    } finally {
+                                        isExporting = false
+                                    }
+                                }
+                            }
+                        }
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        if (isExporting) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
+                        } else {
+                            Icon(
+                                Icons.Filled.Download,
+                                contentDescription = "Unduh Laporan",
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "Unduh Laporan",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
             }
