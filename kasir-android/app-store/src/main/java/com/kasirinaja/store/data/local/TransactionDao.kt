@@ -5,7 +5,18 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 
+
+data class ReportItem(
+    val productName: String,
+    val quantitySold: Int,
+    val buyPrice: Double,
+    val sellPrice: Double,
+    val productTotalRevenue: Double,
+    val productTotalProfit: Double
+)
+
 @Dao
+
 interface TransactionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransaction(transaction: LocalTransactionEntity)
@@ -91,4 +102,21 @@ interface TransactionDao {
 
     @Query("SELECT SUM(ti.subtotal - (ti.buyPrice * ti.quantity)) FROM transaction_items ti INNER JOIN transactions t ON ti.transactionId = t.id WHERE t.transactionTime >= :startDate AND t.transactionTime <= :endDate")
     fun getNetProfitBetweenDatesFlow(startDate: Long, endDate: Long): kotlinx.coroutines.flow.Flow<Double?>
+
+    @Query("""
+        SELECT
+            sp.name AS productName,
+            SUM(ti.quantity) AS quantitySold,
+            ti.buyPrice AS buyPrice,
+            ti.sellPrice AS sellPrice,
+            SUM(ti.subtotal) AS productTotalRevenue,
+            SUM(ti.subtotal - (ti.buyPrice * ti.quantity)) AS productTotalProfit
+        FROM transaction_items ti
+        INNER JOIN transactions t ON ti.transactionId = t.id
+        INNER JOIN local_products sp ON ti.storeProductId = sp.id
+        WHERE t.transactionTime >= :startDate AND t.transactionTime <= :endDate
+        GROUP BY sp.id, ti.buyPrice, ti.sellPrice
+        ORDER BY quantitySold DESC
+    """)
+    suspend fun getReportItemsBetweenDates(startDate: Long, endDate: Long): List<ReportItem>
 }

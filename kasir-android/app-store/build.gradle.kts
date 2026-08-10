@@ -70,6 +70,9 @@ dependencies {
     // WorkManager
     implementation("androidx.work:work-runtime-ktx:2.9.0")
 
+    // Apache POI for Excel export
+    implementation("net.sourceforge.jexcelapi:jxl:2.6.12")
+
     // CameraX
     implementation("androidx.camera:camera-core:1.3.1")
     implementation("androidx.camera:camera-camera2:1.3.1")
