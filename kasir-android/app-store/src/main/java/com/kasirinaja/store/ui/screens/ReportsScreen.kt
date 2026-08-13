@@ -14,6 +14,18 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material3.Divider
+import com.kasirinaja.core.network.RetrofitClient
+import com.kasirinaja.core.network.CashierReportDto
+import java.util.TimeZone
+
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
@@ -103,11 +115,34 @@ fun ReportsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     var isExporting by remember { mutableStateOf(false) }
-    var selectedFormat by remember { mutableStateOf("PDF") }
+    var selectedFormat by remember { mutableStateOf("XLS") }
     val formatOptions = listOf("PDF", "XLS")
     var formatExpanded by remember { mutableStateOf(false) }
 
     val transactionDao = remember { AppDatabase.getDatabase(context).transactionDao() }
+
+    var selectedTabIndex by remember { mutableStateOf(0) }
+    val tabs = listOf("Grafik Penjualan", "Riwayat Shift")
+    var cashierReports by remember { mutableStateOf<List<CashierReportDto>>(emptyList()) }
+    var isLoadingReports by remember { mutableStateOf(false) }
+
+    LaunchedEffect(selectedTabIndex) {
+        if (selectedTabIndex == 1 && cashierReports.isEmpty()) {
+            isLoadingReports = true
+            try {
+                val response = RetrofitClient.reportApi.getStoreReports()
+                if (response.isSuccessful && response.body() != null) {
+                    cashierReports = response.body()!!.reports
+                } else {
+                    snackbarHostState.showSnackbar("Gagal memuat riwayat laporan")
+                }
+            } catch (e: Exception) {
+                snackbarHostState.showSnackbar("Terjadi kesalahan: ${e.message}")
+            } finally {
+                isLoadingReports = false
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -126,9 +161,29 @@ fun ReportsScreen(
                 .fillMaxSize()
                 .background(Color(0xFFF8F9FA))
                 .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
         ) {
+            TabRow(
+                selectedTabIndex = selectedTabIndex,
+                containerColor = Color.White,
+                contentColor = MaterialTheme.colorScheme.primary,
+                indicator = { tabPositions ->
+                    TabRowDefaults.Indicator(
+                        Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            ) {
+                tabs.forEachIndexed { index, title ->
+                    Tab(
+                        selected = selectedTabIndex == index,
+                        onClick = { selectedTabIndex = index },
+                        text = { Text(title, fontWeight = FontWeight.Bold) }
+                    )
+                }
+            }
+
+            if (selectedTabIndex == 0) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(16.dp)) {
             val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
             val startStr = dateFormat.format(Date(state.startDate))
             val endStr = dateFormat.format(Date(state.endDate))
@@ -470,6 +525,100 @@ fun ReportsScreen(
                                 text = "Tidak ada data transaksi di periode ini.",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                        }
+                    }
+                }
+            }
+            } // End of Column for Tab 0
+            } else {
+                // Tab 1: Riwayat Shift
+                if (isLoadingReports) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    }
+                } else if (cashierReports.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Belum ada riwayat laporan shift", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                } else {
+                    val currencyFormatter = remember { NumberFormat.getCurrencyInstance(Locale("id", "ID")).apply { maximumFractionDigits = 0 } }
+                    val dateFormatter = remember { SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault()) }
+
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize().padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(cashierReports) { report ->
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                        Text(text = "Kasir: ${report.cashier_name}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                        Text(text = report.created_at.take(10), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Divider(color = MaterialTheme.colorScheme.surfaceVariant)
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    val startParsed = runCatching { dateFormatter.format(SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).apply { timeZone = TimeZone.getTimeZone("UTC") }.parse(report.start_time)!!) }.getOrDefault(report.start_time)
+                                    val endParsed = runCatching { dateFormatter.format(SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).apply { timeZone = TimeZone.getTimeZone("UTC") }.parse(report.end_time)!!) }.getOrDefault(report.end_time)
+
+                                    Text(text = "Periode: $startParsed - $endParsed", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(text = "Transaksi: ${report.total_transactions}", style = MaterialTheme.typography.bodySmall)
+                                    Text(text = "Pendapatan: ${currencyFormatter.format(report.total_revenue).replace("Rp", "Rp ")}", style = MaterialTheme.typography.bodySmall)
+                                    Text(text = "Laba: ${currencyFormatter.format(report.total_profit).replace("Rp", "Rp ")}", style = MaterialTheme.typography.bodySmall)
+
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Surface(
+                                        modifier = Modifier.fillMaxWidth().clickable(enabled = !isExporting) {
+                                            isExporting = true
+                                            coroutineScope.launch {
+                                                try {
+                                                    // Need to convert date format to long
+                                                    val df = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+                                                    val sTime = df.parse(report.start_time.take(19))?.time ?: 0L
+                                                    val eTime = df.parse(report.end_time.take(19))?.time ?: System.currentTimeMillis()
+
+                                                    // Fetch items for that range
+                                                    val items = transactionDao.getReportItemsBetweenDates(sTime, eTime)
+
+                                                    val success = ReportExportUtil.exportToPdf(
+                                                        context,
+                                                        items,
+                                                        sTime,
+                                                        eTime,
+                                                        report.total_revenue.toDouble(),
+                                                        report.total_profit.toDouble()
+                                                    )
+
+                                                    if (success) {
+                                                        snackbarHostState.showSnackbar("PDF Berhasil disimpan ke Download/pos kedai")
+                                                    } else {
+                                                        snackbarHostState.showSnackbar("Gagal menyimpan PDF.")
+                                                    }
+                                                } catch (e: Exception) {
+                                                    snackbarHostState.showSnackbar("Gagal: ${e.message}")
+                                                } finally {
+                                                    isExporting = false
+                                                }
+                                            }
+                                        },
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                                    ) {
+                                        Row(modifier = Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Filled.PictureAsPdf, contentDescription = "PDF", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(text = "Download PDF", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

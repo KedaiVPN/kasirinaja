@@ -75,3 +75,18 @@ LIMIT 5;
 SELECT * FROM transactions
 WHERE store_id = $1 AND cashier_id = $2
 ORDER BY transaction_time DESC;
+
+-- name: GetUnreportedTransactionsByCashier :many
+SELECT * FROM transactions
+WHERE store_id = $1 AND cashier_id = $2 AND is_reported = FALSE
+ORDER BY transaction_time ASC;
+
+-- name: MarkTransactionsAsReported :exec
+UPDATE transactions
+SET is_reported = TRUE
+WHERE store_id = $1 AND cashier_id = $2 AND is_reported = FALSE;
+
+-- name: UpdateTransactionReportStatus :exec
+UPDATE transactions
+SET is_reported = $1
+WHERE id = $2;

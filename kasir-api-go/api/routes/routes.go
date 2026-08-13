@@ -16,6 +16,7 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 	authHandler := handlers.NewAuthHandler(queries, pool)
 	adminHandler := handlers.NewAdminHandler(queries)
 	storeHandler := handlers.NewStoreHandler(queries)
+	reportHandler := handlers.NewReportHandler(queries)
 
 	// Root route to prevent 404 on base domain
 	router.GET("/", func(c *gin.Context) {
@@ -62,6 +63,14 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 			products.DELETE("/store/:id", handlers.AuthMiddleware(), productHandler.DeleteStoreProductSpecific)
 			products.DELETE("/:id", handlers.AuthMiddleware(), productHandler.DeleteProduct)
 			products.PUT("/:id", handlers.AuthMiddleware(), productHandler.UpdateProduct)
+		}
+
+		// Report routes
+		reports := api.Group("/reports")
+		reports.Use(handlers.AuthMiddleware())
+		{
+			reports.POST("/", reportHandler.SubmitReport)
+			reports.GET("/", reportHandler.GetStoreReports)
 		}
 
 		// Transaction routes
