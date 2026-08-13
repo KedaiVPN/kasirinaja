@@ -13,6 +13,7 @@ import (
 type Querier interface {
 	CountMasterProducts(ctx context.Context) (int64, error)
 	CountPendingProducts(ctx context.Context) (int64, error)
+	CreateCashierReport(ctx context.Context, arg CreateCashierReportParams) (CashierReport, error)
 	CreateCategory(ctx context.Context, arg CreateCategoryParams) (Category, error)
 	CreateMasterProduct(ctx context.Context, arg CreateMasterProductParams) (MasterProduct, error)
 	CreatePendingProduct(ctx context.Context, arg CreatePendingProductParams) (PendingProduct, error)
@@ -31,6 +32,8 @@ type Querier interface {
 	DeleteUser(ctx context.Context, id pgtype.UUID) error
 	GetAllStoreTransactions(ctx context.Context, storeID pgtype.UUID) ([]Transaction, error)
 	GetAllStoreTransactionsByCashier(ctx context.Context, arg GetAllStoreTransactionsByCashierParams) ([]Transaction, error)
+	GetCashierReportsByCashier(ctx context.Context, arg GetCashierReportsByCashierParams) ([]CashierReport, error)
+	GetCashierReportsByStore(ctx context.Context, storeID pgtype.UUID) ([]CashierReport, error)
 	GetCategoryByName(ctx context.Context, name string) (Category, error)
 	GetMasterProduct(ctx context.Context, id pgtype.UUID) (MasterProduct, error)
 	GetPendingProduct(ctx context.Context, id pgtype.UUID) (PendingProduct, error)
@@ -41,6 +44,7 @@ type Querier interface {
 	GetStoreDashboardStatsByCashier(ctx context.Context, arg GetStoreDashboardStatsByCashierParams) (GetStoreDashboardStatsByCashierRow, error)
 	GetStoreProduct(ctx context.Context, id pgtype.UUID) (StoreProduct, error)
 	GetTransactionItemsByTransactionId(ctx context.Context, transactionID pgtype.UUID) ([]TransactionItem, error)
+	GetUnreportedTransactionsByCashier(ctx context.Context, arg GetUnreportedTransactionsByCashierParams) ([]Transaction, error)
 	GetUser(ctx context.Context, id pgtype.UUID) (User, error)
 	GetUserByEmail(ctx context.Context, email pgtype.Text) (User, error)
 	ListMasterProducts(ctx context.Context) ([]ListMasterProductsRow, error)
@@ -48,10 +52,12 @@ type Querier interface {
 	ListStoreProductsByStore(ctx context.Context, storeID pgtype.UUID) ([]ListStoreProductsByStoreRow, error)
 	ListUsers(ctx context.Context) ([]User, error)
 	ListUsersByStore(ctx context.Context, storeID pgtype.UUID) ([]User, error)
+	MarkTransactionsAsReported(ctx context.Context, arg MarkTransactionsAsReportedParams) error
 	UpdatePendingProduct(ctx context.Context, arg UpdatePendingProductParams) error
 	UpdateStore(ctx context.Context, arg UpdateStoreParams) (Store, error)
 	UpdateStoreProduct(ctx context.Context, arg UpdateStoreProductParams) error
 	UpdateStoreProductStock(ctx context.Context, arg UpdateStoreProductStockParams) error
+	UpdateTransactionReportStatus(ctx context.Context, arg UpdateTransactionReportStatusParams) error
 	UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) (User, error)
 	UpdateUserStoreID(ctx context.Context, arg UpdateUserStoreIDParams) error
 }

@@ -16,6 +16,19 @@ type Brand struct {
 	UpdatedAt pgtype.Timestamp `json:"updated_at"`
 }
 
+type CashierReport struct {
+	ID                pgtype.UUID        `json:"id"`
+	StoreID           pgtype.UUID        `json:"store_id"`
+	CashierID         pgtype.UUID        `json:"cashier_id"`
+	CashierName       string             `json:"cashier_name"`
+	StartTime         pgtype.Timestamptz `json:"start_time"`
+	EndTime           pgtype.Timestamptz `json:"end_time"`
+	TotalTransactions int32              `json:"total_transactions"`
+	TotalRevenue      int64              `json:"total_revenue"`
+	TotalProfit       int64              `json:"total_profit"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+}
+
 type Category struct {
 	ID        pgtype.UUID      `json:"id"`
 	Name      string           `json:"name"`
@@ -112,6 +125,7 @@ type Transaction struct {
 	IsActive        pgtype.Bool      `json:"is_active"`
 	CreatedAt       pgtype.Timestamp `json:"created_at"`
 	UpdatedAt       pgtype.Timestamp `json:"updated_at"`
+	IsReported      bool             `json:"is_reported"`
 }
 
 type TransactionItem struct {

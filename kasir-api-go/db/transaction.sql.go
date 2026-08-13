@@ -60,7 +60,7 @@ INSERT INTO transactions (
 ) VALUES (
   $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 )
-RETURNING id, store_id, cashier_id, invoice_number, total_amount, paid_amount, change_amount, payment_method, transaction_time, sync_status, device_id, is_active, created_at, updated_at
+RETURNING id, store_id, cashier_id, invoice_number, total_amount, paid_amount, change_amount, payment_method, transaction_time, sync_status, device_id, is_active, created_at, updated_at, is_reported
 `
 
 type CreateTransactionParams struct {
@@ -105,6 +105,7 @@ func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionPa
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsReported,
 	)
 	return i, err
 }
@@ -162,7 +163,7 @@ func (q *Queries) CreateTransactionItem(ctx context.Context, arg CreateTransacti
 }
 
 const getAllStoreTransactions = `-- name: GetAllStoreTransactions :many
-SELECT id, store_id, cashier_id, invoice_number, total_amount, paid_amount, change_amount, payment_method, transaction_time, sync_status, device_id, is_active, created_at, updated_at FROM transactions
+SELECT id, store_id, cashier_id, invoice_number, total_amount, paid_amount, change_amount, payment_method, transaction_time, sync_status, device_id, is_active, created_at, updated_at, is_reported FROM transactions
 WHERE store_id = $1
 ORDER BY transaction_time DESC
 `
@@ -191,6 +192,7 @@ func (q *Queries) GetAllStoreTransactions(ctx context.Context, storeID pgtype.UU
 			&i.IsActive,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.IsReported,
 		); err != nil {
 			return nil, err
 		}
@@ -203,7 +205,7 @@ func (q *Queries) GetAllStoreTransactions(ctx context.Context, storeID pgtype.UU
 }
 
 const getAllStoreTransactionsByCashier = `-- name: GetAllStoreTransactionsByCashier :many
-SELECT id, store_id, cashier_id, invoice_number, total_amount, paid_amount, change_amount, payment_method, transaction_time, sync_status, device_id, is_active, created_at, updated_at FROM transactions
+SELECT id, store_id, cashier_id, invoice_number, total_amount, paid_amount, change_amount, payment_method, transaction_time, sync_status, device_id, is_active, created_at, updated_at, is_reported FROM transactions
 WHERE store_id = $1 AND cashier_id = $2
 ORDER BY transaction_time DESC
 `
@@ -237,6 +239,7 @@ func (q *Queries) GetAllStoreTransactionsByCashier(ctx context.Context, arg GetA
 			&i.IsActive,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.IsReported,
 		); err != nil {
 			return nil, err
 		}
@@ -249,7 +252,7 @@ func (q *Queries) GetAllStoreTransactionsByCashier(ctx context.Context, arg GetA
 }
 
 const getRecentStoreTransactions = `-- name: GetRecentStoreTransactions :many
-SELECT id, store_id, cashier_id, invoice_number, total_amount, paid_amount, change_amount, payment_method, transaction_time, sync_status, device_id, is_active, created_at, updated_at FROM transactions
+SELECT id, store_id, cashier_id, invoice_number, total_amount, paid_amount, change_amount, payment_method, transaction_time, sync_status, device_id, is_active, created_at, updated_at, is_reported FROM transactions
 WHERE store_id = $1
 ORDER BY transaction_time DESC
 LIMIT 5
@@ -279,6 +282,7 @@ func (q *Queries) GetRecentStoreTransactions(ctx context.Context, storeID pgtype
 			&i.IsActive,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.IsReported,
 		); err != nil {
 			return nil, err
 		}
@@ -291,7 +295,7 @@ func (q *Queries) GetRecentStoreTransactions(ctx context.Context, storeID pgtype
 }
 
 const getRecentStoreTransactionsByCashier = `-- name: GetRecentStoreTransactionsByCashier :many
-SELECT id, store_id, cashier_id, invoice_number, total_amount, paid_amount, change_amount, payment_method, transaction_time, sync_status, device_id, is_active, created_at, updated_at FROM transactions
+SELECT id, store_id, cashier_id, invoice_number, total_amount, paid_amount, change_amount, payment_method, transaction_time, sync_status, device_id, is_active, created_at, updated_at, is_reported FROM transactions
 WHERE store_id = $1 AND cashier_id = $2
 ORDER BY transaction_time DESC
 LIMIT 5
@@ -326,6 +330,7 @@ func (q *Queries) GetRecentStoreTransactionsByCashier(ctx context.Context, arg G
 			&i.IsActive,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.IsReported,
 		); err != nil {
 			return nil, err
 		}
@@ -447,4 +452,83 @@ func (q *Queries) GetTransactionItemsByTransactionId(ctx context.Context, transa
 		return nil, err
 	}
 	return items, nil
+}
+
+const getUnreportedTransactionsByCashier = `-- name: GetUnreportedTransactionsByCashier :many
+SELECT id, store_id, cashier_id, invoice_number, total_amount, paid_amount, change_amount, payment_method, transaction_time, sync_status, device_id, is_active, created_at, updated_at, is_reported FROM transactions
+WHERE store_id = $1 AND cashier_id = $2 AND is_reported = FALSE
+ORDER BY transaction_time ASC
+`
+
+type GetUnreportedTransactionsByCashierParams struct {
+	StoreID   pgtype.UUID `json:"store_id"`
+	CashierID pgtype.UUID `json:"cashier_id"`
+}
+
+func (q *Queries) GetUnreportedTransactionsByCashier(ctx context.Context, arg GetUnreportedTransactionsByCashierParams) ([]Transaction, error) {
+	rows, err := q.db.Query(ctx, getUnreportedTransactionsByCashier, arg.StoreID, arg.CashierID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Transaction
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.StoreID,
+			&i.CashierID,
+			&i.InvoiceNumber,
+			&i.TotalAmount,
+			&i.PaidAmount,
+			&i.ChangeAmount,
+			&i.PaymentMethod,
+			&i.TransactionTime,
+			&i.SyncStatus,
+			&i.DeviceID,
+			&i.IsActive,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.IsReported,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const markTransactionsAsReported = `-- name: MarkTransactionsAsReported :exec
+UPDATE transactions
+SET is_reported = TRUE
+WHERE store_id = $1 AND cashier_id = $2 AND is_reported = FALSE
+`
+
+type MarkTransactionsAsReportedParams struct {
+	StoreID   pgtype.UUID `json:"store_id"`
+	CashierID pgtype.UUID `json:"cashier_id"`
+}
+
+func (q *Queries) MarkTransactionsAsReported(ctx context.Context, arg MarkTransactionsAsReportedParams) error {
+	_, err := q.db.Exec(ctx, markTransactionsAsReported, arg.StoreID, arg.CashierID)
+	return err
+}
+
+const updateTransactionReportStatus = `-- name: UpdateTransactionReportStatus :exec
+UPDATE transactions
+SET is_reported = $1
+WHERE id = $2
+`
+
+type UpdateTransactionReportStatusParams struct {
+	IsReported bool        `json:"is_reported"`
+	ID         pgtype.UUID `json:"id"`
+}
+
+func (q *Queries) UpdateTransactionReportStatus(ctx context.Context, arg UpdateTransactionReportStatusParams) error {
+	_, err := q.db.Exec(ctx, updateTransactionReportStatus, arg.IsReported, arg.ID)
+	return err
 }
