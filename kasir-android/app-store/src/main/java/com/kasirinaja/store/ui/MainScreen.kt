@@ -364,6 +364,81 @@ fun MainScreen() {
     val userName = tokenManager.getUserName()
     val userPhotoUrl = tokenManager.getPhotoUrl()
 
+    if (showReportDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { if (!isReporting) showReportDialog = false },
+            title = { androidx.compose.material3.Text("Tutup Kasir") },
+            text = { androidx.compose.material3.Text("Apakah Anda yakin ingin menutup shift dan melaporkan transaksi ke Owner? Transaksi yang belum dilaporkan akan dikirim.") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    enabled = !isReporting,
+                    onClick = {
+                        isReporting = true
+                        coroutineScope.launch {
+                            try {
+                                val unreported = transactionDao.getUnreportedTransactions()
+                                if (unreported.isEmpty()) {
+                                    android.widget.Toast.makeText(context, "Tidak ada transaksi baru untuk dilaporkan", android.widget.Toast.LENGTH_SHORT).show()
+                                    showReportDialog = false
+                                    isReporting = false
+                                    return@launch
+                                }
+
+                                val totalRevenue = unreported.sumOf { it.totalAmount }
+
+                                var totalProfit: Long = 0
+                                for (tx in unreported) {
+                                    val items = transactionDao.getTransactionItems(tx.id)
+                                    for (item in items) {
+                                        totalProfit += (item.subtotal - (item.buyPrice * item.quantity)).toLong()
+                                    }
+                                }
+
+                                val format = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.getDefault()).apply {
+                                    timeZone = java.util.TimeZone.getTimeZone("UTC")
+                                }
+                                val startTimeStr = format.format(java.util.Date(unreported.first().transactionTime))
+                                val endTimeStr = format.format(java.util.Date(unreported.last().transactionTime))
+
+                                val req = com.kasirinaja.core.network.SubmitReportRequest(
+                                    start_time = startTimeStr,
+                                    end_time = endTimeStr,
+                                    total_transactions = unreported.size,
+                                    total_revenue = totalRevenue.toLong(),
+                                    total_profit = totalProfit
+                                )
+
+                                val response = com.kasirinaja.core.network.RetrofitClient.reportApi.submitReport(req)
+                                if (response.isSuccessful) {
+                                    val cashierId = tokenManager.getUserId() ?: ""
+                                    transactionDao.markTransactionsAsReported(cashierId)
+                                    android.widget.Toast.makeText(context, "Berhasil dilaporkan ke Owner", android.widget.Toast.LENGTH_SHORT).show()
+                                } else {
+                                    android.widget.Toast.makeText(context, "Gagal melapor: Server error", android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            } catch (e: Exception) {
+                                android.widget.Toast.makeText(context, "Gagal melapor: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                            } finally {
+                                isReporting = false
+                                showReportDialog = false
+                            }
+                        }
+                    }
+                ) {
+                    androidx.compose.material3.Text(if (isReporting) "Mengirim..." else "Laporkan")
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(
+                    enabled = !isReporting,
+                    onClick = { showReportDialog = false }
+                ) {
+                    androidx.compose.material3.Text("Batal")
+                }
+            }
+        )
+    }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         gesturesEnabled = drawerState.isOpen,
