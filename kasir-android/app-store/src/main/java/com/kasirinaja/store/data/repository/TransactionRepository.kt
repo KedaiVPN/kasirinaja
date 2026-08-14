@@ -168,7 +168,8 @@ class TransactionRepository(
                             paymentMethod = remoteTx.payment_method,
                             transactionTime = transactionTime,
                             syncStatus = "synced",
-                            deviceId = remoteTx.device_id
+                            deviceId = remoteTx.device_id,
+                            isReported = remoteTx.is_reported ?: false
                         )
 
                         val itemsList = remoteTx.items ?: emptyList()
