@@ -272,6 +272,8 @@ fun MainScreen() {
     }
 
     var showLogoutConfirmDialog by remember { mutableStateOf(false) }
+    var showReportDialog by remember { mutableStateOf(false) }
+    var isReporting by remember { mutableStateOf(false) }
 
     fun performLogout() {
         coroutineScope.launch {
@@ -440,6 +442,19 @@ fun MainScreen() {
                     }
 
                     Divider(modifier = Modifier.padding(vertical = 16.dp))
+
+                    if (userRole == "kasir") {
+                        NavigationDrawerItem(
+                            label = { Text("Tutup Kasir (Laporkan)") },
+                            selected = false,
+                            onClick = {
+                                coroutineScope.launch { drawerState.close() }
+                                showReportDialog = true
+                            },
+                            icon = { Icon(androidx.compose.material.icons.Icons.Filled.Person, contentDescription = "Tutup Kasir") },
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                    }
 
                     if (userRole == "owner") {
                         NavigationDrawerItem(
