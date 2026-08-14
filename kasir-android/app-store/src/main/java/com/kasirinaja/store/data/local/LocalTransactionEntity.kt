@@ -15,5 +15,6 @@ data class LocalTransactionEntity(
     val paymentMethod: String,
     val transactionTime: Long,
     val syncStatus: String,
-    val deviceId: String
+    val deviceId: String,
+    val isReported: Boolean = false
 )

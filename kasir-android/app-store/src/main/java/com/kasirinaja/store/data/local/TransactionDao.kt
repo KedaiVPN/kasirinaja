@@ -119,4 +119,10 @@ interface TransactionDao {
         ORDER BY quantitySold DESC
     """)
     suspend fun getReportItemsBetweenDates(startDate: Long, endDate: Long): List<ReportItem>
+
+    @Query("SELECT * FROM transactions WHERE isReported = 0 ORDER BY transactionTime ASC")
+    suspend fun getUnreportedTransactions(): List<LocalTransactionEntity>
+
+    @Query("UPDATE transactions SET isReported = 1 WHERE isReported = 0 AND cashierId = :cashierId")
+    suspend fun markTransactionsAsReported(cashierId: String)
 }

@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.Divider
 import com.kasirinaja.core.network.RetrofitClient
+import android.util.Log
 import com.kasirinaja.core.network.CashierReportDto
 import java.util.TimeZone
 
@@ -131,10 +132,11 @@ fun ReportsScreen(
             isLoadingReports = true
             try {
                 val response = RetrofitClient.reportApi.getStoreReports()
+                Log.d("ReportsScreen", "Response: ${response.code()} ${response.message()}")
                 if (response.isSuccessful && response.body() != null) {
                     cashierReports = response.body()!!.reports
                 } else {
-                    snackbarHostState.showSnackbar("Gagal memuat riwayat laporan")
+                    snackbarHostState.showSnackbar("Gagal memuat riwayat laporan: ${response.code()}")
                 }
             } catch (e: Exception) {
                 snackbarHostState.showSnackbar("Terjadi kesalahan: ${e.message}")
