@@ -3,7 +3,6 @@ package handlers
 import (
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -17,14 +16,6 @@ type ReportHandler struct {
 
 func NewReportHandler(q *db.Queries) *ReportHandler {
 	return &ReportHandler{q: q}
-}
-
-type SubmitReportRequest struct {
-	StartTime         time.Time `json:"start_time" binding:"required"`
-	EndTime           time.Time `json:"end_time" binding:"required"`
-	TotalTransactions int32     `json:"total_transactions" binding:"required"`
-	TotalRevenue      int64     `json:"total_revenue" binding:"required"`
-	TotalProfit       int64     `json:"total_profit" binding:"required"`
 }
 
 func (h *ReportHandler) SubmitReport(c *gin.Context) {
@@ -45,28 +36,56 @@ func (h *ReportHandler) SubmitReport(c *gin.Context) {
 	pgStoreID := pgtype.UUID{Bytes: storeID, Valid: true}
 	pgUserID := pgtype.UUID{Bytes: userID, Valid: true}
 
-	var req SubmitReportRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
 	user, err := h.q.GetUser(c.Request.Context(), pgUserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
 		return
 	}
 
-	// Create the report
+	// 1. Fetch unreported transactions from database directly
+	unreported, err := h.q.GetUnreportedTransactionsByCashier(c.Request.Context(), db.GetUnreportedTransactionsByCashierParams{
+		StoreID:   pgStoreID,
+		CashierID: pgUserID,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check transactions"})
+		return
+	}
+
+	// 2. Check if there are any unreported transactions
+	if len(unreported) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "NO_UNREPORTED_TRANSACTIONS"})
+		return
+	}
+
+	// 3. Calculate totals from server data
+	var totalRevenue int64 = 0
+	var totalProfit int64 = 0
+
+	startTime := unreported[0].TransactionTime
+	endTime := unreported[len(unreported)-1].TransactionTime
+
+	for _, tx := range unreported {
+		totalRevenue += tx.TotalAmount
+
+		items, err := h.q.GetTransactionItemsByTransactionId(c.Request.Context(), tx.ID)
+		if err == nil {
+			for _, item := range items {
+				totalProfit += (item.Subtotal - (item.BuyPrice * int64(item.Quantity)))
+			}
+		}
+	}
+
+	// 4. Create the report
 	report, err := h.q.CreateCashierReport(c.Request.Context(), db.CreateCashierReportParams{
 		StoreID:           pgStoreID,
 		CashierID:         pgUserID,
 		CashierName:       user.FullName,
-		StartTime:         pgtype.Timestamptz{Time: req.StartTime, Valid: true},
-		EndTime:           pgtype.Timestamptz{Time: req.EndTime, Valid: true},
-		TotalTransactions: req.TotalTransactions,
-		TotalRevenue:      req.TotalRevenue,
-		TotalProfit:       req.TotalProfit,
+		StartTime:         pgtype.Timestamptz{Time: startTime.Time, Valid: startTime.Valid},
+		EndTime:           pgtype.Timestamptz{Time: endTime.Time, Valid: endTime.Valid},
+		TotalTransactions: int32(len(unreported)),
+		TotalRevenue:      totalRevenue,
+		TotalProfit:       totalProfit,
 	})
 	if err != nil {
 		log.Printf("Error creating report: %v", err)
@@ -74,14 +93,13 @@ func (h *ReportHandler) SubmitReport(c *gin.Context) {
 		return
 	}
 
-	// Mark transactions as reported
+	// 5. Mark transactions as reported
 	err = h.q.MarkTransactionsAsReported(c.Request.Context(), db.MarkTransactionsAsReportedParams{
 		StoreID:   pgStoreID,
 		CashierID: pgUserID,
 	})
 	if err != nil {
 		log.Printf("Error marking transactions: %v", err)
-		// We don't fail the request here, but log it
 	}
 
 	c.JSON(http.StatusOK, gin.H{
