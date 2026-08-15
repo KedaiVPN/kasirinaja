@@ -376,45 +376,21 @@ fun MainScreen() {
                         isReporting = true
                         coroutineScope.launch {
                             try {
-                                val unreported = transactionDao.getUnreportedTransactions()
-                                if (unreported.isEmpty()) {
-                                    android.widget.Toast.makeText(context, "Tidak ada transaksi baru untuk dilaporkan", android.widget.Toast.LENGTH_SHORT).show()
-                                    showReportDialog = false
-                                    isReporting = false
-                                    return@launch
-                                }
+                                val emptyReq = com.kasirinaja.core.network.SubmitReportRequest("", "", 0, 0L, 0L)
+                                val response = com.kasirinaja.core.network.RetrofitClient.reportApi.submitReport(emptyReq)
 
-                                val totalRevenue = unreported.sumOf { it.totalAmount }
-
-                                var totalProfit: Long = 0
-                                for (tx in unreported) {
-                                    val items = transactionDao.getTransactionItems(tx.id)
-                                    for (item in items) {
-                                        totalProfit += (item.subtotal - (item.buyPrice * item.quantity)).toLong()
-                                    }
-                                }
-
-                                val format = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.getDefault()).apply {
-                                    timeZone = java.util.TimeZone.getTimeZone("UTC")
-                                }
-                                val startTimeStr = format.format(java.util.Date(unreported.first().transactionTime))
-                                val endTimeStr = format.format(java.util.Date(unreported.last().transactionTime))
-
-                                val req = com.kasirinaja.core.network.SubmitReportRequest(
-                                    start_time = startTimeStr,
-                                    end_time = endTimeStr,
-                                    total_transactions = unreported.size,
-                                    total_revenue = totalRevenue.toLong(),
-                                    total_profit = totalProfit
-                                )
-
-                                val response = com.kasirinaja.core.network.RetrofitClient.reportApi.submitReport(req)
                                 if (response.isSuccessful) {
                                     val cashierId = tokenManager.getUserId() ?: ""
                                     transactionDao.markTransactionsAsReported(cashierId)
                                     android.widget.Toast.makeText(context, "Berhasil dilaporkan ke Owner", android.widget.Toast.LENGTH_SHORT).show()
                                 } else {
-                                    android.widget.Toast.makeText(context, "Gagal melapor: Server error", android.widget.Toast.LENGTH_SHORT).show()
+                                    // Parse error message
+                                    val errorBody = response.errorBody()?.string() ?: ""
+                                    if (errorBody.contains("NO_UNREPORTED_TRANSACTIONS")) {
+                                        android.widget.Toast.makeText(context, "Semua transaksi sudah dilaporkan!", android.widget.Toast.LENGTH_LONG).show()
+                                    } else {
+                                        android.widget.Toast.makeText(context, "Gagal melapor: Server error", android.widget.Toast.LENGTH_SHORT).show()
+                                    }
                                 }
                             } catch (e: Exception) {
                                 android.widget.Toast.makeText(context, "Gagal melapor: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
