@@ -422,6 +422,7 @@ fun MainScreen() {
             ModalDrawerSheet {
                 Column(
                     modifier = Modifier
+                        .fillMaxHeight()
                         .fillMaxWidth()
                         .padding(24.dp)
                 ) {
@@ -494,19 +495,6 @@ fun MainScreen() {
 
                     Divider(modifier = Modifier.padding(vertical = 16.dp))
 
-                    if (userRole == "kasir") {
-                        NavigationDrawerItem(
-                            label = { Text("Tutup Kasir (Laporkan)") },
-                            selected = false,
-                            onClick = {
-                                coroutineScope.launch { drawerState.close() }
-                                showReportDialog = true
-                            },
-                            icon = { Icon(androidx.compose.material.icons.Icons.Filled.Person, contentDescription = "Tutup Kasir") },
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        )
-                    }
-
                     if (userRole == "owner") {
                         NavigationDrawerItem(
                             label = { Text(Screen.Reports.title) },
@@ -525,6 +513,52 @@ fun MainScreen() {
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
                     }
+
+                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
+
+                    if (userRole == "kasir") {
+                        androidx.compose.material3.Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                            colors = androidx.compose.material3.CardDefaults.cardColors(
+                                containerColor = androidx.compose.ui.graphics.Color.White
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color.LightGray)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                            ) {
+                                Text(
+                                    text = "Selesaikan transaksi dan setor hasil ke pemilik.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = androidx.compose.ui.graphics.Color.Gray,
+                                    modifier = Modifier.padding(bottom = 12.dp)
+                                )
+                                androidx.compose.material3.Button(
+                                    onClick = {
+                                        coroutineScope.launch { drawerState.close() }
+                                        showReportDialog = true
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary
+                                    )
+                                ) {
+                                    Text(
+                                        text = "Laporkan",
+                                        color = androidx.compose.ui.graphics.Color.White,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+
 
                 }
             }
