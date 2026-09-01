@@ -158,7 +158,7 @@ func (h *ReportHandler) DeleteReport(c *gin.Context) {
 	pgStoreID := pgtype.UUID{Bytes: storeID, Valid: true}
 	pgReportID := pgtype.UUID{Bytes: reportID, Valid: true}
 
-	report, err := h.q.GetCashierReportById(c.Request.Context(), db.GetCashierReportByIdParams{
+	_, err = h.q.GetCashierReportById(c.Request.Context(), db.GetCashierReportByIdParams{
 		ID:      pgReportID,
 		StoreID: pgStoreID,
 	})
@@ -174,16 +174,6 @@ func (h *ReportHandler) DeleteReport(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete report"})
 		return
-	}
-
-	err = h.q.UnmarkTransactionsAsReported(c.Request.Context(), db.UnmarkTransactionsAsReportedParams{
-		StoreID:   pgStoreID,
-		CashierID: report.CashierID,
-		TransactionTime:   pgtype.Timestamp{Time: report.StartTime.Time, Valid: report.StartTime.Valid},
-		TransactionTime_2: pgtype.Timestamp{Time: report.EndTime.Time, Valid: report.EndTime.Valid},
-	})
-	if err != nil {
-		log.Printf("Error unmarking transactions: %v", err)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
