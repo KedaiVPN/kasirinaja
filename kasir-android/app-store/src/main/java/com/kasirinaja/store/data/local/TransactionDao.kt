@@ -15,8 +15,16 @@ data class ReportItem(
     val productTotalProfit: Double
 )
 
-@Dao
+data class TopProductItem(
+    val storeProductId: String,
+    val productName: String,
+    val totalSold: Int,
+    val isDeleted: Boolean,
+    val stock: Int?,
+    val category: String?
+)
 
+@Dao
 interface TransactionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransaction(transaction: LocalTransactionEntity)
@@ -125,4 +133,23 @@ interface TransactionDao {
 
     @Query("UPDATE transactions SET isReported = 1 WHERE isReported = 0 AND cashierId = :cashierId")
     suspend fun markTransactionsAsReported(cashierId: String)
+
+    @Query("""
+        SELECT
+            ti.storeProductId,
+            ti.productName,
+            SUM(ti.quantity) AS totalSold,
+            CASE WHEN p.id IS NULL THEN 1 ELSE 0 END AS isDeleted,
+            p.stock,
+            p.category
+        FROM transaction_items ti
+        INNER JOIN transactions t ON ti.transactionId = t.id
+        LEFT JOIN local_products p ON ti.storeProductId = p.id
+        WHERE t.transactionTime >= :startOfMonth AND t.transactionTime <= :endOfMonth
+        AND (:cashierId IS NULL OR t.cashierId = :cashierId)
+        GROUP BY ti.storeProductId, ti.productName
+        ORDER BY totalSold DESC
+        LIMIT :limit
+    """)
+    fun getTopSellingProductsFlow(startOfMonth: Long, endOfMonth: Long, limit: Int, cashierId: String?): kotlinx.coroutines.flow.Flow<List<TopProductItem>>
 }
