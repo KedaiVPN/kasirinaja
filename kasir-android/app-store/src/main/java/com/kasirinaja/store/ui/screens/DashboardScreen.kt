@@ -571,7 +571,7 @@ fun TopProductItemView(
                 Spacer(modifier = Modifier.height(2.dp))
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    val stockText = if (isDeleted) "-" else (stock?.toString() ?: "0")
+                    val stockText = if (isDeleted) "-" else if (stock == -1) "Unlimited" else (stock?.toString() ?: "0")
                     val categoryText = if (isDeleted) "-" else (category ?: "Tidak ada")
 
                     Text(
