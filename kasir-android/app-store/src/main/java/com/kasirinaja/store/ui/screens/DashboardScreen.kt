@@ -169,11 +169,11 @@ fun DashboardScreen(
                 }
             }
 
-            // Recent Transactions Section
+            // Top Products Section
             item {
                 Spacer(modifier = Modifier.height(32.dp))
                 Text(
-                    text = "Transaksi Terakhir",
+                    text = "Produk Terlaris",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground,
@@ -182,7 +182,7 @@ fun DashboardScreen(
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
-            if (state.recentTransactions.isEmpty()) {
+            if (state.topProducts.isEmpty()) {
                 item {
                     Box(
                         modifier = Modifier
@@ -191,22 +191,22 @@ fun DashboardScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Belum ada transaksi hari ini",
+                            text = "Belum ada produk terjual bulan ini",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
                 }
             } else {
-                items(state.recentTransactions.size) { index ->
-                    val tx = state.recentTransactions[index]
-                    val formatter = SimpleDateFormat("HH:mm", Locale.getDefault())
-                    val timeString = formatter.format(Date(tx.transactionTime))
+                items(state.topProducts.size) { index ->
+                    val product = state.topProducts[index]
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        ModernTransactionItem(
-                            id = tx.invoiceNumber,
-                            amount = FormatUtils.formatCurrency(tx.totalAmount.toLong()),
-                            time = timeString
+                        TopProductItemView(
+                            productName = product.productName,
+                            totalSold = product.totalSold,
+                            isDeleted = product.isDeleted,
+                            stock = product.stock,
+                            category = product.category
                         )
                     }
                 }
@@ -507,7 +507,13 @@ fun DashboardStatCard(
 }
 
 @Composable
-fun ModernTransactionItem(id: String, amount: String, time: String) {
+fun TopProductItemView(
+    productName: String,
+    totalSold: Int,
+    isDeleted: Boolean,
+    stock: Int?,
+    category: String?
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -533,8 +539,8 @@ fun ModernTransactionItem(id: String, amount: String, time: String) {
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    Icons.Rounded.ReceiptLong,
-                    contentDescription = "Receipt",
+                    Icons.Filled.Inventory,
+                    contentDescription = "Produk",
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp)
                 )
@@ -543,35 +549,52 @@ fun ModernTransactionItem(id: String, amount: String, time: String) {
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = id,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(2.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Filled.Schedule,
-                        contentDescription = "Time",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(12.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = time,
+                        text = productName,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1
+                    )
+                    if (isDeleted) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "(Dihapus)",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val stockText = if (isDeleted) "-" else (stock?.toString() ?: "0")
+                    val categoryText = if (isDeleted) "-" else (category ?: "Tidak ada")
+
+                    Text(
+                        text = "Stok: $stockText • $categoryText",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
             }
 
-            Text(
-                text = amount,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = "$totalSold",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Terjual",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

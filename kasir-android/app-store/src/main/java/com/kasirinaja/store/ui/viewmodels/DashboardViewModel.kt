@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import com.kasirinaja.store.data.repository.TransactionRepository
 import java.util.TimeZone
 import com.kasirinaja.store.data.local.LocalTransactionEntity
+import com.kasirinaja.store.data.local.TopProductItem
 import com.kasirinaja.store.data.local.TransactionDao
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.launch
@@ -34,7 +35,7 @@ data class DashboardState(
     val logoUrl: String? = null,
     val role: String = "Owner",
     val userPhotoUrl: String? = null,
-    val recentTransactions: List<LocalTransactionEntity> = emptyList(),
+    val topProducts: List<TopProductItem> = emptyList(),
     val triggerRefresh: Long = 0L // Helper to force UI refresh
 )
 
@@ -75,6 +76,26 @@ class DashboardViewModel(
         return calendar.timeInMillis
     }
 
+    private fun getStartOfMonth(): Long {
+        val calendar = java.util.Calendar.getInstance()
+        calendar.set(java.util.Calendar.DAY_OF_MONTH, 1)
+        calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
+        calendar.set(java.util.Calendar.MINUTE, 0)
+        calendar.set(java.util.Calendar.SECOND, 0)
+        calendar.set(java.util.Calendar.MILLISECOND, 0)
+        return calendar.timeInMillis
+    }
+
+    private fun getEndOfMonth(): Long {
+        val calendar = java.util.Calendar.getInstance()
+        calendar.set(java.util.Calendar.DAY_OF_MONTH, calendar.getActualMaximum(java.util.Calendar.DAY_OF_MONTH))
+        calendar.set(java.util.Calendar.HOUR_OF_DAY, 23)
+        calendar.set(java.util.Calendar.MINUTE, 59)
+        calendar.set(java.util.Calendar.SECOND, 59)
+        calendar.set(java.util.Calendar.MILLISECOND, 999)
+        return calendar.timeInMillis
+    }
+
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val state: StateFlow<DashboardState> = refreshTrigger.flatMapLatest { refreshTriggerVal ->
         val role = tokenManager?.getRole() ?: "owner"
@@ -86,7 +107,7 @@ class DashboardViewModel(
             transactionDao.getTodayTotalTransactionsFlow(getStartOfDay(), getEndOfDay()),
             productDao.getTotalProductsFlow(),
             transactionDao.getTodayNetProfitFlow(getStartOfDay(), getEndOfDay()),
-            transactionDao.getRecentTransactionsFlow(5, cashierIdFilter),
+            transactionDao.getTopSellingProductsFlow(getStartOfMonth(), getEndOfMonth(), 10, cashierIdFilter),
             transactionDao.getTodayTotalProductsSoldFlow(getStartOfDay(), getEndOfDay())
         ) { arr ->
             @Suppress("UNCHECKED_CAST")
@@ -94,7 +115,7 @@ class DashboardViewModel(
             val txCount = arr[1] as Int?
             val productCount = arr[2] as Int?
             val profit = arr[3] as Double?
-            val recentTxs = arr[4] as List<LocalTransactionEntity>
+            val topProds = arr[4] as List<TopProductItem>
             val productsSold = arr[5] as Int?
 
             DashboardState(
@@ -104,7 +125,7 @@ class DashboardViewModel(
                 netProfit = profit ?: 0.0,
                 todayRevenue = revenue ?: 0.0,
                 todayProfit = profit ?: 0.0,
-                recentTransactions = recentTxs,
+                topProducts = topProds,
                 todayProductsSold = productsSold ?: 0
             )
         },
