@@ -23,6 +23,7 @@ type Querier interface {
 	CreateTransaction(ctx context.Context, arg CreateTransactionParams) (Transaction, error)
 	CreateTransactionItem(ctx context.Context, arg CreateTransactionItemParams) (TransactionItem, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteCashierReport(ctx context.Context, arg DeleteCashierReportParams) error
 	DeleteMasterProduct(ctx context.Context, id pgtype.UUID) error
 	DeletePendingProduct(ctx context.Context, id pgtype.UUID) error
 	DeleteStockMovementsByMasterProduct(ctx context.Context, masterProductID pgtype.UUID) error
@@ -32,6 +33,7 @@ type Querier interface {
 	DeleteUser(ctx context.Context, id pgtype.UUID) error
 	GetAllStoreTransactions(ctx context.Context, storeID pgtype.UUID) ([]Transaction, error)
 	GetAllStoreTransactionsByCashier(ctx context.Context, arg GetAllStoreTransactionsByCashierParams) ([]Transaction, error)
+	GetCashierReportById(ctx context.Context, arg GetCashierReportByIdParams) (CashierReport, error)
 	GetCashierReportsByCashier(ctx context.Context, arg GetCashierReportsByCashierParams) ([]CashierReport, error)
 	GetCashierReportsByStore(ctx context.Context, storeID pgtype.UUID) ([]CashierReport, error)
 	GetCategoryByName(ctx context.Context, name string) (Category, error)
@@ -53,6 +55,7 @@ type Querier interface {
 	ListUsers(ctx context.Context) ([]User, error)
 	ListUsersByStore(ctx context.Context, storeID pgtype.UUID) ([]User, error)
 	MarkTransactionsAsReported(ctx context.Context, arg MarkTransactionsAsReportedParams) error
+	UnmarkTransactionsAsReported(ctx context.Context, arg UnmarkTransactionsAsReportedParams) error
 	UpdatePendingProduct(ctx context.Context, arg UpdatePendingProductParams) error
 	UpdateStore(ctx context.Context, arg UpdateStoreParams) (Store, error)
 	UpdateStoreProduct(ctx context.Context, arg UpdateStoreProductParams) error

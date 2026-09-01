@@ -71,6 +71,7 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 		{
 			reports.POST("/", reportHandler.SubmitReport)
 			reports.GET("/", reportHandler.GetStoreReports)
+		reports.DELETE("/:id", reportHandler.DeleteReport)
 		}
 
 		// Transaction routes

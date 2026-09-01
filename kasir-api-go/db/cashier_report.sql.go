@@ -58,6 +58,49 @@ func (q *Queries) CreateCashierReport(ctx context.Context, arg CreateCashierRepo
 	return i, err
 }
 
+const deleteCashierReport = `-- name: DeleteCashierReport :exec
+DELETE FROM cashier_reports
+WHERE id = $1 AND store_id = $2
+`
+
+type DeleteCashierReportParams struct {
+	ID      pgtype.UUID `json:"id"`
+	StoreID pgtype.UUID `json:"store_id"`
+}
+
+func (q *Queries) DeleteCashierReport(ctx context.Context, arg DeleteCashierReportParams) error {
+	_, err := q.db.Exec(ctx, deleteCashierReport, arg.ID, arg.StoreID)
+	return err
+}
+
+const getCashierReportById = `-- name: GetCashierReportById :one
+SELECT id, store_id, cashier_id, cashier_name, start_time, end_time, total_transactions, total_revenue, total_profit, created_at FROM cashier_reports
+WHERE id = $1 AND store_id = $2
+`
+
+type GetCashierReportByIdParams struct {
+	ID      pgtype.UUID `json:"id"`
+	StoreID pgtype.UUID `json:"store_id"`
+}
+
+func (q *Queries) GetCashierReportById(ctx context.Context, arg GetCashierReportByIdParams) (CashierReport, error) {
+	row := q.db.QueryRow(ctx, getCashierReportById, arg.ID, arg.StoreID)
+	var i CashierReport
+	err := row.Scan(
+		&i.ID,
+		&i.StoreID,
+		&i.CashierID,
+		&i.CashierName,
+		&i.StartTime,
+		&i.EndTime,
+		&i.TotalTransactions,
+		&i.TotalRevenue,
+		&i.TotalProfit,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getCashierReportsByCashier = `-- name: GetCashierReportsByCashier :many
 SELECT id, store_id, cashier_id, cashier_name, start_time, end_time, total_transactions, total_revenue, total_profit, created_at FROM cashier_reports
 WHERE store_id = $1 AND cashier_id = $2
@@ -135,4 +178,27 @@ func (q *Queries) GetCashierReportsByStore(ctx context.Context, storeID pgtype.U
 		return nil, err
 	}
 	return items, nil
+}
+
+const unmarkTransactionsAsReported = `-- name: UnmarkTransactionsAsReported :exec
+UPDATE transactions
+SET is_reported = false
+WHERE store_id = $1 AND cashier_id = $2 AND transaction_time >= $3 AND transaction_time <= $4
+`
+
+type UnmarkTransactionsAsReportedParams struct {
+	StoreID           pgtype.UUID      `json:"store_id"`
+	CashierID         pgtype.UUID      `json:"cashier_id"`
+	TransactionTime   pgtype.Timestamp `json:"transaction_time"`
+	TransactionTime_2 pgtype.Timestamp `json:"transaction_time_2"`
+}
+
+func (q *Queries) UnmarkTransactionsAsReported(ctx context.Context, arg UnmarkTransactionsAsReportedParams) error {
+	_, err := q.db.Exec(ctx, unmarkTransactionsAsReported,
+		arg.StoreID,
+		arg.CashierID,
+		arg.TransactionTime,
+		arg.TransactionTime_2,
+	)
+	return err
 }

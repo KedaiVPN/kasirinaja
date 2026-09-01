@@ -132,3 +132,61 @@ func (h *ReportHandler) GetStoreReports(c *gin.Context) {
 		"reports": reports,
 	})
 }
+
+func (h *ReportHandler) DeleteReport(c *gin.Context) {
+	storeIDStr := c.GetString("store_id")
+	userRole := c.GetString("role")
+	reportIDStr := c.Param("id")
+
+	if userRole != "owner" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only owners can delete reports"})
+		return
+	}
+
+	storeID, err := uuid.Parse(storeIDStr)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid store context"})
+		return
+	}
+
+	reportID, err := uuid.Parse(reportIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid report ID"})
+		return
+	}
+
+	pgStoreID := pgtype.UUID{Bytes: storeID, Valid: true}
+	pgReportID := pgtype.UUID{Bytes: reportID, Valid: true}
+
+	report, err := h.q.GetCashierReportById(c.Request.Context(), db.GetCashierReportByIdParams{
+		ID:      pgReportID,
+		StoreID: pgStoreID,
+	})
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Report not found"})
+		return
+	}
+
+	err = h.q.DeleteCashierReport(c.Request.Context(), db.DeleteCashierReportParams{
+		ID:      pgReportID,
+		StoreID: pgStoreID,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete report"})
+		return
+	}
+
+	err = h.q.UnmarkTransactionsAsReported(c.Request.Context(), db.UnmarkTransactionsAsReportedParams{
+		StoreID:   pgStoreID,
+		CashierID: report.CashierID,
+		TransactionTime:   pgtype.Timestamp{Time: report.StartTime.Time, Valid: report.StartTime.Valid},
+		TransactionTime_2: pgtype.Timestamp{Time: report.EndTime.Time, Valid: report.EndTime.Valid},
+	})
+	if err != nil {
+		log.Printf("Error unmarking transactions: %v", err)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Report deleted successfully",
+	})
+}
