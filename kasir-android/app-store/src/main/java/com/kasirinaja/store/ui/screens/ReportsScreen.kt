@@ -28,6 +28,11 @@ import com.kasirinaja.core.network.CashierReportDto
 import java.util.TimeZone
 
 import androidx.compose.runtime.LaunchedEffect
+
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import com.kasirinaja.store.utils.ReportExportUtil
@@ -126,6 +131,34 @@ fun ReportsScreen(
     val tabs = listOf("Grafik Penjualan", "Riwayat Shift")
     var cashierReports by remember { mutableStateOf<List<CashierReportDto>>(emptyList()) }
     var isLoadingReports by remember { mutableStateOf(false) }
+
+    var showDeleteDialog by remember { mutableStateOf<String?>(null) }
+    val deleteStatus by viewModel.deleteReportStatus.collectAsState()
+
+    LaunchedEffect(deleteStatus) {
+        deleteStatus?.let { result ->
+            if (result.isSuccess) {
+                snackbarHostState.showSnackbar("Laporan berhasil dihapus")
+                cashierReports = emptyList() // Trigger reload
+                isLoadingReports = true
+                try {
+                    val response = RetrofitClient.reportApi.getStoreReports()
+                    if (response.isSuccessful && response.body() != null) {
+                        cashierReports = response.body()!!.reports
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                } finally {
+                    isLoadingReports = false
+                }
+            } else {
+                snackbarHostState.showSnackbar("Gagal menghapus laporan: ${result.exceptionOrNull()?.message}")
+            }
+            viewModel.resetDeleteReportStatus()
+            showDeleteDialog = null
+        }
+    }
+
 
     LaunchedEffect(selectedTabIndex) {
         if (selectedTabIndex == 1 && cashierReports.isEmpty()) {
@@ -595,7 +628,8 @@ fun ReportsScreen(
                                                         sTime,
                                                         eTime,
                                                         report.total_revenue.toDouble(),
-                                                        report.total_profit.toDouble()
+                                                        report.total_profit.toDouble(),
+                                                        report.cashier_name
                                                     )
 
                                                     if (success) {
@@ -619,6 +653,20 @@ fun ReportsScreen(
                                             Text(text = "Download PDF", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                                         }
                                     }
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Surface(
+                                        modifier = Modifier.fillMaxWidth().clickable(enabled = !isExporting) { showDeleteDialog = report.id },
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = Color.Red.copy(alpha = 0.1f)
+                                    ) {
+                                        Row(modifier = Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Filled.Delete, contentDescription = "Hapus", modifier = Modifier.size(16.dp), tint = Color.Red)
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(text = "Hapus Laporan", color = Color.Red, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+
                                 }
                             }
                         }
@@ -626,6 +674,27 @@ fun ReportsScreen(
                 }
             }
         }
+    }
+
+
+    if (showDeleteDialog != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = null },
+            title = { Text("Hapus Laporan") },
+            text = { Text("Apakah Anda yakin ingin menghapus laporan ini? Tindakan ini akan mengembalikan status transaksi menjadi belum dilaporkan.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteReport(showDeleteDialog!!, RetrofitClient.reportApi)
+                }) {
+                    Text("Hapus", color = Color.Red)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = null }) {
+                    Text("Batal")
+                }
+            }
+        )
     }
 
     if (showDatePicker) {

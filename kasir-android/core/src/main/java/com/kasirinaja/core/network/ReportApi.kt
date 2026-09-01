@@ -3,6 +3,8 @@ package com.kasirinaja.core.network
 import retrofit2.http.POST
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.DELETE
+import retrofit2.http.Path
 import retrofit2.Response
 
 data class SubmitReportRequest(
@@ -41,4 +43,7 @@ interface ReportApi {
 
     @GET("reports/")
     suspend fun getStoreReports(): Response<GetReportsResponse>
+
+    @DELETE("reports/{id}")
+    suspend fun deleteReport(@Path("id") reportId: String): Response<Unit>
 }

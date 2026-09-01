@@ -23,7 +23,7 @@ import java.util.Locale
 
 object ReportExportUtil {
 
-    suspend fun exportToPdf(context: Context, items: List<ReportItem>, startDate: Long, endDate: Long, totalRevenue: Double, totalProfit: Double): Boolean = withContext(Dispatchers.IO) {
+    suspend fun exportToPdf(context: Context, items: List<ReportItem>, startDate: Long, endDate: Long, totalRevenue: Double, totalProfit: Double, cashierName: String = ""): Boolean = withContext(Dispatchers.IO) {
         try {
             val document = PdfDocument()
             val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create() // A4 size in points
@@ -48,7 +48,12 @@ object ReportExportUtil {
             canvas.drawText("Laporan Penjualan POS Kedai", 50f, yPosition, titlePaint)
             yPosition += 25f
             paint.textSize = 12f
+            if (cashierName.isNotEmpty()) {
+                canvas.drawText("Kasir: $cashierName", 50f, yPosition, paint)
+                yPosition += 20f
+            }
             canvas.drawText("Periode: $startStr - $endStr", 50f, yPosition, paint)
+
             yPosition += 20f
             canvas.drawText("Total Pendapatan Kotor: ${currencyFormat.format(totalRevenue).replace("Rp", "Rp ")}", 50f, yPosition, paint)
             yPosition += 20f

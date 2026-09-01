@@ -102,7 +102,31 @@ class ReportsViewModel(
         }
     }
 
+
+    private val _deleteReportStatus = MutableStateFlow<Result<Unit>?>(null)
+    val deleteReportStatus: StateFlow<Result<Unit>?> = _deleteReportStatus
+
+    fun deleteReport(reportId: String, api: com.kasirinaja.core.network.ReportApi) {
+        viewModelScope.launch {
+            try {
+                val response = api.deleteReport(reportId)
+                if (response.isSuccessful) {
+                    _deleteReportStatus.value = Result.success(Unit)
+                } else {
+                    _deleteReportStatus.value = Result.failure(Exception(response.message()))
+                }
+            } catch (e: Exception) {
+                _deleteReportStatus.value = Result.failure(e)
+            }
+        }
+    }
+
+    fun resetDeleteReportStatus() {
+        _deleteReportStatus.value = null
+    }
+
     private fun getStartOfDefaultRange(): Long {
+
         val cal = Calendar.getInstance()
         cal.set(Calendar.DAY_OF_MONTH, 1)
         cal.set(Calendar.HOUR_OF_DAY, 0)
