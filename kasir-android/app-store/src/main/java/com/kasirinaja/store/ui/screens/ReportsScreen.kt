@@ -681,7 +681,7 @@ fun ReportsScreen(
         AlertDialog(
             onDismissRequest = { showDeleteDialog = null },
             title = { Text("Hapus Laporan") },
-            text = { Text("Apakah Anda yakin ingin menghapus laporan ini? Tindakan ini akan mengembalikan status transaksi menjadi belum dilaporkan.") },
+            text = { Text("Apakah Anda yakin ingin menghapus laporan ini?") },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.deleteReport(showDeleteDialog!!, RetrofitClient.reportApi)
