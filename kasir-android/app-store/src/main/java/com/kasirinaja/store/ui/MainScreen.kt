@@ -333,28 +333,17 @@ fun MainScreen() {
 
     val userRole = tokenManager.getRole() ?: "owner"
 
-    val bottomBarScreens = if (userRole == "owner") {
-        listOf(
-            Screen.Dashboard,
-            Screen.Stock,
-            Screen.History,
-            Screen.Scan,
-            Screen.More
-        )
-    } else {
-        listOf(
-            Screen.Dashboard,
-            Screen.History,
-            Screen.Scan
-        )
-    }
+    val bottomBarScreens = listOf(
+        Screen.Dashboard,
+        Screen.History,
+        Screen.Scan
+    )
 
-    var showMoreMenu by remember { mutableStateOf(false) }
-    val bottomBarVisibleScreens = if (userRole == "owner") {
-        listOf(Screen.Dashboard.route, Screen.Stock.route, Screen.History.route, Screen.Scan.route, Screen.Master.route, Screen.Settings.route)
-    } else {
-        listOf(Screen.Dashboard.route, Screen.History.route, Screen.Scan.route)
-    }
+    val bottomBarVisibleScreens = listOf(
+        Screen.Dashboard.route,
+        Screen.History.route,
+        Screen.Scan.route
+    )
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -512,6 +501,54 @@ fun MainScreen() {
                             icon = { Icon(Screen.Reports.icon, contentDescription = Screen.Reports.title) },
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
+                        NavigationDrawerItem(
+                            label = { Text(Screen.Stock.title) },
+                            selected = currentRoute == Screen.Stock.route,
+                            onClick = {
+                                coroutineScope.launch { drawerState.close() }
+                                navController.navigate(Screen.Stock.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            icon = { Icon(Screen.Stock.icon, contentDescription = Screen.Stock.title) },
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                        NavigationDrawerItem(
+                            label = { Text(Screen.Master.title) },
+                            selected = currentRoute == Screen.Master.route,
+                            onClick = {
+                                coroutineScope.launch { drawerState.close() }
+                                navController.navigate(Screen.Master.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            icon = { Icon(Screen.Master.icon, contentDescription = Screen.Master.title) },
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                        NavigationDrawerItem(
+                            label = { Text(Screen.Settings.title) },
+                            selected = currentRoute == Screen.Settings.route,
+                            onClick = {
+                                coroutineScope.launch { drawerState.close() }
+                                navController.navigate(Screen.Settings.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            icon = { Icon(Screen.Settings.icon, contentDescription = Screen.Settings.title) },
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
                     }
 
                     androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
@@ -616,7 +653,7 @@ fun MainScreen() {
                         ) {
                             bottomBarScreens.forEach { screen ->
                                 val isSelected = currentDestination?.hierarchy?.any {
-                                    it.route == screen.route || (screen == Screen.More && (it.route == Screen.Master.route || it.route == Screen.Settings.route))
+                                    it.route == screen.route
                                 } == true
 
                                 Box(modifier = Modifier.onGloballyPositioned { coordinates ->
@@ -630,16 +667,12 @@ fun MainScreen() {
                                         modifier = Modifier
                                             .clip(androidx.compose.foundation.shape.RoundedCornerShape(24.dp))
                                             .clickable {
-                                                if (screen == Screen.More) {
-                                                    showMoreMenu = true
-                                                } else {
-                                                    navController.navigate(screen.route) {
-                                                        popUpTo(navController.graph.findStartDestination().id) {
-                                                            saveState = true
-                                                        }
-                                                        launchSingleTop = true
-                                                        restoreState = true
+                                                navController.navigate(screen.route) {
+                                                    popUpTo(navController.graph.findStartDestination().id) {
+                                                        saveState = true
                                                     }
+                                                    launchSingleTop = true
+                                                    restoreState = true
                                                 }
                                             }
                                             .padding(horizontal = if (isSelected) 16.dp else 12.dp, vertical = 12.dp),
@@ -662,37 +695,6 @@ fun MainScreen() {
                                         }
                                     }
 
-                                    if (screen == Screen.More) {
-                                        DropdownMenu(
-                                            expanded = showMoreMenu,
-                                            onDismissRequest = { showMoreMenu = false }
-                                        ) {
-                                            DropdownMenuItem(
-                                                text = { Text("Master") },
-                                                leadingIcon = { Icon(Screen.Master.icon, contentDescription = "Master") },
-                                                onClick = {
-                                                    showMoreMenu = false
-                                                    navController.navigate(Screen.Master.route) {
-                                                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                                        launchSingleTop = true
-                                                        restoreState = true
-                                                    }
-                                                }
-                                            )
-                                            DropdownMenuItem(
-                                                text = { Text("Pengaturan Users") },
-                                                leadingIcon = { Icon(Screen.Settings.icon, contentDescription = "Pengaturan") },
-                                                onClick = {
-                                                    showMoreMenu = false
-                                                    navController.navigate(Screen.Settings.route) {
-                                                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                                        launchSingleTop = true
-                                                        restoreState = true
-                                                    }
-                                                }
-                                            )
-                                        }
-                                    }
                                 }
                             }
                         }
