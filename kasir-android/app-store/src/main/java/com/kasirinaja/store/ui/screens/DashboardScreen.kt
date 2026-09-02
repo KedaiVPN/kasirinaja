@@ -172,13 +172,74 @@ fun DashboardScreen(
             // Top Products Section
             item {
                 Spacer(modifier = Modifier.height(32.dp))
-                Text(
-                    text = "Produk Terlaris",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Produk Terlaris",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+
+                    var expanded by remember { mutableStateOf(false) }
+                    val filterText = when (state.topProductsFilter) {
+                        com.kasirinaja.store.ui.viewmodels.TimeFilter.TODAY -> "Hari Ini"
+                        com.kasirinaja.store.ui.viewmodels.TimeFilter.THIS_MONTH -> "Bulan Ini"
+                        com.kasirinaja.store.ui.viewmodels.TimeFilter.THIS_YEAR -> "Tahun Ini"
+                    }
+
+                    Box {
+                        TextButton(
+                            onClick = { expanded = true },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = filterText,
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Icon(
+                                imageVector = Icons.Filled.ArrowDropDown,
+                                contentDescription = "Pilih Waktu",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Hari Ini") },
+                                onClick = {
+                                    viewModel.updateTopProductsFilter(com.kasirinaja.store.ui.viewmodels.TimeFilter.TODAY)
+                                    expanded = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Bulan Ini") },
+                                onClick = {
+                                    viewModel.updateTopProductsFilter(com.kasirinaja.store.ui.viewmodels.TimeFilter.THIS_MONTH)
+                                    expanded = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Tahun Ini") },
+                                onClick = {
+                                    viewModel.updateTopProductsFilter(com.kasirinaja.store.ui.viewmodels.TimeFilter.THIS_YEAR)
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
@@ -190,8 +251,13 @@ fun DashboardScreen(
                             .padding(32.dp),
                         contentAlignment = Alignment.Center
                     ) {
+                        val filterText = when (state.topProductsFilter) {
+                            com.kasirinaja.store.ui.viewmodels.TimeFilter.TODAY -> "hari ini"
+                            com.kasirinaja.store.ui.viewmodels.TimeFilter.THIS_MONTH -> "bulan ini"
+                            com.kasirinaja.store.ui.viewmodels.TimeFilter.THIS_YEAR -> "tahun ini"
+                        }
                         Text(
-                            text = "Belum ada produk terjual bulan ini",
+                            text = "Belum ada produk terjual $filterText",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             style = MaterialTheme.typography.bodyMedium
                         )
