@@ -102,7 +102,7 @@ fun MasterScreen(
     Scaffold(
         topBar = {
             GlobalTopAppBar(
-                title = "Master",
+                title = "Master Produk",
                 onNavigateToEditProfile = onNavigateToEditProfile,
                 onLogout = onLogout,
                 onOpenDrawer = onOpenDrawer
