@@ -37,6 +37,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
@@ -390,7 +391,7 @@ fun MainScreen() {
                         }
                     }
                 ) {
-                    androidx.compose.material3.Text(if (isReporting) "Mengirim..." else "Laporkan")
+                    androidx.compose.material3.Text(if (isReporting) "Mengirim..." else "Laporkan Transaksi")
                 }
             },
             dismissButton = {
@@ -485,6 +486,14 @@ fun MainScreen() {
                     Divider(modifier = Modifier.padding(vertical = 16.dp))
 
                     if (userRole == "owner") {
+                        val drawerItemColors = NavigationDrawerItemDefaults.colors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
                         NavigationDrawerItem(
                             label = { Text(Screen.Reports.title) },
                             selected = currentRoute == Screen.Reports.route,
@@ -499,6 +508,7 @@ fun MainScreen() {
                                 }
                             },
                             icon = { Icon(Screen.Reports.icon, contentDescription = Screen.Reports.title) },
+                            colors = drawerItemColors,
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
                         NavigationDrawerItem(
@@ -515,6 +525,7 @@ fun MainScreen() {
                                 }
                             },
                             icon = { Icon(Screen.Stock.icon, contentDescription = Screen.Stock.title) },
+                            colors = drawerItemColors,
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
                         NavigationDrawerItem(
@@ -531,6 +542,7 @@ fun MainScreen() {
                                 }
                             },
                             icon = { Icon(Screen.Master.icon, contentDescription = Screen.Master.title) },
+                            colors = drawerItemColors,
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
                         NavigationDrawerItem(
@@ -547,6 +559,7 @@ fun MainScreen() {
                                 }
                             },
                             icon = { Icon(Screen.Settings.icon, contentDescription = Screen.Settings.title) },
+                            colors = drawerItemColors,
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
                     }
@@ -587,7 +600,7 @@ fun MainScreen() {
                                     )
                                 ) {
                                     Text(
-                                        text = "Laporkan",
+                                        text = "Laporkan Transaksi",
                                         color = androidx.compose.ui.graphics.Color.White,
                                         fontWeight = FontWeight.Bold
                                     )
