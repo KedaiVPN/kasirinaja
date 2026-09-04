@@ -58,6 +58,8 @@ class ProductRepository(
                 val buyPrice = product.get("buy_price")?.asLong?.toString() ?: "0"
                 val sellPrice = product.get("sell_price")?.asLong?.toString() ?: "0"
                 val stock = product.get("stock")?.asInt ?: 0
+                val minStock = product.get("min_stock")?.asInt ?: 0
+                val isStockNotificationEnabled = product.get("is_stock_notification_enabled")?.asBoolean ?: false
                 val localCategory = if (product.get("local_category") != null && !product.get("local_category").isJsonNull) product.get("local_category").asString else ""
                 val categoryName = if (product.get("category_name") != null && !product.get("category_name").isJsonNull) product.get("category_name").asString else ""
                 val category = if (localCategory.isNotEmpty()) localCategory else categoryName
@@ -99,6 +101,8 @@ class ProductRepository(
                     buyPrice = buyPrice,
                     sellPrice = sellPrice,
                     stock = stock,
+                    minStock = minStock,
+                    isStockNotificationEnabled = isStockNotificationEnabled,
                     category = category,
                     description = description,
                     barcode = barcode,
@@ -153,7 +157,8 @@ class ProductRepository(
         localCategory: String,
         barcode: String,
         imageUrl: String,
-        description: String
+        description: String,
+        isStockNotificationEnabled: Boolean = false
     ) {
         val request = mapOf<String, Any>(
             "store_id" to storeId,
@@ -163,7 +168,8 @@ class ProductRepository(
             "stock" to stock,
             "min_stock" to minStock,
             "local_name" to localName,
-            "local_category" to localCategory
+            "local_category" to localCategory,
+            "is_stock_notification_enabled" to isStockNotificationEnabled
         )
         val response = RetrofitClient.productApi.addStoreProduct(request)
         if (response.isSuccessful) {
@@ -207,10 +213,12 @@ class ProductRepository(
         buyPrice: Long,
         sellPrice: Long,
         stock: Int,
+        minStock: Int = 0,
         category: String,
         description: String,
         barcode: String,
-        imageUrl: String
+        imageUrl: String,
+        isStockNotificationEnabled: Boolean = false
     ): Result<Unit> {
         val localId = existingId ?: UUID.randomUUID().toString()
 
@@ -225,10 +233,12 @@ class ProductRepository(
             buyPrice = buyPrice.toString(),
             sellPrice = sellPrice.toString(),
             stock = stock,
+            minStock = minStock,
             category = category,
             description = description,
             barcode = barcode,
             imageUrl = imageUrl,
+            isStockNotificationEnabled = isStockNotificationEnabled,
             isSynced = isCurrentlySynced,
             pendingSync = true // Always needs sync after edit
         )
@@ -247,11 +257,13 @@ class ProductRepository(
                 buy_price = buyPrice,
                 sell_price = sellPrice,
                 stock = stock,
+                min_stock = minStock,
                 category = category,
                 description = description,
                 barcode = barcode,
                 image_url = finalImageUrl,
-                store_id = storeId
+                store_id = storeId,
+                is_stock_notification_enabled = isStockNotificationEnabled
             )
 
             val response = if (existingId != null) {

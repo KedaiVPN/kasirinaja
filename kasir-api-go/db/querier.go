@@ -61,6 +61,7 @@ type Querier interface {
 	UpdateStoreProduct(ctx context.Context, arg UpdateStoreProductParams) error
 	UpdateStoreProductStock(ctx context.Context, arg UpdateStoreProductStockParams) error
 	UpdateTransactionReportStatus(ctx context.Context, arg UpdateTransactionReportStatusParams) error
+	UpdateUserFCMToken(ctx context.Context, arg UpdateUserFCMTokenParams) error
 	UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) (User, error)
 	UpdateUserStoreID(ctx context.Context, arg UpdateUserStoreIDParams) error
 }

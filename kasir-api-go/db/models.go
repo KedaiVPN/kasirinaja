@@ -96,18 +96,19 @@ type Store struct {
 }
 
 type StoreProduct struct {
-	ID              pgtype.UUID      `json:"id"`
-	StoreID         pgtype.UUID      `json:"store_id"`
-	MasterProductID pgtype.UUID      `json:"master_product_id"`
-	BuyPrice        int64            `json:"buy_price"`
-	SellPrice       int64            `json:"sell_price"`
-	Stock           int32            `json:"stock"`
-	MinStock        int32            `json:"min_stock"`
-	IsActive        pgtype.Bool      `json:"is_active"`
-	CreatedAt       pgtype.Timestamp `json:"created_at"`
-	UpdatedAt       pgtype.Timestamp `json:"updated_at"`
-	LocalName       pgtype.Text      `json:"local_name"`
-	LocalCategory   pgtype.Text      `json:"local_category"`
+	ID                         pgtype.UUID      `json:"id"`
+	StoreID                    pgtype.UUID      `json:"store_id"`
+	MasterProductID            pgtype.UUID      `json:"master_product_id"`
+	BuyPrice                   int64            `json:"buy_price"`
+	SellPrice                  int64            `json:"sell_price"`
+	Stock                      int32            `json:"stock"`
+	MinStock                   int32            `json:"min_stock"`
+	IsActive                   pgtype.Bool      `json:"is_active"`
+	CreatedAt                  pgtype.Timestamp `json:"created_at"`
+	UpdatedAt                  pgtype.Timestamp `json:"updated_at"`
+	LocalName                  pgtype.Text      `json:"local_name"`
+	LocalCategory              pgtype.Text      `json:"local_category"`
+	IsStockNotificationEnabled pgtype.Bool      `json:"is_stock_notification_enabled"`
 }
 
 type Transaction struct {
@@ -156,4 +157,5 @@ type User struct {
 	CreatedAt    pgtype.Timestamp `json:"created_at"`
 	UpdatedAt    pgtype.Timestamp `json:"updated_at"`
 	PhotoUrl     pgtype.Text      `json:"photo_url"`
+	FcmToken     pgtype.Text      `json:"fcm_token"`
 }

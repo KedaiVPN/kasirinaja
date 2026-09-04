@@ -15,11 +15,13 @@ data class PendingProductRequest(
     val buy_price: Long,
     val sell_price: Long,
     val stock: Int,
+    val min_stock: Int? = null,
     val category: String,
     val description: String,
     val barcode: String,
     val image_url: String,
-    val store_id: String? = null
+    val store_id: String? = null,
+    val is_stock_notification_enabled: Boolean? = null
 )
 
 interface ProductApi {

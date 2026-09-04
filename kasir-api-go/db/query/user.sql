@@ -37,3 +37,6 @@ RETURNING *;
 -- name: DeleteUser :exec
 DELETE FROM users
 WHERE id = $1;
+
+-- name: UpdateUserFCMToken :exec
+UPDATE users SET fcm_token = $2 WHERE id = $1;

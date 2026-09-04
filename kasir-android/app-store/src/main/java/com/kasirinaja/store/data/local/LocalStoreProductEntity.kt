@@ -19,5 +19,6 @@ data class LocalStoreProductEntity(
     val minStock: Int,
     val isActive: Boolean,
     val updatedAt: Long,
-    val syncStatus: String
+    val syncStatus: String,
+    val isStockNotificationEnabled: Boolean = false
 )

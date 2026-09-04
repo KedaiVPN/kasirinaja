@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"kasir-api-go/api"
 	"kasir-api-go/api/handlers"
 	"kasir-api-go/api/routes"
 	"kasir-api-go/db"
@@ -21,6 +22,9 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, relying on environment variables")
 	}
+
+	// Initialize Firebase Cloud Messaging
+	api.InitFirebase()
 
 	dbUrl := os.Getenv("DATABASE_URL")
 	if dbUrl == "" {

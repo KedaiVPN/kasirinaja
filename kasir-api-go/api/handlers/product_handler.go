@@ -196,14 +196,15 @@ func (h *ProductHandler) ListMasterProducts(c *gin.Context) {
 }
 
 type CreateStoreProductRequest struct {
-	StoreID         string `json:"store_id" binding:"required"`
-	MasterProductID string `json:"master_product_id" binding:"required"`
-	BuyPrice        int64  `json:"buy_price" binding:"required"`
-	SellPrice       int64  `json:"sell_price" binding:"required"`
-	Stock           int32  `json:"stock"`
-	MinStock        int32  `json:"min_stock"`
-	LocalName       string `json:"local_name"`
-	LocalCategory   string `json:"local_category"`
+	StoreID                    string `json:"store_id" binding:"required"`
+	MasterProductID            string `json:"master_product_id" binding:"required"`
+	BuyPrice                   int64  `json:"buy_price" binding:"required"`
+	SellPrice                  int64  `json:"sell_price" binding:"required"`
+	Stock                      int32  `json:"stock"`
+	MinStock                   int32  `json:"min_stock"`
+	LocalName                  string `json:"local_name"`
+	LocalCategory              string `json:"local_category"`
+	IsStockNotificationEnabled bool   `json:"is_stock_notification_enabled"`
 }
 
 func (h *ProductHandler) CreateStoreProduct(c *gin.Context) {
@@ -233,12 +234,13 @@ func (h *ProductHandler) CreateStoreProduct(c *gin.Context) {
 	arg := db.CreateStoreProductParams{
 		StoreID:         pgtype.UUID{Bytes: storeID, Valid: true},
 		MasterProductID: pgtype.UUID{Bytes: masterProductID, Valid: true},
-		BuyPrice:        req.BuyPrice,
-		SellPrice:       req.SellPrice,
-		Stock:           req.Stock,
-		MinStock:        req.MinStock,
-		LocalName:       pgtype.Text{String: req.LocalName, Valid: req.LocalName != ""},
-		LocalCategory:   pgtype.Text{String: req.LocalCategory, Valid: req.LocalCategory != ""},
+		BuyPrice:                   req.BuyPrice,
+		SellPrice:                  req.SellPrice,
+		Stock:                      req.Stock,
+		MinStock:                   req.MinStock,
+		LocalName:                  pgtype.Text{String: req.LocalName, Valid: req.LocalName != ""},
+		LocalCategory:              pgtype.Text{String: req.LocalCategory, Valid: req.LocalCategory != ""},
+		IsStockNotificationEnabled: pgtype.Bool{Bool: req.IsStockNotificationEnabled, Valid: true},
 	}
 
 	product, err := h.queries.CreateStoreProduct(c.Request.Context(), arg)
@@ -481,14 +483,16 @@ func (h *ProductHandler) DeleteProduct(c *gin.Context) {
 }
 
 type UpdateProductRequest struct {
-	Name        string `json:"name"`
-	BuyPrice    int64  `json:"buy_price"`
-	SellPrice   int64  `json:"sell_price"`
-	Stock       int32  `json:"stock"`
-	Category    string `json:"category"`
-	Description string `json:"description"`
-	Barcode     string `json:"barcode"`
-	ImageURL    string `json:"image_url"`
+	Name                       string `json:"name"`
+	BuyPrice                   int64  `json:"buy_price"`
+	SellPrice                  int64  `json:"sell_price"`
+	Stock                      int32  `json:"stock"`
+	MinStock                   int32  `json:"min_stock"`
+	Category                   string `json:"category"`
+	Description                string `json:"description"`
+	Barcode                    string `json:"barcode"`
+	ImageURL                   string `json:"image_url"`
+	IsStockNotificationEnabled bool   `json:"is_stock_notification_enabled"`
 }
 
 func (h *ProductHandler) UpdateProduct(c *gin.Context) {
@@ -532,12 +536,14 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 		}
 	} else if status == "approved" {
 		arg := db.UpdateStoreProductParams{
-			ID:            pgtype.UUID{Bytes: id, Valid: true},
-			BuyPrice:      req.BuyPrice,
-			SellPrice:     req.SellPrice,
-			Stock:         req.Stock,
-			LocalName:     pgtype.Text{String: req.Name, Valid: req.Name != ""}, // Name mapped to local_name
-			LocalCategory: pgtype.Text{String: req.Category, Valid: req.Category != ""}, // Category mapped to local_category
+			ID:                         pgtype.UUID{Bytes: id, Valid: true},
+			BuyPrice:                   req.BuyPrice,
+			SellPrice:                  req.SellPrice,
+			Stock:                      req.Stock,
+			MinStock:                   req.MinStock,
+			LocalName:                  pgtype.Text{String: req.Name, Valid: req.Name != ""}, // Name mapped to local_name
+			LocalCategory:              pgtype.Text{String: req.Category, Valid: req.Category != ""}, // Category mapped to local_category
+			IsStockNotificationEnabled: pgtype.Bool{Bool: req.IsStockNotificationEnabled, Valid: true},
 		}
 		err = h.queries.UpdateStoreProduct(c.Request.Context(), arg)
 		if err != nil {

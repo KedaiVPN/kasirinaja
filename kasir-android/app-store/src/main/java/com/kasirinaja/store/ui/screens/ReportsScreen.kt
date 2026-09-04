@@ -28,6 +28,7 @@ import com.kasirinaja.core.network.CashierReportDto
 import java.util.TimeZone
 
 import androidx.compose.runtime.LaunchedEffect
+import com.kasirinaja.store.ui.screens.StockReportTab
 
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
@@ -128,7 +129,14 @@ fun ReportsScreen(
     val transactionDao = remember { AppDatabase.getDatabase(context).transactionDao() }
 
     var selectedTabIndex by remember { mutableStateOf(0) }
-    val tabs = listOf("Grafik Penjualan", "Riwayat Shift")
+    val tabs = listOf("Grafik Penjualan", "Riwayat Shift", "Laporan Stok")
+    val stockReports by viewModel.stockReports.collectAsState()
+    val isStockLoading by viewModel.isStockLoading.collectAsState()
+    LaunchedEffect(selectedTabIndex) {
+        if (selectedTabIndex == 2) {
+            viewModel.fetchStockReport()
+        }
+    }
     var cashierReports by remember { mutableStateOf<List<CashierReportDto>>(emptyList()) }
     var isLoadingReports by remember { mutableStateOf(false) }
 
@@ -565,7 +573,7 @@ fun ReportsScreen(
                 }
             }
             } // End of Column for Tab 0
-            } else {
+            } else if (selectedTabIndex == 1) {
                 // Tab 1: Riwayat Shift
                 if (isLoadingReports) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -672,6 +680,8 @@ fun ReportsScreen(
                         }
                     }
                 }
+            } else if (selectedTabIndex == 2) {
+                StockReportTab(isStockLoading = isStockLoading, stockReports = stockReports)
             }
         }
     }

@@ -37,9 +37,22 @@ data class GetReportsResponse(
     val reports: List<CashierReportDto>
 )
 
+data class StockReportDto(
+    val id: String,
+    val name: String,
+    val category: String,
+    val stock: Int,
+    val min_stock: Int,
+    val status: String,
+    val is_stock_notification_enabled: Boolean
+)
+
 interface ReportApi {
     @POST("reports/")
     suspend fun submitReport(@Body request: SubmitReportRequest): Response<SubmitReportResponse>
+
+    @GET("products/stock-report")
+    suspend fun getStockReport(): Response<List<StockReportDto>>
 
     @GET("reports/")
     suspend fun getStoreReports(): Response<GetReportsResponse>

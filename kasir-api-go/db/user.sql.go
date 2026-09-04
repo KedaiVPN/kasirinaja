@@ -17,7 +17,7 @@ INSERT INTO users (
 ) VALUES (
   $1, $2, $3, $4, $5, $6
 )
-RETURNING id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at, photo_url
+RETURNING id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at, photo_url, fcm_token
 `
 
 type CreateUserParams struct {
@@ -51,6 +51,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PhotoUrl,
+		&i.FcmToken,
 	)
 	return i, err
 }
@@ -66,7 +67,7 @@ func (q *Queries) DeleteUser(ctx context.Context, id pgtype.UUID) error {
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at, photo_url FROM users
+SELECT id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at, photo_url, fcm_token FROM users
 WHERE id = $1 LIMIT 1
 `
 
@@ -85,12 +86,13 @@ func (q *Queries) GetUser(ctx context.Context, id pgtype.UUID) (User, error) {
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PhotoUrl,
+		&i.FcmToken,
 	)
 	return i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at, photo_url FROM users
+SELECT id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at, photo_url, fcm_token FROM users
 WHERE email = $1 LIMIT 1
 `
 
@@ -109,12 +111,13 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email pgtype.Text) (User, 
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PhotoUrl,
+		&i.FcmToken,
 	)
 	return i, err
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at, photo_url FROM users
+SELECT id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at, photo_url, fcm_token FROM users
 ORDER BY id
 `
 
@@ -139,6 +142,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.PhotoUrl,
+			&i.FcmToken,
 		); err != nil {
 			return nil, err
 		}
@@ -151,7 +155,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 }
 
 const listUsersByStore = `-- name: ListUsersByStore :many
-SELECT id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at, photo_url FROM users
+SELECT id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at, photo_url, fcm_token FROM users
 WHERE store_id = $1
 ORDER BY created_at ASC
 `
@@ -177,6 +181,7 @@ func (q *Queries) ListUsersByStore(ctx context.Context, storeID pgtype.UUID) ([]
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.PhotoUrl,
+			&i.FcmToken,
 		); err != nil {
 			return nil, err
 		}
@@ -188,6 +193,20 @@ func (q *Queries) ListUsersByStore(ctx context.Context, storeID pgtype.UUID) ([]
 	return items, nil
 }
 
+const updateUserFCMToken = `-- name: UpdateUserFCMToken :exec
+UPDATE users SET fcm_token = $2 WHERE id = $1
+`
+
+type UpdateUserFCMTokenParams struct {
+	ID       pgtype.UUID `json:"id"`
+	FcmToken pgtype.Text `json:"fcm_token"`
+}
+
+func (q *Queries) UpdateUserFCMToken(ctx context.Context, arg UpdateUserFCMTokenParams) error {
+	_, err := q.db.Exec(ctx, updateUserFCMToken, arg.ID, arg.FcmToken)
+	return err
+}
+
 const updateUserProfile = `-- name: UpdateUserProfile :one
 UPDATE users
 SET
@@ -195,7 +214,7 @@ SET
   photo_url = COALESCE($3, photo_url),
   updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
-RETURNING id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at, photo_url
+RETURNING id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at, photo_url, fcm_token
 `
 
 type UpdateUserProfileParams struct {
@@ -219,6 +238,7 @@ func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfilePa
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PhotoUrl,
+		&i.FcmToken,
 	)
 	return i, err
 }

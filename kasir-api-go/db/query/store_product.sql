@@ -1,8 +1,8 @@
 -- name: CreateStoreProduct :one
 INSERT INTO store_products (
-  store_id, master_product_id, buy_price, sell_price, stock, min_stock, local_name, local_category
+  store_id, master_product_id, buy_price, sell_price, stock, min_stock, local_name, local_category, is_stock_notification_enabled
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8
+  $1, $2, $3, $4, $5, $6, $7, $8, $9
 )
 ON CONFLICT (store_id, master_product_id)
 DO UPDATE SET
@@ -10,7 +10,9 @@ DO UPDATE SET
   sell_price = EXCLUDED.sell_price,
   stock = store_products.stock + EXCLUDED.stock,
   local_name = EXCLUDED.local_name,
-  local_category = EXCLUDED.local_category
+  local_category = EXCLUDED.local_category,
+  min_stock = EXCLUDED.min_stock,
+  is_stock_notification_enabled = EXCLUDED.is_stock_notification_enabled
 RETURNING *;
 
 -- name: GetStoreProduct :one
@@ -31,7 +33,7 @@ DELETE FROM store_products WHERE id = $1;
 
 -- name: UpdateStoreProduct :exec
 UPDATE store_products
-SET buy_price = $2, sell_price = $3, stock = $4, local_name = $5, local_category = $6
+SET buy_price = $2, sell_price = $3, stock = $4, local_name = $5, local_category = $6, min_stock = $7, is_stock_notification_enabled = $8
 WHERE id = $1;
 
 -- name: DeleteStoreProductsByMasterID :exec

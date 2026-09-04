@@ -148,6 +148,24 @@ fun MainScreen() {
                 webSocketManager.connect(it)
             }
 
+            com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                if (!task.isSuccessful) {
+                    android.util.Log.w("FCM", "Fetching FCM registration token failed", task.exception)
+                    return@addOnCompleteListener
+                }
+
+                val token = task.result
+                android.util.Log.d("FCM", "FCM token: $token")
+                coroutineScope.launch {
+                    try {
+                        val authApi = com.kasirinaja.core.network.RetrofitClient.authApi
+                        authApi.updateFcmToken(mapOf("fcm_token" to token))
+                    } catch(e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+
             // Perform one-time initial sync on startup/login
             coroutineScope.launch {
                 try {
