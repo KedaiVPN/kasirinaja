@@ -245,6 +245,30 @@ fun AddProductScreen(
                                 Text("+")
                             }
                         }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = "Aktifkan notifikasi stok", style = MaterialTheme.typography.titleMedium)
+                            Switch(
+                                checked = formState.isStockNotificationEnabled,
+                                onCheckedChange = { v -> viewModel.updateFormState { it.copy(isStockNotificationEnabled = v) } }
+                            )
+                        }
+
+                        if (formState.isStockNotificationEnabled) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            OutlinedTextField(
+                                value = formState.minStockCount.toString(),
+                                onValueChange = { v -> viewModel.updateFormState { it.copy(minStockCount = v.toIntOrNull() ?: 0) } },
+                                label = { Text("Stok Minimal") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
                     } else {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(

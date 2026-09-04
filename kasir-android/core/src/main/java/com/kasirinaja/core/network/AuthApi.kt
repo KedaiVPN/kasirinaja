@@ -21,4 +21,7 @@ interface AuthApi {
 
     @POST("auth/resend-otp")
     suspend fun resendOtp(@Body request: Map<String, String>): Map<String, Any>
+
+    @retrofit2.http.PUT("users/fcm-token")
+    suspend fun updateFcmToken(@Body request: Map<String, String>): Map<String, Any>
 }

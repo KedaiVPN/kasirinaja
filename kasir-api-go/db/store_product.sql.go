@@ -13,9 +13,9 @@ import (
 
 const createStoreProduct = `-- name: CreateStoreProduct :one
 INSERT INTO store_products (
-  store_id, master_product_id, buy_price, sell_price, stock, min_stock, local_name, local_category
+  store_id, master_product_id, buy_price, sell_price, stock, min_stock, local_name, local_category, is_stock_notification_enabled
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7, $8
+  $1, $2, $3, $4, $5, $6, $7, $8, $9
 )
 ON CONFLICT (store_id, master_product_id)
 DO UPDATE SET
@@ -23,19 +23,22 @@ DO UPDATE SET
   sell_price = EXCLUDED.sell_price,
   stock = store_products.stock + EXCLUDED.stock,
   local_name = EXCLUDED.local_name,
-  local_category = EXCLUDED.local_category
-RETURNING id, store_id, master_product_id, buy_price, sell_price, stock, min_stock, is_active, created_at, updated_at, local_name, local_category
+  local_category = EXCLUDED.local_category,
+  min_stock = EXCLUDED.min_stock,
+  is_stock_notification_enabled = EXCLUDED.is_stock_notification_enabled
+RETURNING id, store_id, master_product_id, buy_price, sell_price, stock, min_stock, is_active, created_at, updated_at, local_name, local_category, is_stock_notification_enabled
 `
 
 type CreateStoreProductParams struct {
-	StoreID         pgtype.UUID `json:"store_id"`
-	MasterProductID pgtype.UUID `json:"master_product_id"`
-	BuyPrice        int64       `json:"buy_price"`
-	SellPrice       int64       `json:"sell_price"`
-	Stock           int32       `json:"stock"`
-	MinStock        int32       `json:"min_stock"`
-	LocalName       pgtype.Text `json:"local_name"`
-	LocalCategory   pgtype.Text `json:"local_category"`
+	StoreID                    pgtype.UUID `json:"store_id"`
+	MasterProductID            pgtype.UUID `json:"master_product_id"`
+	BuyPrice                   int64       `json:"buy_price"`
+	SellPrice                  int64       `json:"sell_price"`
+	Stock                      int32       `json:"stock"`
+	MinStock                   int32       `json:"min_stock"`
+	LocalName                  pgtype.Text `json:"local_name"`
+	LocalCategory              pgtype.Text `json:"local_category"`
+	IsStockNotificationEnabled pgtype.Bool `json:"is_stock_notification_enabled"`
 }
 
 func (q *Queries) CreateStoreProduct(ctx context.Context, arg CreateStoreProductParams) (StoreProduct, error) {
@@ -48,6 +51,7 @@ func (q *Queries) CreateStoreProduct(ctx context.Context, arg CreateStoreProduct
 		arg.MinStock,
 		arg.LocalName,
 		arg.LocalCategory,
+		arg.IsStockNotificationEnabled,
 	)
 	var i StoreProduct
 	err := row.Scan(
@@ -63,6 +67,7 @@ func (q *Queries) CreateStoreProduct(ctx context.Context, arg CreateStoreProduct
 		&i.UpdatedAt,
 		&i.LocalName,
 		&i.LocalCategory,
+		&i.IsStockNotificationEnabled,
 	)
 	return i, err
 }
@@ -95,7 +100,7 @@ func (q *Queries) DeleteStoreProductsByMasterID(ctx context.Context, masterProdu
 }
 
 const getStoreProduct = `-- name: GetStoreProduct :one
-SELECT id, store_id, master_product_id, buy_price, sell_price, stock, min_stock, is_active, created_at, updated_at, local_name, local_category FROM store_products WHERE id = $1
+SELECT id, store_id, master_product_id, buy_price, sell_price, stock, min_stock, is_active, created_at, updated_at, local_name, local_category, is_stock_notification_enabled FROM store_products WHERE id = $1
 `
 
 func (q *Queries) GetStoreProduct(ctx context.Context, id pgtype.UUID) (StoreProduct, error) {
@@ -114,12 +119,13 @@ func (q *Queries) GetStoreProduct(ctx context.Context, id pgtype.UUID) (StorePro
 		&i.UpdatedAt,
 		&i.LocalName,
 		&i.LocalCategory,
+		&i.IsStockNotificationEnabled,
 	)
 	return i, err
 }
 
 const listStoreProductsByStore = `-- name: ListStoreProductsByStore :many
-SELECT sp.id, sp.store_id, sp.master_product_id, sp.buy_price, sp.sell_price, sp.stock, sp.min_stock, sp.is_active, sp.created_at, sp.updated_at, sp.local_name, sp.local_category, mp.barcode, mp.photo_url as image_url, c.name as category_name
+SELECT sp.id, sp.store_id, sp.master_product_id, sp.buy_price, sp.sell_price, sp.stock, sp.min_stock, sp.is_active, sp.created_at, sp.updated_at, sp.local_name, sp.local_category, sp.is_stock_notification_enabled, mp.barcode, mp.photo_url as image_url, c.name as category_name
 FROM store_products sp
 LEFT JOIN master_products mp ON sp.master_product_id = mp.id
 LEFT JOIN categories c ON mp.category_id = c.id
@@ -127,21 +133,22 @@ WHERE sp.store_id = $1 ORDER BY sp.created_at DESC
 `
 
 type ListStoreProductsByStoreRow struct {
-	ID              pgtype.UUID      `json:"id"`
-	StoreID         pgtype.UUID      `json:"store_id"`
-	MasterProductID pgtype.UUID      `json:"master_product_id"`
-	BuyPrice        int64            `json:"buy_price"`
-	SellPrice       int64            `json:"sell_price"`
-	Stock           int32            `json:"stock"`
-	MinStock        int32            `json:"min_stock"`
-	IsActive        pgtype.Bool      `json:"is_active"`
-	CreatedAt       pgtype.Timestamp `json:"created_at"`
-	UpdatedAt       pgtype.Timestamp `json:"updated_at"`
-	LocalName       pgtype.Text      `json:"local_name"`
-	LocalCategory   pgtype.Text      `json:"local_category"`
-	Barcode         pgtype.Text      `json:"barcode"`
-	ImageUrl        pgtype.Text      `json:"image_url"`
-	CategoryName    pgtype.Text      `json:"category_name"`
+	ID                         pgtype.UUID      `json:"id"`
+	StoreID                    pgtype.UUID      `json:"store_id"`
+	MasterProductID            pgtype.UUID      `json:"master_product_id"`
+	BuyPrice                   int64            `json:"buy_price"`
+	SellPrice                  int64            `json:"sell_price"`
+	Stock                      int32            `json:"stock"`
+	MinStock                   int32            `json:"min_stock"`
+	IsActive                   pgtype.Bool      `json:"is_active"`
+	CreatedAt                  pgtype.Timestamp `json:"created_at"`
+	UpdatedAt                  pgtype.Timestamp `json:"updated_at"`
+	LocalName                  pgtype.Text      `json:"local_name"`
+	LocalCategory              pgtype.Text      `json:"local_category"`
+	IsStockNotificationEnabled pgtype.Bool      `json:"is_stock_notification_enabled"`
+	Barcode                    pgtype.Text      `json:"barcode"`
+	ImageUrl                   pgtype.Text      `json:"image_url"`
+	CategoryName               pgtype.Text      `json:"category_name"`
 }
 
 func (q *Queries) ListStoreProductsByStore(ctx context.Context, storeID pgtype.UUID) ([]ListStoreProductsByStoreRow, error) {
@@ -166,6 +173,7 @@ func (q *Queries) ListStoreProductsByStore(ctx context.Context, storeID pgtype.U
 			&i.UpdatedAt,
 			&i.LocalName,
 			&i.LocalCategory,
+			&i.IsStockNotificationEnabled,
 			&i.Barcode,
 			&i.ImageUrl,
 			&i.CategoryName,
@@ -182,17 +190,19 @@ func (q *Queries) ListStoreProductsByStore(ctx context.Context, storeID pgtype.U
 
 const updateStoreProduct = `-- name: UpdateStoreProduct :exec
 UPDATE store_products
-SET buy_price = $2, sell_price = $3, stock = $4, local_name = $5, local_category = $6
+SET buy_price = $2, sell_price = $3, stock = $4, local_name = $5, local_category = $6, min_stock = $7, is_stock_notification_enabled = $8
 WHERE id = $1
 `
 
 type UpdateStoreProductParams struct {
-	ID            pgtype.UUID `json:"id"`
-	BuyPrice      int64       `json:"buy_price"`
-	SellPrice     int64       `json:"sell_price"`
-	Stock         int32       `json:"stock"`
-	LocalName     pgtype.Text `json:"local_name"`
-	LocalCategory pgtype.Text `json:"local_category"`
+	ID                         pgtype.UUID `json:"id"`
+	BuyPrice                   int64       `json:"buy_price"`
+	SellPrice                  int64       `json:"sell_price"`
+	Stock                      int32       `json:"stock"`
+	LocalName                  pgtype.Text `json:"local_name"`
+	LocalCategory              pgtype.Text `json:"local_category"`
+	MinStock                   int32       `json:"min_stock"`
+	IsStockNotificationEnabled pgtype.Bool `json:"is_stock_notification_enabled"`
 }
 
 func (q *Queries) UpdateStoreProduct(ctx context.Context, arg UpdateStoreProductParams) error {
@@ -203,6 +213,8 @@ func (q *Queries) UpdateStoreProduct(ctx context.Context, arg UpdateStoreProduct
 		arg.Stock,
 		arg.LocalName,
 		arg.LocalCategory,
+		arg.MinStock,
+		arg.IsStockNotificationEnabled,
 	)
 	return err
 }

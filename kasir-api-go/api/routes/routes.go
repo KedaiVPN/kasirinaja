@@ -44,11 +44,13 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 			usersAuth.POST("/add-employee", userHandler.AddStoreEmployee)
 			usersAuth.PUT("/profile", userHandler.UpdateProfile)
 			usersAuth.DELETE("/employees/:id", userHandler.DeleteStoreEmployee)
+			users.PUT("/fcm-token", handlers.AuthMiddleware(), userHandler.UpdateFCMToken)
 		}
 
 		// Product routes
 		products := api.Group("/products")
 		{
+			products.GET("/stock-report", handlers.AuthMiddleware(), productHandler.GetStockReport)
 			products.POST("/master", handlers.AuthMiddleware(), productHandler.CreateMasterProduct)
 			products.GET("/master/:id", productHandler.GetMasterProduct)
 			products.GET("/master", productHandler.ListMasterProducts)

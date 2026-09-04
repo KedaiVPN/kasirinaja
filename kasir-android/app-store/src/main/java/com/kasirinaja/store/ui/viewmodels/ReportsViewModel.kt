@@ -7,6 +7,7 @@ import com.kasirinaja.store.data.local.TransactionDao
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
@@ -17,6 +18,8 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import com.kasirinaja.core.network.RetrofitClient
+import com.kasirinaja.core.network.StockReportDto
 
 data class ReportsState(
     val startDate: Long,
@@ -32,6 +35,12 @@ class ReportsViewModel(
 
     private val _startDate = MutableStateFlow(getStartOfDefaultRange())
     private val _endDate = MutableStateFlow(getEndOfDefaultRange())
+
+    private val _stockReports = MutableStateFlow<List<StockReportDto>>(emptyList())
+    val stockReports: StateFlow<List<StockReportDto>> = _stockReports.asStateFlow()
+
+    private val _isStockLoading = MutableStateFlow(false)
+    val isStockLoading: StateFlow<Boolean> = _isStockLoading.asStateFlow()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val state: StateFlow<ReportsState> = combine(_startDate, _endDate) { start, end ->
@@ -86,6 +95,24 @@ class ReportsViewModel(
             endDate = getEndOfDefaultRange()
         )
     )
+
+    fun fetchStockReport() {
+        viewModelScope.launch {
+            _isStockLoading.value = true
+            try {
+                val response = RetrofitClient.reportApi.getStockReport()
+                if (response.isSuccessful) {
+                    _stockReports.value = response.body() ?: emptyList()
+                } else {
+                    _stockReports.value = emptyList()
+                }
+            } catch (e: Exception) {
+                _stockReports.value = emptyList()
+            } finally {
+                _isStockLoading.value = false
+            }
+        }
+    }
 
     fun updateDateRange(start: Long, end: Long) {
         viewModelScope.launch {

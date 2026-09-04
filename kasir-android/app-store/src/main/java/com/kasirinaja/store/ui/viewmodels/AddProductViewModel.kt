@@ -18,6 +18,8 @@ data class ProductFormState(
     val barcode: String = "",
     val stockCount: Int = 0,
     val hasStock: Boolean = false,
+    val minStockCount: Int = 0,
+    val isStockNotificationEnabled: Boolean = false,
     val imageUri: String? = null
 )
 
@@ -92,10 +94,12 @@ class AddProductViewModel(private val repository: ProductRepository) : ViewModel
                 buyPrice = buyPriceLong,
                 sellPrice = sellPriceLong,
                 stock = finalStock,
+                minStock = state.minStockCount,
                 category = state.category,
                 description = state.description,
                 barcode = state.barcode,
-                imageUrl = state.imageUri ?: ""
+                imageUrl = state.imageUri ?: "",
+                isStockNotificationEnabled = state.isStockNotificationEnabled
             )
 
             if (result.isSuccess) {

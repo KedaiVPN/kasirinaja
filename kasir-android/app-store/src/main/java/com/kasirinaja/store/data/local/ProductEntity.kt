@@ -14,6 +14,8 @@ data class ProductEntity(
     val description: String?,
     val barcode: String?,
     val imageUrl: String?,
+    val minStock: Int = 0,
+    val isStockNotificationEnabled: Boolean = false,
     val isSynced: Boolean = false, // True if approved by admin and converted to master/store product
     val pendingSync: Boolean = true, // True if waiting to be uploaded to pending_products
     val createdAt: Long = System.currentTimeMillis()

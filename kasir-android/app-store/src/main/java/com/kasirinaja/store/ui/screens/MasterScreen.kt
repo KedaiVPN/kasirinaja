@@ -285,7 +285,7 @@ fun MasterScreen(
         AddStoreProductModal(
             product = product,
             onDismiss = { productToEdit = null },
-            onSave = { name, category, buyPrice, sellPrice, stock ->
+            onSave = { name, category, buyPrice, sellPrice, stock, minStock, isStockNotificationEnabled ->
                 val storeId = TokenManager(context).getStoreId() ?: ""
 
                 // Set default to "0" if empty because backend expects a numeric string but requires the field
@@ -304,9 +304,11 @@ fun MasterScreen(
                     buyPrice = safeBuyPrice,
                     sellPrice = safeSellPrice,
                     stock = stock,
+                    minStock = minStock,
                     barcode = barcode,
                     imageUrl = photoUrl,
-                    description = description
+                    description = description,
+                    isStockNotificationEnabled = isStockNotificationEnabled
                 )
                 productToEdit = null
             }

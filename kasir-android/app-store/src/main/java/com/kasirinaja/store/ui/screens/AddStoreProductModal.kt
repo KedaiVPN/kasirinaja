@@ -14,7 +14,7 @@ import com.google.gson.JsonObject
 fun AddStoreProductModal(
     product: JsonObject,
     onDismiss: () -> Unit,
-    onSave: (name: String, category: String, buyPrice: String, sellPrice: String, stock: Int) -> Unit
+    onSave: (name: String, category: String, buyPrice: String, sellPrice: String, stock: Int, minStock: Int, isStockNotificationEnabled: Boolean) -> Unit
 ) {
     val initialName = product.get("name")?.asString ?: ""
     val initialCategory = product.get("category_name")?.asString ?: product.get("category_id")?.asString ?: ""
@@ -26,6 +26,8 @@ fun AddStoreProductModal(
 
     var isStockTracked by remember { mutableStateOf(false) }
     var stockCount by remember { mutableStateOf("") }
+    var isStockNotificationEnabled by remember { mutableStateOf(false) }
+    var minStockCount by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -86,6 +88,27 @@ fun AddStoreProductModal(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth()
                     )
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(text = "Aktifkan notifikasi stok", modifier = Modifier.weight(1f))
+                        Switch(
+                            checked = isStockNotificationEnabled,
+                            onCheckedChange = { isStockNotificationEnabled = it }
+                        )
+                    }
+
+                    if (isStockNotificationEnabled) {
+                        OutlinedTextField(
+                            value = minStockCount,
+                            onValueChange = { minStockCount = it },
+                            label = { Text("Stok Minimal") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 } else {
                     Text(text = "Stok tidak terbatas (Unlimited)", style = MaterialTheme.typography.bodySmall)
                 }
@@ -94,7 +117,8 @@ fun AddStoreProductModal(
         confirmButton = {
             Button(onClick = {
                 val stockValue = if (isStockTracked) stockCount.toIntOrNull() ?: 0 else -1
-                onSave(name, category, buyPrice, sellPrice, stockValue)
+                val minStockValue = if (isStockNotificationEnabled) minStockCount.toIntOrNull() ?: 0 else 0
+                onSave(name, category, buyPrice, sellPrice, stockValue, minStockValue, isStockNotificationEnabled)
             }) {
                 Text("Simpan")
             }
