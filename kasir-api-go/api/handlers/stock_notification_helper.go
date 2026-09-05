@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-func CheckAndSendStockNotification(ctx context.Context, queries *db.Queries, storeID pgtype.UUID, storeProductID pgtype.UUID) {
+func CheckAndSendStockNotification(ctx context.Context, queries *db.Queries, storeProductID pgtype.UUID) {
 	// Dapatkan detail produk setelah diupdate stoknya
 	storeProduct, err := queries.GetStoreProduct(ctx, storeProductID)
 	if err != nil {
@@ -19,12 +19,12 @@ func CheckAndSendStockNotification(ctx context.Context, queries *db.Queries, sto
 	}
 
 	// Cek apakah notifikasi diaktifkan dan stok kurang dari atau sama dengan minimum
-	if !storeProduct.IsStockNotificationEnabled.Bool || storeProduct.Stock > storeProduct.MinStock {
+	if !storeProduct.IsStockNotificationEnabled.Bool || storeProduct.Stock > storeProduct.MinStock || storeProduct.Stock == -1 {
 		return
 	}
 
 	// Cari user (owner) dari toko ini
-	users, err := queries.ListUsersByStore(ctx, storeID)
+	users, err := queries.ListUsersByStore(ctx, storeProduct.StoreID)
 	if err != nil {
 		log.Println("Gagal mengambil daftar user toko:", err)
 		return
