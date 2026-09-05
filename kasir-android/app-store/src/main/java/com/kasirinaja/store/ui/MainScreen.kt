@@ -142,6 +142,30 @@ fun MainScreen() {
     }
 
     val isUserLoggedIn = tokenManager.getToken() != null
+
+    // Request permission for Post Notifications (Android 13+)
+    val notificationPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            android.util.Log.d("FCM", "Notification permission granted")
+        } else {
+            android.util.Log.d("FCM", "Notification permission denied")
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            val permissionCheckResult = androidx.core.content.ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            )
+            if (permissionCheckResult != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+
     LaunchedEffect(isUserLoggedIn) {
         if (isUserLoggedIn) {
             tokenManager.getStoreId()?.let {
