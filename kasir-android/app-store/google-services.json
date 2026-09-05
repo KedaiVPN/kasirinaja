@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "1234567890",
-    "project_id": "kasirinaja-store",
-    "storage_bucket": "kasirinaja-store.appspot.com"
+    "project_number": "456007688217",
+    "project_id": "pos-kasir-6017b",
+    "storage_bucket": "pos-kasir-6017b.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1234567890:android:abcde12345",
+        "mobilesdk_app_id": "1:456007688217:android:58a2482e182b8b84520a88",
         "android_client_info": {
           "package_name": "com.kasirinaja.store"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "dummy_api_key_for_build"
+          "current_key": "AIzaSyAn5DGGgsKh1rh2lct1TGZthTQ_2DxXynY"
         }
       ],
       "services": {
