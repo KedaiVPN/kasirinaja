@@ -1,13 +1,14 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/gin-gonic/gin"
-		"github.com/google/uuid"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"kasir-api-go/db"
 )
@@ -105,6 +106,9 @@ func (h *ProductHandler) CreateMasterProduct(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+    // Call notification check immediately after creating or updating
+    go CheckAndSendStockNotification(context.Background(), h.queries, product.ID)
 
 	c.JSON(http.StatusCreated, product)
 }
@@ -550,6 +554,9 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
+
+		// Call notification check immediately after updating
+        go CheckAndSendStockNotification(context.Background(), h.queries, pgtype.UUID{Bytes: id, Valid: true})
 	} else {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "status query param must be 'pending' or 'approved'"})
 		return
