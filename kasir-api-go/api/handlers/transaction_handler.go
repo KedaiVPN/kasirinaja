@@ -160,13 +160,16 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create stock movement: " + err.Error()})
 				return
 			}
-
-			// Cek dan kirim notifikasi jika diperlukan
-			go CheckAndSendStockNotification(context.Background(), h.queries, pgtype.UUID{Bytes: storeID, Valid: true}, pgtype.UUID{Bytes: spID, Valid: true})
 		}
 	}
 
 	err = tx.Commit(ctx)
+
+    // Call notification check AFTER commit to ensure the background task reads the correct updated stock
+    for _, item := range req.Items {
+		spID, _ := uuid.Parse(item.StoreProductID)
+        go CheckAndSendStockNotification(context.Background(), h.queries, pgtype.UUID{Bytes: storeID, Valid: true}, pgtype.UUID{Bytes: spID, Valid: true})
+    }
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to commit transaction"})
 		return
