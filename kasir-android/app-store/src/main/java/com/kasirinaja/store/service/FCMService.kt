@@ -35,14 +35,50 @@ class FCMService : FirebaseMessagingService() {
         }
     }
 
+
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
-        // Firebase automatically shows notification when app is in background.
-        // For foreground, we could show a local notification here if needed.
         Log.d("FCMService", "Message received from: ${remoteMessage.from}")
 
-        if (remoteMessage.notification != null) {
-            Log.d("FCMService", "Message Notification Body: ${remoteMessage.notification?.body}")
+        remoteMessage.notification?.let {
+            Log.d("FCMService", "Message Notification Body: ${it.body}")
+            showNotification(it.title ?: "Peringatan", it.body ?: "")
         }
+    }
+
+    private fun showNotification(title: String, messageBody: String) {
+        val intent = android.content.Intent(this, com.kasirinaja.store.MainActivity::class.java).apply {
+            addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        }
+        val pendingIntent = android.app.PendingIntent.getActivity(
+            this, 0, intent,
+            android.app.PendingIntent.FLAG_ONE_SHOT or android.app.PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val channelId = "stock_alerts"
+        val defaultSoundUri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
+
+        val notificationBuilder = androidx.core.app.NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(com.kasirinaja.store.R.mipmap.ic_launcher)
+            .setContentTitle(title)
+            .setContentText(messageBody)
+            .setAutoCancel(true)
+            .setSound(defaultSoundUri)
+            .setContentIntent(pendingIntent)
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
+
+        val notificationManager = getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+
+        // Since Android Oreo, notification channel is needed
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val channel = android.app.NotificationChannel(
+                channelId,
+                "Stock Alerts",
+                android.app.NotificationManager.IMPORTANCE_HIGH
+            )
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        notificationManager.notify(System.currentTimeMillis().toInt(), notificationBuilder.build())
     }
 }
