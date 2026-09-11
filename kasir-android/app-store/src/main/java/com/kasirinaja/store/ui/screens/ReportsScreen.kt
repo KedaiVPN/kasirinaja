@@ -143,6 +143,10 @@ fun ReportsScreen(
     var showDeleteDialog by remember { mutableStateOf<String?>(null) }
     val deleteStatus by viewModel.deleteReportStatus.collectAsState()
 
+    var showAddStockDialog by remember { mutableStateOf<String?>(null) }
+    var stockToAdd by remember { mutableStateOf("") }
+
+
     LaunchedEffect(deleteStatus) {
         deleteStatus?.let { result ->
             if (result.isSuccess) {
@@ -681,11 +685,58 @@ fun ReportsScreen(
                     }
                 }
             } else if (selectedTabIndex == 2) {
-                StockReportTab(isStockLoading = isStockLoading, stockReports = stockReports)
+                StockReportTab(
+                    isStockLoading = isStockLoading,
+                    stockReports = stockReports,
+                    onAddStockClick = { productId ->
+                        showAddStockDialog = productId
+                        stockToAdd = ""
+                    }
+                )
             }
         }
     }
 
+
+    if (showAddStockDialog != null) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showAddStockDialog = null },
+            title = { androidx.compose.material3.Text("Tambah Stok") },
+            text = {
+                androidx.compose.foundation.layout.Column {
+                    androidx.compose.material3.Text("Masukkan jumlah stok yang ingin ditambahkan:")
+                    androidx.compose.foundation.layout.Spacer(modifier = androidx.compose.ui.Modifier.height(8.dp))
+                    androidx.compose.material3.OutlinedTextField(
+                        value = stockToAdd,
+                        onValueChange = { stockToAdd = it },
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                        singleLine = true,
+                        modifier = androidx.compose.ui.Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                androidx.compose.material3.Button(onClick = {
+                    val amount = stockToAdd.toIntOrNull() ?: 0
+                    if (amount > 0) {
+                        viewModel.addStock(showAddStockDialog!!, amount) { success, msg ->
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar(msg)
+                            }
+                        }
+                    }
+                    showAddStockDialog = null
+                }) {
+                    androidx.compose.material3.Text("Tambah")
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { showAddStockDialog = null }) {
+                    androidx.compose.material3.Text("Batal")
+                }
+            }
+        )
+    }
 
     if (showDeleteDialog != null) {
         AlertDialog(

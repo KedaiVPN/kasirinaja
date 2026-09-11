@@ -58,6 +58,7 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 			products.POST("/store", handlers.AuthMiddleware(), productHandler.CreateStoreProduct)
 			products.GET("/store/:id", productHandler.GetStoreProduct)
 			products.GET("/store", productHandler.ListStoreProducts)
+			products.PUT("/store/:id/stock", handlers.AuthMiddleware(), productHandler.AddStoreProductStock)
 
 			products.POST("/pending", handlers.AuthMiddleware(), productHandler.SubmitPendingProduct)
 			products.GET("/pending", productHandler.ListPendingProducts)

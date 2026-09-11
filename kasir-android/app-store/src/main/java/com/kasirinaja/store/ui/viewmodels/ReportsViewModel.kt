@@ -114,6 +114,22 @@ class ReportsViewModel(
         }
     }
 
+    fun addStock(productId: String, additionalStock: Int, onResult: (Boolean, String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.productApi.addStoreProductStock(productId, mapOf("additional_stock" to additionalStock))
+                if (response.isSuccessful) {
+                    fetchStockReport() // Refresh
+                    onResult(true, "Stok berhasil ditambahkan")
+                } else {
+                    onResult(false, "Gagal menambahkan stok")
+                }
+            } catch (e: Exception) {
+                onResult(false, e.message ?: "Terjadi kesalahan")
+            }
+        }
+    }
+
     fun updateDateRange(start: Long, end: Long) {
         viewModelScope.launch {
             val utcCal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
