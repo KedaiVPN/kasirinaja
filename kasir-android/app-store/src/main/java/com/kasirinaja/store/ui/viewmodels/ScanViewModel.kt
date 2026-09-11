@@ -81,13 +81,20 @@ class ScanViewModel(
     }
 
     fun addProductToCart(product: ProductEntity) {
+        val currentCart = _cartItems.value.toMutableList()
+        val existingItemIndex = currentCart.indexOfFirst { it.product.id == product.id }
+
+        val currentQuantityInCart = if (existingItemIndex != -1) currentCart[existingItemIndex].quantity else 0
+
+        // Block if stock is limited and cart already has all available stock
+        if (product.stock != -1 && currentQuantityInCart >= product.stock) {
+            return
+        }
+
         // Play sound
         playBeepSound()
 
         // Add to cart or increment
-        val currentCart = _cartItems.value.toMutableList()
-        val existingItemIndex = currentCart.indexOfFirst { it.product.id == product.id }
-
         if (existingItemIndex != -1) {
             val existingItem = currentCart[existingItemIndex]
             currentCart[existingItemIndex] = existingItem.copy(quantity = existingItem.quantity + 1)
@@ -103,6 +110,10 @@ class ScanViewModel(
         val index = currentCart.indexOfFirst { it.product.id == product.id }
         if (index != -1) {
             val item = currentCart[index]
+            // Block if stock is limited and cart already has all available stock
+            if (product.stock != -1 && item.quantity >= product.stock) {
+                return
+            }
             currentCart[index] = item.copy(quantity = item.quantity + 1)
             _cartItems.value = currentCart
         }
