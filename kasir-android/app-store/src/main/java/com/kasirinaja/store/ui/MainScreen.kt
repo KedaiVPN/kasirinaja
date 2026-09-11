@@ -107,7 +107,7 @@ import com.kasirinaja.store.ui.viewmodels.ReceiptViewModelFactory
 
 
 @Composable
-fun MainScreen() {
+fun MainScreen(initialRoute: String? = null) {
     val navController = rememberNavController()
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -307,12 +307,17 @@ fun MainScreen() {
     LaunchedEffect(Unit) {
         val token = tokenManager.getToken()
         if (!token.isNullOrEmpty()) {
-            startDest = Screen.Dashboard.route
+            if (initialRoute == "reports_stock") {
+                startDest = Screen.Reports.route
+            } else {
+                startDest = Screen.Dashboard.route
+            }
         } else {
             startDest = Screen.Login.route
         }
         isCheckingToken = false
     }
+
 
     var showLogoutConfirmDialog by remember { mutableStateOf(false) }
     var showReportDialog by remember { mutableStateOf(false) }

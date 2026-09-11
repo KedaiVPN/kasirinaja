@@ -128,7 +128,7 @@ fun ReportsScreen(
 
     val transactionDao = remember { AppDatabase.getDatabase(context).transactionDao() }
 
-    var selectedTabIndex by remember { mutableStateOf(0) }
+    var selectedTabIndex by remember { mutableStateOf(2) }
     val tabs = listOf("Grafik Penjualan", "Riwayat Shift", "Laporan Stok")
     val stockReports by viewModel.stockReports.collectAsState()
     val isStockLoading by viewModel.isStockLoading.collectAsState()
