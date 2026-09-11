@@ -49,6 +49,7 @@ class FCMService : FirebaseMessagingService() {
     private fun showNotification(title: String, messageBody: String) {
         val intent = android.content.Intent(this, com.kasirinaja.store.MainActivity::class.java).apply {
             addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            putExtra("route", "reports_stock")
         }
         val pendingIntent = android.app.PendingIntent.getActivity(
             this, 0, intent,

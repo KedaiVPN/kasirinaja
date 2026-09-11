@@ -39,6 +39,9 @@ func SendPushNotification(token, title, body string) error {
 			Title: title,
 			Body:  body,
 		},
+		Data: map[string]string{
+			"route": "reports_stock",
+		},
 		Token: token,
 	}
 
