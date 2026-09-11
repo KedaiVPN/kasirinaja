@@ -615,3 +615,43 @@ func (h *ProductHandler) DeleteStoreProductSpecific(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "store product deleted successfully"})
 }
+
+type AddStockRequest struct {
+	AdditionalStock int32 `json:"additional_stock" binding:"required"`
+}
+
+func (h *ProductHandler) AddStoreProductStock(c *gin.Context) {
+	role, exists := c.Get("role")
+	if exists && role == "kasir" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Kasir is not allowed to add stock"})
+		return
+	}
+
+	idParam := c.Param("id")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid store product id"})
+		return
+	}
+
+	var req AddStockRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = h.queries.UpdateStoreProductStock(c.Request.Context(), db.UpdateStoreProductStockParams{
+		ID:    pgtype.UUID{Bytes: id, Valid: true},
+		Stock: req.AdditionalStock,
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add stock"})
+		return
+	}
+
+	// Call notification check in background
+	go CheckAndSendStockNotification(context.Background(), h.queries, pgtype.UUID{Bytes: id, Valid: true})
+
+	c.JSON(http.StatusOK, gin.H{"message": "stock added successfully"})
+}

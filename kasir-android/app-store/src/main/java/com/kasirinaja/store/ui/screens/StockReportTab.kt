@@ -16,7 +16,8 @@ import com.kasirinaja.core.network.StockReportDto
 @Composable
 fun StockReportTab(
     isStockLoading: Boolean,
-    stockReports: List<StockReportDto>
+    stockReports: List<StockReportDto>,
+    onAddStockClick: (String) -> Unit
 ) {
     if (isStockLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -82,6 +83,14 @@ fun StockReportTab(
                                     Text(text = "Tidak Aktif", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                                 }
                             }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = { onAddStockClick(report.id) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Tambahkan Stok")
                         }
                     }
                 }

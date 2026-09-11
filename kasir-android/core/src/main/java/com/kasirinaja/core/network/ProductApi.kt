@@ -25,6 +25,12 @@ data class PendingProductRequest(
 )
 
 interface ProductApi {
+    @retrofit2.http.PUT("products/store/{id}/stock")
+    suspend fun addStoreProductStock(
+        @Path("id") id: String,
+        @Body request: Map<String, Int>
+    ): Response<Map<String, Any>>
+
     @DELETE("products/store/{id}")
     suspend fun deleteStoreProductSpecific(@Path("id") id: String): Response<Map<String, Any>>
 
