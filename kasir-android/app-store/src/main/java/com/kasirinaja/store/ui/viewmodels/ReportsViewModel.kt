@@ -20,6 +20,7 @@ import java.util.Locale
 import java.util.TimeZone
 import com.kasirinaja.core.network.RetrofitClient
 import com.kasirinaja.core.network.StockReportDto
+import com.kasirinaja.store.data.repository.ProductRepository
 
 data class ReportsState(
     val startDate: Long,
@@ -30,7 +31,8 @@ data class ReportsState(
 )
 
 class ReportsViewModel(
-    private val transactionDao: TransactionDao
+    private val transactionDao: TransactionDao,
+    private val productRepository: ProductRepository
 ) : ViewModel() {
 
     private val _startDate = MutableStateFlow(getStartOfDefaultRange())
@@ -119,7 +121,8 @@ class ReportsViewModel(
             try {
                 val response = RetrofitClient.productApi.addStoreProductStock(productId, mapOf("additional_stock" to additionalStock))
                 if (response.isSuccessful) {
-                    fetchStockReport() // Refresh
+                    productRepository.syncStoreProducts() // Force local DB sync immediately
+                    fetchStockReport() // Refresh remote report
                     onResult(true, "Stok berhasil ditambahkan")
                 } else {
                     onResult(false, "Gagal menambahkan stok")
@@ -189,12 +192,13 @@ class ReportsViewModel(
     }
 
     class Factory(
-        private val transactionDao: TransactionDao
+        private val transactionDao: TransactionDao,
+        private val productRepository: ProductRepository
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(ReportsViewModel::class.java)) {
                 @Suppress("UNCHECKED_CAST")
-                return ReportsViewModel(transactionDao) as T
+                return ReportsViewModel(transactionDao, productRepository) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }

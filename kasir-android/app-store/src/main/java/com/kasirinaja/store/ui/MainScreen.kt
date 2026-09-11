@@ -942,7 +942,7 @@ fun MainScreen() {
             composable(Screen.Reports.route) {
                 if (userRole == "owner") {
                     val reportsViewModel: ReportsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
-                        factory = ReportsViewModel.Factory(database.transactionDao())
+                        factory = ReportsViewModel.Factory(database.transactionDao(), productRepository)
                     )
                     ReportsScreen(
                         viewModel = reportsViewModel,
