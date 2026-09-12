@@ -37,4 +37,29 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        val route = intent.getStringExtra("route")
+        val transactionId = intent.getStringExtra("transaction_id")
+
+        var finalRoute = route
+        if (route == "receipt" && transactionId != null) {
+            finalRoute = "receipt/$transactionId"
+        }
+
+        // When onNewIntent is called, recreating the view will read the new intent.
+        val tokenManager = TokenManager(this)
+        setContent {
+            KasirTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    MainScreen(initialRoute = finalRoute)
+                }
+            }
+        }
+    }
 }
