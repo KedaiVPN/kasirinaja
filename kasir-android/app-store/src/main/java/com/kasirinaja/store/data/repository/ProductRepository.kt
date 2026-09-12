@@ -33,6 +33,11 @@ class ProductRepository(
 
     val allProducts: Flow<List<ProductEntity>> = productDao.getAllProducts()
 
+    suspend fun reduceStockLocally(productId: String, quantity: Int) {
+        productDao.reduceStock(productId, quantity)
+    }
+
+
     suspend fun syncStoreProducts() {
         val storeId = TokenManager(context).getStoreId() ?: return
         val response = RetrofitClient.productApi.getStoreProducts(storeId)

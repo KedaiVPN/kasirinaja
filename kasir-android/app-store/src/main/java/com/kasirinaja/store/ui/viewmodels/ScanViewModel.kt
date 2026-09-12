@@ -196,6 +196,13 @@ class ScanViewModel(
             _toastMessage.emit("Menyimpan transaksi...")
             transactionRepository?.saveTransactionLocally(transaction, transactionItems)
 
+            // Reduce stock locally for all items
+            items.forEach { cartItem ->
+                if (cartItem.product.stock != -1) {
+                    repository.reduceStockLocally(cartItem.product.id, cartItem.quantity)
+                }
+            }
+
             // Enqueue worker to sync immediately with network constraints
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)

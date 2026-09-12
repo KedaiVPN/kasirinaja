@@ -27,6 +27,9 @@ interface ProductDao {
     suspend fun getProductByBarcode(barcode: String): ProductEntity?
 
 
+    @Query("UPDATE local_products SET stock = stock - :quantity WHERE id = :productId AND stock != -1")
+    suspend fun reduceStock(productId: String, quantity: Int)
+
     @Query("DELETE FROM local_products WHERE isSynced = 1")
     suspend fun deleteSyncedProducts()
 
