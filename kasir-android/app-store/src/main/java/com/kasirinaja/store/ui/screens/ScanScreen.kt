@@ -447,6 +447,23 @@ fun ScanScreen(
             Text(text = "Izin Kamera diperlukan untuk menggunakan fitur Scan")
         }
     }
+    if (showOutOfStockDialog) {
+        AlertDialog(
+            onDismissRequest = { showOutOfStockDialog = false },
+            title = { Text(text = "Stok Habis") },
+            text = { Text(text = outOfStockMessage) },
+            confirmButton = {
+                Button(
+                    onClick = { showOutOfStockDialog = false },
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text("Tutup", color = androidx.compose.ui.graphics.Color.White)
+                }
+            }
+        )
+    }
 }
 
 private class ContinuousBarcodeAnalyzer(private val onBarcodeScanned: (String) -> Unit) : ImageAnalysis.Analyzer {
@@ -479,21 +496,5 @@ private class ContinuousBarcodeAnalyzer(private val onBarcodeScanned: (String) -
         }
     }
 
-    if (showOutOfStockDialog) {
-        AlertDialog(
-            onDismissRequest = { showOutOfStockDialog = false },
-            title = { Text(text = "Stok Habis") },
-            text = { Text(text = outOfStockMessage) },
-            confirmButton = {
-                Button(
-                    onClick = { showOutOfStockDialog = false },
-                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Text("Tutup", color = androidx.compose.ui.graphics.Color.White)
-                }
-            }
-        )
-    }
+
 }
