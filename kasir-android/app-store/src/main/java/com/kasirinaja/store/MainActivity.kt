@@ -25,7 +25,14 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val route = intent.getStringExtra("route")
-                    MainScreen(initialRoute = route)
+                    val transactionId = intent.getStringExtra("transaction_id")
+
+                    var finalRoute = route
+                    if (route == "receipt" && transactionId != null) {
+                        finalRoute = "receipt/$transactionId"
+                    }
+
+                    MainScreen(initialRoute = finalRoute)
                 }
             }
         }

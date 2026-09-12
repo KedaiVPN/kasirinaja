@@ -116,6 +116,44 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email pgtype.Text) (User, 
 	return i, err
 }
 
+const listStoreOwners = `-- name: ListStoreOwners :many
+SELECT id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at, photo_url, fcm_token FROM users
+WHERE store_id = $1 AND role = 'owner'
+`
+
+func (q *Queries) ListStoreOwners(ctx context.Context, storeID pgtype.UUID) ([]User, error) {
+	rows, err := q.db.Query(ctx, listStoreOwners, storeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []User
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.FullName,
+			&i.Email,
+			&i.Phone,
+			&i.PasswordHash,
+			&i.Role,
+			&i.StoreID,
+			&i.IsActive,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.PhotoUrl,
+			&i.FcmToken,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listUsers = `-- name: ListUsers :many
 SELECT id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at, photo_url, fcm_token FROM users
 ORDER BY id

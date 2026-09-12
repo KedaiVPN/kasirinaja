@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"kasir-api-go/db"
+	"kasir-api-go/api"
 )
 
 type TransactionHandler struct {
@@ -165,15 +167,39 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 
 	err = tx.Commit(ctx)
 
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to commit transaction"})
+		return
+	}
+
     // Call notification check AFTER commit to ensure the background task reads the correct updated stock
     for _, item := range req.Items {
 		spID, _ := uuid.Parse(item.StoreProductID)
         go CheckAndSendStockNotification(context.Background(), h.queries, pgtype.UUID{Bytes: spID, Valid: true})
     }
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to commit transaction"})
-		return
-	}
+
+	// Send Push Notification to Owners
+	go func() {
+		bgCtx := context.Background()
+		owners, err := h.queries.ListStoreOwners(bgCtx, pgtype.UUID{Bytes: storeID, Valid: true})
+		if err == nil {
+			title := "Transaksi Baru"
+			body := fmt.Sprintf("Transaksi sejumlah Rp %d telah dilakukan.", createdTx.TotalAmount)
+
+			txIDBytes, _ := uuid.FromBytes(createdTx.ID.Bytes[:])
+			txIDStr := txIDBytes.String()
+			data := map[string]string{
+				"route":          "receipt",
+				"transaction_id": txIDStr,
+			}
+
+			for _, owner := range owners {
+				if owner.FcmToken.Valid && owner.FcmToken.String != "" {
+					api.SendPushNotificationWithData(owner.FcmToken.String, title, body, data)
+				}
+			}
+		}
+	}()
 
 	c.JSON(http.StatusCreated, createdTx)
 }
