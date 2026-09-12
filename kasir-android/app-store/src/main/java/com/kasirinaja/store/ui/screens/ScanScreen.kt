@@ -39,6 +39,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -350,8 +354,19 @@ fun ScanScreen(
                                                 fontWeight = FontWeight.Bold
                                             )
                                             Text(text = "Kategori: ${product.category}", style = MaterialTheme.typography.bodySmall)
-                                            val stockText = if (product.stock == -1) "Unlimited" else product.stock.toString()
-                                            Text(text = "Stok: $stockText", style = MaterialTheme.typography.bodySmall)
+                                            val stockText = buildAnnotatedString {
+                                                append("Stok: ")
+                                                if (product.stock == -1) {
+                                                    append("Unlimited")
+                                                } else if (product.stock == 0) {
+                                                    withStyle(style = SpanStyle(color = Color.Red)) {
+                                                        append("Habis")
+                                                    }
+                                                } else {
+                                                    append(product.stock.toString())
+                                                }
+                                            }
+                                            Text(text = stockText, style = MaterialTheme.typography.bodySmall)
                                             Text(
                                                 text = "Harga: ${FormatUtils.formatCurrency(product.sellPrice)}",
                                                 style = MaterialTheme.typography.bodyMedium,
