@@ -46,6 +46,9 @@ class ScanViewModel(
     private val _toastMessage = MutableSharedFlow<String>()
     val toastMessage = _toastMessage.asSharedFlow()
 
+    private val _outOfStockEvent = MutableSharedFlow<String>()
+    val outOfStockEvent = _outOfStockEvent.asSharedFlow()
+
     private var toneGenerator: ToneGenerator? = null
 
     // To prevent rapid scanning of the same barcode in a single frame sweep
@@ -87,7 +90,17 @@ class ScanViewModel(
         val currentQuantityInCart = if (existingItemIndex != -1) currentCart[existingItemIndex].quantity else 0
 
         // Block if stock is limited and cart already has all available stock
-        if (product.stock != -1 && currentQuantityInCart >= product.stock) {
+        if (product.stock == 0) {
+            playErrorSound()
+            viewModelScope.launch {
+                _outOfStockEvent.emit("Stok untuk produk ${product.name} sudah habis dan tidak bisa dimasukkan ke dalam keranjang.")
+            }
+            return
+        } else if (product.stock != -1 && currentQuantityInCart >= product.stock) {
+            playErrorSound()
+            viewModelScope.launch {
+                _outOfStockEvent.emit("Jumlah produk ${product.name} di keranjang sudah mencapai batas maksimal stok yang tersedia.")
+            }
             return
         }
 
@@ -112,6 +125,10 @@ class ScanViewModel(
             val item = currentCart[index]
             // Block if stock is limited and cart already has all available stock
             if (product.stock != -1 && item.quantity >= product.stock) {
+                playErrorSound()
+                viewModelScope.launch {
+                    _outOfStockEvent.emit("Jumlah produk ${product.name} di keranjang sudah mencapai batas maksimal stok yang tersedia.")
+                }
                 return
             }
             currentCart[index] = item.copy(quantity = item.quantity + 1)

@@ -26,6 +26,7 @@ import androidx.compose.material3.*
 import com.kasirinaja.store.ui.components.GlobalTopAppBar
 import android.widget.Toast
 import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.*
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
@@ -71,10 +72,20 @@ fun ScanScreen(
 
     var showCamera by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
+    var showOutOfStockDialog by remember { mutableStateOf(false) }
+    var outOfStockMessage by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
-        viewModel.toastMessage.collect { message ->
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        launch {
+            viewModel.toastMessage.collect { message ->
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            }
+        }
+        launch {
+            viewModel.outOfStockEvent.collect { message ->
+                outOfStockMessage = message
+                showOutOfStockDialog = true
+            }
         }
     }
 
@@ -164,8 +175,16 @@ fun ScanScreen(
                                                 Icon(Icons.Default.Remove, contentDescription = "Kurangi")
                                             }
                                             Text(text = item.quantity.toString(), modifier = Modifier.padding(horizontal = 8.dp))
-                                            IconButton(onClick = { viewModel.incrementQuantity(item.product) }) {
-                                                Icon(Icons.Default.Add, contentDescription = "Tambah")
+                                            val isIncrementDisabled = item.product.stock != -1 && item.quantity >= item.product.stock
+                                            IconButton(
+                                                onClick = { viewModel.incrementQuantity(item.product) },
+                                                enabled = !isIncrementDisabled
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Add,
+                                                    contentDescription = "Tambah",
+                                                    tint = if (isIncrementDisabled) Color.Gray else LocalContentColor.current
+                                                )
                                             }
                                             IconButton(onClick = { viewModel.removeProduct(item.product) }) {
                                                 Icon(Icons.Default.Delete, contentDescription = "Hapus", tint = Color.Red)
@@ -331,14 +350,22 @@ fun ScanScreen(
                                                 fontWeight = FontWeight.Bold
                                             )
                                             Text(text = "Kategori: ${product.category}", style = MaterialTheme.typography.bodySmall)
+                                            val stockText = if (product.stock == -1) "Unlimited" else product.stock.toString()
+                                            Text(text = "Stok: $stockText", style = MaterialTheme.typography.bodySmall)
                                             Text(
                                                 text = "Harga: ${FormatUtils.formatCurrency(product.sellPrice)}",
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 color = MaterialTheme.colorScheme.primary
                                             )
                                         }
+                                        val quantityInCart = cartItems.find { it.product.id == product.id }?.quantity ?: 0
+                                        val isStockDepleted = product.stock == 0
+                                        val isStockMaxedOut = product.stock != -1 && quantityInCart >= product.stock
+                                        val isBuyDisabled = isStockDepleted || isStockMaxedOut
+
                                         Button(
                                             onClick = { viewModel.addProductToCart(product) },
+                                            enabled = !isBuyDisabled,
                                             elevation = ButtonDefaults.buttonElevation(
                                                 defaultElevation = 4.dp,
                                                 pressedElevation = 8.dp
@@ -450,5 +477,23 @@ private class ContinuousBarcodeAnalyzer(private val onBarcodeScanned: (String) -
         } else {
             imageProxy.close()
         }
+    }
+
+    if (showOutOfStockDialog) {
+        AlertDialog(
+            onDismissRequest = { showOutOfStockDialog = false },
+            title = { Text(text = "Stok Habis") },
+            text = { Text(text = outOfStockMessage) },
+            confirmButton = {
+                Button(
+                    onClick = { showOutOfStockDialog = false },
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text("Tutup", color = androidx.compose.ui.graphics.Color.White)
+                }
+            }
+        )
     }
 }
