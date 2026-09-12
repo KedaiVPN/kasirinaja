@@ -40,16 +40,22 @@ class FCMService : FirebaseMessagingService() {
         super.onMessageReceived(remoteMessage)
         Log.d("FCMService", "Message received from: ${remoteMessage.from}")
 
+        val route = remoteMessage.data["route"] ?: "reports_stock"
+        val transactionId = remoteMessage.data["transaction_id"]
+
         remoteMessage.notification?.let {
             Log.d("FCMService", "Message Notification Body: ${it.body}")
-            showNotification(it.title ?: "Peringatan", it.body ?: "")
+            showNotification(it.title ?: "Peringatan", it.body ?: "", route, transactionId)
         }
     }
 
-    private fun showNotification(title: String, messageBody: String) {
+    private fun showNotification(title: String, messageBody: String, route: String, transactionId: String?) {
         val intent = android.content.Intent(this, com.kasirinaja.store.MainActivity::class.java).apply {
             addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            putExtra("route", "reports_stock")
+            putExtra("route", route)
+            if (transactionId != null) {
+                putExtra("transaction_id", transactionId)
+            }
         }
         val pendingIntent = android.app.PendingIntent.getActivity(
             this, 0, intent,

@@ -309,6 +309,8 @@ fun MainScreen(initialRoute: String? = null) {
         if (!token.isNullOrEmpty()) {
             if (initialRoute == "reports_stock") {
                 startDest = Screen.Reports.route
+            } else if (initialRoute?.startsWith("receipt/") == true) {
+                startDest = initialRoute
             } else {
                 startDest = Screen.Dashboard.route
             }

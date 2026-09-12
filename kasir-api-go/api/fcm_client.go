@@ -29,6 +29,29 @@ func InitFirebase() {
 	log.Println("Firebase Cloud Messaging initialized")
 }
 
+func SendPushNotificationWithData(token, title, body string, data map[string]string) error {
+	if fcmClient == nil || token == "" {
+		return fmt.Errorf("FCM client not initialized or token empty")
+	}
+
+	message := &messaging.Message{
+		Notification: &messaging.Notification{
+			Title: title,
+			Body:  body,
+		},
+		Data: data,
+		Token: token,
+	}
+
+	response, err := fcmClient.Send(context.Background(), message)
+	if err != nil {
+		return err
+	}
+
+	log.Println("Successfully sent message:", response)
+	return nil
+}
+
 func SendPushNotification(token, title, body string) error {
 	if fcmClient == nil || token == "" {
 		return fmt.Errorf("FCM client not initialized or token empty")
