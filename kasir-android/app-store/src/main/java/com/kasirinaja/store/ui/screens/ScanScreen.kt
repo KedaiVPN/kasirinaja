@@ -357,13 +357,21 @@ fun ScanScreen(
                                             val stockText = buildAnnotatedString {
                                                 append("Stok: ")
                                                 if (product.stock == -1) {
-                                                    append("Unlimited")
+                                                    withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
+                                                        append("Unlimited")
+                                                    }
                                                 } else if (product.stock == 0) {
                                                     withStyle(style = SpanStyle(color = Color.Red)) {
                                                         append("Habis")
                                                     }
+                                                } else if (product.stock <= product.minStock) {
+                                                    withStyle(style = SpanStyle(color = Color(0xFFFFA500))) {
+                                                        append(product.stock.toString())
+                                                    }
                                                 } else {
-                                                    append(product.stock.toString())
+                                                    withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
+                                                        append(product.stock.toString())
+                                                    }
                                                 }
                                             }
                                             Text(text = stockText, style = MaterialTheme.typography.bodySmall)
