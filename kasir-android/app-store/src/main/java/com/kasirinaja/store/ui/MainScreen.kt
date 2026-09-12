@@ -294,7 +294,7 @@ fun MainScreen(initialRoute: String? = null) {
     )
 
     val receiptViewModel: ReceiptViewModel = viewModel(
-        factory = ReceiptViewModelFactory(productRepository)
+        factory = ReceiptViewModelFactory(productRepository, transactionRepository)
     )
 
     val historyViewModel: HistoryViewModel = viewModel(
@@ -304,20 +304,29 @@ fun MainScreen(initialRoute: String? = null) {
     var startDest by remember { mutableStateOf(Screen.Login.route) }
     var isCheckingToken by remember { mutableStateOf(true) }
 
+    var targetDeepLink by remember { mutableStateOf<String?>(null) }
+
     LaunchedEffect(Unit) {
         val token = tokenManager.getToken()
         if (!token.isNullOrEmpty()) {
+            startDest = Screen.Dashboard.route
+
             if (initialRoute == "reports_stock") {
-                startDest = Screen.Reports.route
+                targetDeepLink = Screen.Reports.route
             } else if (initialRoute?.startsWith("receipt/") == true) {
-                startDest = initialRoute
-            } else {
-                startDest = Screen.Dashboard.route
+                targetDeepLink = initialRoute
             }
         } else {
             startDest = Screen.Login.route
         }
         isCheckingToken = false
+    }
+
+    LaunchedEffect(isCheckingToken, targetDeepLink) {
+        if (!isCheckingToken && targetDeepLink != null) {
+            navController.navigate(targetDeepLink!!)
+            targetDeepLink = null
+        }
     }
 
 
