@@ -18,11 +18,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import coil.compose.AsyncImage
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
+import com.kasirinaja.core.network.RetrofitClient
 import com.kasirinaja.core.network.TokenManager
 import com.kasirinaja.core.utils.FormatUtils
 import com.kasirinaja.store.ui.viewmodels.ReceiptViewModel
@@ -48,6 +50,8 @@ fun ReceiptScreen(
     val tokenManager = remember { TokenManager(context) }
     val storeName = tokenManager.getStoreName() ?: "Nama Toko"
     val storeAddress = tokenManager.getStoreAddress() ?: "Alamat Toko"
+    val storeLogoUrl = tokenManager.getStoreLogoUrl()
+    val cashierName = tokenManager.getUserName()
 
     val transaction by viewModel.transaction.collectAsState()
     val items by viewModel.items.collectAsState()
@@ -99,6 +103,8 @@ fun ReceiptScreen(
                             ReceiptContent(
                                 storeName = storeName,
                                 storeAddress = storeAddress,
+                                storeLogoUrl = storeLogoUrl,
+                                cashierName = cashierName,
                                 transaction = transaction,
                                 items = items
                             )
@@ -131,6 +137,8 @@ fun ReceiptScreen(
 fun ReceiptContent(
     storeName: String,
     storeAddress: String,
+    storeLogoUrl: String?,
+    cashierName: String,
     transaction: com.kasirinaja.store.data.local.LocalTransactionEntity?,
     items: List<com.kasirinaja.store.data.local.LocalTransactionItemEntity>
 ) {
@@ -141,6 +149,15 @@ fun ReceiptContent(
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        if (!storeLogoUrl.isNullOrEmpty()) {
+            AsyncImage(
+                model = "${RetrofitClient.IMAGE_BASE_URL}${storeLogoUrl}",
+                contentDescription = "Logo Toko",
+                modifier = Modifier
+                    .size(80.dp)
+                    .padding(bottom = 8.dp)
+            )
+        }
         Text(
             text = storeName,
             fontWeight = FontWeight.Bold,
@@ -166,6 +183,10 @@ fun ReceiptContent(
                 Text("Tanggal:", fontSize = 12.sp, color = Color.Gray)
                 val sdf = SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault())
                 Text(sdf.format(Date(transaction.transactionTime)), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Kasir:", fontSize = 12.sp, color = Color.Gray)
+                Text(cashierName, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             }
         }
 
