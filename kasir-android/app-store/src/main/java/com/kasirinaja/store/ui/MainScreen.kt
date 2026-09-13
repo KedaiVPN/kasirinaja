@@ -306,10 +306,12 @@ fun MainScreen(initialRoute: String? = null) {
 
     var targetDeepLink by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(initialRoute) {
         val token = tokenManager.getToken()
         if (!token.isNullOrEmpty()) {
-            startDest = Screen.Dashboard.route
+            if (isCheckingToken) {
+                startDest = Screen.Dashboard.route
+            }
 
             if (initialRoute == "reports_stock") {
                 targetDeepLink = Screen.Reports.route
@@ -324,6 +326,7 @@ fun MainScreen(initialRoute: String? = null) {
 
     LaunchedEffect(isCheckingToken, targetDeepLink) {
         if (!isCheckingToken && targetDeepLink != null) {
+            kotlinx.coroutines.delay(100) // Wait for NavHost to initialize
             navController.navigate(targetDeepLink!!)
             targetDeepLink = null
         }
