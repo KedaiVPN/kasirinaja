@@ -57,9 +57,10 @@ class FCMService : FirebaseMessagingService() {
                 putExtra("transaction_id", transactionId)
             }
         }
+        val uniqueId = System.currentTimeMillis().toInt()
         val pendingIntent = android.app.PendingIntent.getActivity(
-            this, 0, intent,
-            android.app.PendingIntent.FLAG_ONE_SHOT or android.app.PendingIntent.FLAG_IMMUTABLE
+            this, uniqueId, intent,
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
         )
 
         val channelId = "stock_alerts"
@@ -86,6 +87,6 @@ class FCMService : FirebaseMessagingService() {
             notificationManager.createNotificationChannel(channel)
         }
 
-        notificationManager.notify(System.currentTimeMillis().toInt(), notificationBuilder.build())
+        notificationManager.notify(uniqueId, notificationBuilder.build())
     }
 }
