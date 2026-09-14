@@ -297,6 +297,7 @@ type TransactionResponse struct {
 	ID              string                         `json:"id"`
 	StoreID         string                         `json:"store_id"`
 	CashierID       string                         `json:"cashier_id"`
+	CashierName     string                         `json:"cashier_name"`
 	InvoiceNumber   string                         `json:"invoice_number"`
 	TotalAmount     int64                          `json:"total_amount"`
 	PaidAmount      int64                          `json:"paid_amount"`
@@ -376,10 +377,17 @@ func (h *TransactionHandler) GetAllTransactions(c *gin.Context) {
 		storeID, _ := uuid.FromBytes(tx.StoreID.Bytes[:])
 		cashierID, _ := uuid.FromBytes(tx.CashierID.Bytes[:])
 
+		cashierName := ""
+		cashierUser, err := h.queries.GetUser(ctx, tx.CashierID)
+		if err == nil {
+			cashierName = cashierUser.FullName
+		}
+
 		response = append(response, TransactionResponse{
 			ID:              txID.String(),
 			StoreID:         storeID.String(),
 			CashierID:       cashierID.String(),
+			CashierName:     cashierName,
 			InvoiceNumber:   tx.InvoiceNumber,
 			TotalAmount:     tx.TotalAmount,
 			PaidAmount:      tx.PaidAmount,
