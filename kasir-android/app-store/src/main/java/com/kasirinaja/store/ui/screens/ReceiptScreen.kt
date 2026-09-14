@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Share
@@ -16,7 +17,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
 import androidx.compose.ui.text.font.FontWeight
@@ -153,8 +156,10 @@ fun ReceiptContent(
             AsyncImage(
                 model = "${RetrofitClient.IMAGE_BASE_URL}${storeLogoUrl}",
                 contentDescription = "Logo Toko",
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(80.dp)
+                    .clip(CircleShape)
                     .padding(bottom = 8.dp)
             )
         }
@@ -186,7 +191,8 @@ fun ReceiptContent(
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Kasir:", fontSize = 12.sp, color = Color.Gray)
-                Text(cashierName, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                val displayCashierName = transaction.cashierName.ifBlank { cashierName }
+                Text(displayCashierName, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             }
         }
 

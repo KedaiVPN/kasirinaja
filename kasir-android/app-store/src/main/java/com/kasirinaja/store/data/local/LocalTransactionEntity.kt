@@ -8,6 +8,7 @@ data class LocalTransactionEntity(
     @PrimaryKey val id: String,
     val storeId: String,
     val cashierId: String,
+    val cashierName: String = "",
     val invoiceNumber: String,
     val totalAmount: Double,
     val paidAmount: Double,

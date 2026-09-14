@@ -161,6 +161,7 @@ class TransactionRepository(
                             id = remoteTx.id,
                             storeId = remoteTx.store_id,
                             cashierId = remoteTx.cashier_id,
+                            cashierName = remoteTx.cashier_name ?: "",
                             invoiceNumber = remoteTx.invoice_number,
                             totalAmount = remoteTx.total_amount.toDouble(),
                             paidAmount = remoteTx.paid_amount.toDouble(),
