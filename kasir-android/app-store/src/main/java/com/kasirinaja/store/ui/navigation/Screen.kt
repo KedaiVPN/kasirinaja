@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.PointOfSale
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
@@ -21,7 +22,8 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object Scan : Screen("scan", "Transaksi", Icons.Filled.PointOfSale)
     object Master : Screen("master", "Master Produk", Icons.Filled.List)
     object Settings : Screen("settings", "Karyawan", Icons.Filled.People)
-    object Reports : Screen("reports", "Laporan", Icons.Filled.BarChart)
+    object SalesStats : Screen("sales_stats", "Statistik Penjualan", Icons.Filled.BarChart)
+    object Reports : Screen("reports", "Laporan", Icons.Filled.Assignment)
     object More : Screen("more", "Lainnya", Icons.Filled.Menu)
     object AddProduct : Screen("add_product", "Tambah Produk", Icons.Filled.Add)
     object CameraCapture : Screen("camera_capture", "Kamera", Icons.Filled.Add) // Not in bottom bar

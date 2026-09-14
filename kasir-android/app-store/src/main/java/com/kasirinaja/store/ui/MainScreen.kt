@@ -88,6 +88,7 @@ import com.kasirinaja.store.ui.navigation.Screen
 import androidx.compose.material3.NavigationBarItem
 import com.kasirinaja.store.presentation.auth.VerifyOtpScreen
 import com.kasirinaja.store.ui.screens.ReportsScreen
+import com.kasirinaja.store.ui.screens.SalesStatsScreen
 import com.kasirinaja.store.ui.viewmodels.ReportsViewModel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
@@ -556,6 +557,23 @@ fun MainScreen(initialRoute: String? = null) {
                         )
 
                         NavigationDrawerItem(
+                            label = { Text(Screen.SalesStats.title) },
+                            selected = currentRoute == Screen.SalesStats.route,
+                            onClick = {
+                                coroutineScope.launch { drawerState.close() }
+                                navController.navigate(Screen.SalesStats.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            icon = { Icon(Screen.SalesStats.icon, contentDescription = Screen.SalesStats.title) },
+                            colors = drawerItemColors,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                        NavigationDrawerItem(
                             label = { Text(Screen.Reports.title) },
                             selected = currentRoute == Screen.Reports.route,
                             onClick = {
@@ -955,6 +973,22 @@ fun MainScreen(initialRoute: String? = null) {
                             popUpTo(Screen.Dashboard.route) { inclusive = true }
                         }
                     }
+                }
+            }
+
+            composable(Screen.SalesStats.route) {
+                if (userRole == "owner") {
+                    val reportsViewModel: ReportsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                        factory = ReportsViewModel.Factory(database.transactionDao(), productRepository)
+                    )
+                    SalesStatsScreen(
+                        viewModel = reportsViewModel,
+                        onNavigateToEditProfile = { navController.navigate("edit_profile") },
+                        onLogout = { handleLogoutAttempt() },
+                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
+                    )
+                } else {
+                    androidx.compose.runtime.LaunchedEffect(Unit) { navController.popBackStack() }
                 }
             }
 
