@@ -36,6 +36,7 @@ data class TransactionResponse(
     val id: String,
     val store_id: String,
     val cashier_id: String,
+    val cashier_name: String? = null,
     val invoice_number: String,
     val total_amount: Long,
     val paid_amount: Long,

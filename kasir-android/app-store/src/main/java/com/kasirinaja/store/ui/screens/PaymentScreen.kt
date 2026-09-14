@@ -199,11 +199,13 @@ fun PaymentScreen(
                             return@Button
                         }
 
+                        val cashierName = tokenManager.getUserName()
                         viewModel.saveTransaction(
                             paidAmount = paidAmount,
                             changeAmount = changeAmount,
                             storeId = storeId,
-                            cashierId = cashierId
+                            cashierId = cashierId,
+                            cashierName = cashierName
                         ) { transactionId ->
                             onPaymentSuccess(transactionId)
                         }

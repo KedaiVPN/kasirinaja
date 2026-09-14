@@ -156,7 +156,7 @@ class ScanViewModel(
         _cartItems.value = currentCart
     }
 
-    fun saveTransaction(paidAmount: Double, changeAmount: Double, storeId: String, cashierId: String, onTransactionSaved: (String) -> Unit = {}) {
+    fun saveTransaction(paidAmount: Double, changeAmount: Double, storeId: String, cashierId: String, cashierName: String = "", onTransactionSaved: (String) -> Unit = {}) {
         viewModelScope.launch {
             val items = _cartItems.value
             if (items.isEmpty()) return@launch
@@ -168,6 +168,7 @@ class ScanViewModel(
                 id = transactionId,
                 storeId = storeId,
                 cashierId = cashierId,
+                cashierName = cashierName,
                 invoiceNumber = "INV-${System.currentTimeMillis()}",
                 totalAmount = totalAmount,
                 paidAmount = paidAmount,
