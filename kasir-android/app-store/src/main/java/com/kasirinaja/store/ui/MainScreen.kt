@@ -643,6 +643,32 @@ fun MainScreen(initialRoute: String? = null) {
                         )
                     }
 
+                    val drawerItemColors = NavigationDrawerItemDefaults.colors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    NavigationDrawerItem(
+                        label = { Text(Screen.Feedback.title) },
+                        selected = currentRoute == Screen.Feedback.route,
+                        onClick = {
+                            coroutineScope.launch { drawerState.close() }
+                            navController.navigate(Screen.Feedback.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        icon = { Icon(Screen.Feedback.icon, contentDescription = Screen.Feedback.title) },
+                        colors = drawerItemColors,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+
                     androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
 
                     if (userRole == "kasir") {
@@ -974,6 +1000,19 @@ fun MainScreen(initialRoute: String? = null) {
                         }
                     }
                 }
+            }
+
+            composable(Screen.Feedback.route) {
+                val userRepository = com.kasirinaja.store.data.repository.UserRepository(com.kasirinaja.core.network.RetrofitClient.userApi)
+                val feedbackViewModel: com.kasirinaja.store.ui.viewmodels.FeedbackViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                    factory = com.kasirinaja.store.ui.viewmodels.FeedbackViewModel.Factory(userRepository, tokenManager)
+                )
+                com.kasirinaja.store.ui.screens.FeedbackScreen(
+                    viewModel = feedbackViewModel,
+                    onNavigateToEditProfile = { navController.navigate("edit_profile") },
+                    onLogout = { handleLogoutAttempt() },
+                    onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
+                )
             }
 
             composable(Screen.SalesStats.route) {

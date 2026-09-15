@@ -49,4 +49,26 @@ class UserRepository(private val userApi: UserApi) {
             }
         }
     }
+
+    suspend fun sendFeedback(senderEmail: String?, message: String): Result<String> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val requestMap = mutableMapOf("message" to message)
+                if (!senderEmail.isNullOrBlank()) {
+                    requestMap["sender_email"] = senderEmail
+                }
+                val response = userApi.sendFeedback(requestMap)
+                if (response.isSuccessful) {
+                    val resBody = response.body()
+                    val msg = resBody?.get("message") as? String ?: "Kritik & saran berhasil dikirim"
+                    Result.success(msg)
+                } else {
+                    val errorBodyStr = response.errorBody()?.string() ?: "Gagal mengirim kritik & saran"
+                    Result.failure(Exception(errorBodyStr))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
 }
