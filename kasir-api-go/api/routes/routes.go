@@ -17,6 +17,7 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 	adminHandler := handlers.NewAdminHandler(queries)
 	storeHandler := handlers.NewStoreHandler(queries)
 	reportHandler := handlers.NewReportHandler(queries)
+	feedbackHandler := handlers.NewFeedbackHandler(queries)
 
 	// Root route to prevent 404 on base domain
 	router.GET("/", func(c *gin.Context) {
@@ -115,6 +116,9 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 			adminRoutes.POST("/products/:id/approve", adminHandler.ApproveProduct)
 			adminRoutes.POST("/products/:id/reject", adminHandler.RejectProduct)
 		}
+
+		// Feedback route
+		api.POST("/feedback", handlers.AuthMiddleware(), feedbackHandler.SendFeedback)
 
 		// Upload route
 		api.POST("/upload", handlers.UploadImage)

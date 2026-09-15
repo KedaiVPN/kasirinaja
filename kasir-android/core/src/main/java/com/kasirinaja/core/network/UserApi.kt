@@ -28,4 +28,7 @@ interface UserApi {
         @Part("full_name") fullName: RequestBody?,
         @Part photo: MultipartBody.Part?
     ): Response<Map<String, Any>>
+
+    @POST("feedback")
+    suspend fun sendFeedback(@Body request: Map<String, String>): Response<Map<String, Any>>
 }
