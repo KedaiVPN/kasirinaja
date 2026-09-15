@@ -62,7 +62,7 @@ func SendFeedbackEmail(senderName, senderEmail, senderRole, storeName, feedbackT
 		<hr />
 		<p><b>Pesan:</b></p>
 		<p style="white-space: pre-wrap; background-color: #f4f4f4; padding: 12px; border-radius: 8px;">%s</p>
-	`, senderName, senderEmail, senderRole, storeName, feedbackText)
+	`, senderName, senderRole, storeName, feedbackText)
 
 	m.SetBody("text/html", htmlBody)
 
