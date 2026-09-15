@@ -17,7 +17,7 @@ INSERT INTO stores (
 ) VALUES (
   $1, $2, $3, $4, $5
 )
-RETURNING id, owner_id, store_code, store_name, address, phone, is_active, created_at, updated_at, logo_url
+RETURNING id, owner_id, store_code, store_name, address, phone, is_active, created_at, updated_at, logo_url, pro_expires_at
 `
 
 type CreateStoreParams struct {
@@ -48,12 +48,13 @@ func (q *Queries) CreateStore(ctx context.Context, arg CreateStoreParams) (Store
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.LogoUrl,
+		&i.ProExpiresAt,
 	)
 	return i, err
 }
 
 const getStore = `-- name: GetStore :one
-SELECT id, owner_id, store_code, store_name, address, phone, is_active, created_at, updated_at, logo_url FROM stores
+SELECT id, owner_id, store_code, store_name, address, phone, is_active, created_at, updated_at, logo_url, pro_expires_at FROM stores
 WHERE id = $1 LIMIT 1
 `
 
@@ -71,6 +72,7 @@ func (q *Queries) GetStore(ctx context.Context, id pgtype.UUID) (Store, error) {
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.LogoUrl,
+		&i.ProExpiresAt,
 	)
 	return i, err
 }
@@ -83,7 +85,7 @@ SET store_name = COALESCE($2, store_name),
     logo_url = COALESCE($5, logo_url),
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
-RETURNING id, owner_id, store_code, store_name, address, phone, is_active, created_at, updated_at, logo_url
+RETURNING id, owner_id, store_code, store_name, address, phone, is_active, created_at, updated_at, logo_url, pro_expires_at
 `
 
 type UpdateStoreParams struct {
@@ -114,6 +116,7 @@ func (q *Queries) UpdateStore(ctx context.Context, arg UpdateStoreParams) (Store
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.LogoUrl,
+		&i.ProExpiresAt,
 	)
 	return i, err
 }

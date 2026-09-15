@@ -1,6 +1,7 @@
 package com.kasirinaja.store.ui
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.DrawerValue
@@ -89,10 +90,18 @@ import androidx.compose.material3.NavigationBarItem
 import com.kasirinaja.store.presentation.auth.VerifyOtpScreen
 import com.kasirinaja.store.ui.screens.ReportsScreen
 import com.kasirinaja.store.ui.screens.SalesStatsScreen
+import com.kasirinaja.store.ui.screens.SubscriptionPackagesScreen
+import com.kasirinaja.store.ui.screens.SubscriptionChannelsScreen
+import com.kasirinaja.store.ui.screens.SubscriptionDetailScreen
+import com.kasirinaja.store.ui.components.ProFeatureDialog
+import com.kasirinaja.store.ui.viewmodels.StoreSubscriptionViewModel
+import com.kasirinaja.store.ui.viewmodels.ProSubscriptionState
 import com.kasirinaja.store.ui.viewmodels.ReportsViewModel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import com.kasirinaja.store.data.repository.ProductRepository
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.runtime.collectAsState
 import androidx.compose.material3.NavigationBar
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kasirinaja.store.presentation.auth.LoginScreen
@@ -302,6 +311,12 @@ fun MainScreen(initialRoute: String? = null) {
         factory = HistoryViewModelFactory(transactionDao, transactionRepository, tokenManager)
     )
 
+    val storeSubscriptionViewModel: StoreSubscriptionViewModel = viewModel()
+    val proState by storeSubscriptionViewModel.proState.collectAsState()
+    val isProStore = (proState as? ProSubscriptionState.Success)?.isPro ?: false
+
+    var showProDialog by remember { mutableStateOf(false) }
+
     var startDest by remember { mutableStateOf(Screen.Login.route) }
     var isCheckingToken by remember { mutableStateOf(true) }
 
@@ -337,6 +352,15 @@ fun MainScreen(initialRoute: String? = null) {
     var showLogoutConfirmDialog by remember { mutableStateOf(false) }
     var showReportDialog by remember { mutableStateOf(false) }
     var isReporting by remember { mutableStateOf(false) }
+
+    if (showProDialog) {
+        ProFeatureDialog(
+            onDismiss = { showProDialog = false },
+            onUpgradeClick = {
+                navController.navigate(Screen.SubscriptionPackages.route)
+            }
+        )
+    }
 
     fun performLogout() {
         coroutineScope.launch {
@@ -574,16 +598,36 @@ fun MainScreen(initialRoute: String? = null) {
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
                         NavigationDrawerItem(
-                            label = { Text(Screen.Reports.title) },
+                            label = {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                                ) {
+                                    Text(Screen.Reports.title)
+                                    if (!isProStore) {
+                                        androidx.compose.material3.Surface(
+                                            color = Color(0xFFFFE082),
+                                            shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+                                        ) {
+                                            Text("PRO", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE65100), modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                        }
+                                    }
+                                }
+                            },
                             selected = currentRoute == Screen.Reports.route,
                             onClick = {
                                 coroutineScope.launch { drawerState.close() }
-                                navController.navigate(Screen.Reports.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                                if (!isProStore) {
+                                    showProDialog = true
+                                } else {
+                                    navController.navigate(Screen.Reports.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
                                 }
                             },
                             icon = { Icon(Screen.Reports.icon, contentDescription = Screen.Reports.title) },
@@ -608,16 +652,36 @@ fun MainScreen(initialRoute: String? = null) {
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
                         NavigationDrawerItem(
-                            label = { Text(Screen.Master.title) },
+                            label = {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                                ) {
+                                    Text(Screen.Master.title)
+                                    if (!isProStore) {
+                                        androidx.compose.material3.Surface(
+                                            color = Color(0xFFFFE082),
+                                            shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+                                        ) {
+                                            Text("PRO", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE65100), modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                        }
+                                    }
+                                }
+                            },
                             selected = currentRoute == Screen.Master.route,
                             onClick = {
                                 coroutineScope.launch { drawerState.close() }
-                                navController.navigate(Screen.Master.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                                if (!isProStore) {
+                                    showProDialog = true
+                                } else {
+                                    navController.navigate(Screen.Master.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
                                 }
                             },
                             icon = { Icon(Screen.Master.icon, contentDescription = Screen.Master.title) },
@@ -625,19 +689,50 @@ fun MainScreen(initialRoute: String? = null) {
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
                         NavigationDrawerItem(
-                            label = { Text(Screen.Settings.title) },
+                            label = {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                                ) {
+                                    Text(Screen.Settings.title)
+                                    if (!isProStore) {
+                                        androidx.compose.material3.Surface(
+                                            color = Color(0xFFFFE082),
+                                            shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+                                        ) {
+                                            Text("PRO", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE65100), modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                        }
+                                    }
+                                }
+                            },
                             selected = currentRoute == Screen.Settings.route,
                             onClick = {
                                 coroutineScope.launch { drawerState.close() }
-                                navController.navigate(Screen.Settings.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                                if (!isProStore) {
+                                    showProDialog = true
+                                } else {
+                                    navController.navigate(Screen.Settings.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
                                 }
                             },
                             icon = { Icon(Screen.Settings.icon, contentDescription = Screen.Settings.title) },
+                            colors = drawerItemColors,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                        NavigationDrawerItem(
+                            label = { Text("Langganan Pro") },
+                            selected = currentRoute == Screen.SubscriptionPackages.route,
+                            onClick = {
+                                coroutineScope.launch { drawerState.close() }
+                                navController.navigate(Screen.SubscriptionPackages.route)
+                            },
+                            icon = { Icon(Icons.Default.Star, contentDescription = "Fitur Pro", tint = Color(0xFFFFB300)) },
                             colors = drawerItemColors,
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
@@ -1051,11 +1146,49 @@ fun MainScreen(initialRoute: String? = null) {
                         viewModel = reportsViewModel,
                         onNavigateToEditProfile = { navController.navigate("edit_profile") },
                         onLogout = { handleLogoutAttempt() },
-                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
+                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } },
+                        isPro = isProStore,
+                        onProRequired = { showProDialog = true }
                     )
                 } else {
                     androidx.compose.runtime.LaunchedEffect(Unit) { navController.popBackStack() }
                 }
+            }
+
+            composable(Screen.SubscriptionPackages.route) {
+                SubscriptionPackagesScreen(
+                    viewModel = storeSubscriptionViewModel,
+                    onBack = { navController.popBackStack() },
+                    onNavigateToChannels = { navController.navigate(Screen.SubscriptionChannels.route) }
+                )
+            }
+
+            composable(Screen.SubscriptionChannels.route) {
+                SubscriptionChannelsScreen(
+                    viewModel = storeSubscriptionViewModel,
+                    onBack = { navController.popBackStack() },
+                    onCheckoutSuccess = { ref ->
+                        navController.navigate(Screen.SubscriptionDetail.createRoute(ref)) {
+                            popUpTo(Screen.SubscriptionPackages.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            composable(
+                route = Screen.SubscriptionDetail.route,
+                arguments = listOf(androidx.navigation.navArgument("reference") { type = androidx.navigation.NavType.StringType })
+            ) { backStackEntry ->
+                val ref = backStackEntry.arguments?.getString("reference") ?: ""
+                SubscriptionDetailScreen(
+                    reference = ref,
+                    viewModel = storeSubscriptionViewModel,
+                    onBackToDashboard = {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Dashboard.route) { inclusive = true }
+                        }
+                    }
+                )
             }
 
             composable(Screen.Reports.route) {

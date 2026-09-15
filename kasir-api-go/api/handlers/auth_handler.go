@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"kasir-api-go/db"
 	"kasir-api-go/utils"
@@ -268,6 +269,15 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	if !user.IsActive.Bool {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Account is inactive"})
 		return
+	}
+
+	// Check Pro status if user is a cashier (kasir)
+	if user.Role == "kasir" && user.StoreID.Valid {
+		storeStatus, err := h.queries.GetStoreProStatus(c.Request.Context(), user.StoreID)
+		if err != nil || !storeStatus.ProExpiresAt.Valid || storeStatus.ProExpiresAt.Time.Before(time.Now()) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Masa aktif Pro toko telah berakhir. Sesi login karyawan dikunci. Silakan minta owner untuk melakukan perpanjangan Pro."})
+			return
+		}
 	}
 
 	jwtSecret := os.Getenv("JWT_SECRET")

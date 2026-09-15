@@ -83,16 +83,17 @@ type StockMovement struct {
 }
 
 type Store struct {
-	ID        pgtype.UUID      `json:"id"`
-	OwnerID   pgtype.UUID      `json:"owner_id"`
-	StoreCode string           `json:"store_code"`
-	StoreName string           `json:"store_name"`
-	Address   pgtype.Text      `json:"address"`
-	Phone     pgtype.Text      `json:"phone"`
-	IsActive  pgtype.Bool      `json:"is_active"`
-	CreatedAt pgtype.Timestamp `json:"created_at"`
-	UpdatedAt pgtype.Timestamp `json:"updated_at"`
-	LogoUrl   pgtype.Text      `json:"logo_url"`
+	ID           pgtype.UUID        `json:"id"`
+	OwnerID      pgtype.UUID        `json:"owner_id"`
+	StoreCode    string             `json:"store_code"`
+	StoreName    string             `json:"store_name"`
+	Address      pgtype.Text        `json:"address"`
+	Phone        pgtype.Text        `json:"phone"`
+	IsActive     pgtype.Bool        `json:"is_active"`
+	CreatedAt    pgtype.Timestamp   `json:"created_at"`
+	UpdatedAt    pgtype.Timestamp   `json:"updated_at"`
+	LogoUrl      pgtype.Text        `json:"logo_url"`
+	ProExpiresAt pgtype.Timestamptz `json:"pro_expires_at"`
 }
 
 type StoreProduct struct {
@@ -109,6 +110,37 @@ type StoreProduct struct {
 	LocalName                  pgtype.Text      `json:"local_name"`
 	LocalCategory              pgtype.Text      `json:"local_category"`
 	IsStockNotificationEnabled pgtype.Bool      `json:"is_stock_notification_enabled"`
+}
+
+type SubscriptionPlan struct {
+	ID           int32              `json:"id"`
+	Name         string             `json:"name"`
+	DurationDays int32              `json:"duration_days"`
+	Price        int64              `json:"price"`
+	Description  string             `json:"description"`
+	IsActive     bool               `json:"is_active"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+type SubscriptionTransaction struct {
+	ID               int32              `json:"id"`
+	Reference        string             `json:"reference"`
+	MerchantRef      string             `json:"merchant_ref"`
+	StoreID          pgtype.UUID        `json:"store_id"`
+	PlanID           int32              `json:"plan_id"`
+	Amount           int64              `json:"amount"`
+	PaymentMethod    string             `json:"payment_method"`
+	PaymentName      string             `json:"payment_name"`
+	Status           string             `json:"status"`
+	PayCode          string             `json:"pay_code"`
+	QrUrl            string             `json:"qr_url"`
+	CheckoutUrl      string             `json:"checkout_url"`
+	InstructionsJson string             `json:"instructions_json"`
+	ExpiresAt        pgtype.Timestamptz `json:"expires_at"`
+	PaidAt           pgtype.Timestamptz `json:"paid_at"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
 }
 
 type Transaction struct {

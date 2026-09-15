@@ -18,6 +18,7 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 	storeHandler := handlers.NewStoreHandler(queries)
 	reportHandler := handlers.NewReportHandler(queries)
 	feedbackHandler := handlers.NewFeedbackHandler(queries)
+	subscriptionHandler := handlers.NewSubscriptionHandler(queries)
 
 	// Root route to prevent 404 on base domain
 	router.GET("/", func(c *gin.Context) {
@@ -108,6 +109,19 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 		authGroup.Use(handlers.AuthMiddleware())
 		authGroup.POST("/switch-user", authHandler.SwitchUser)
 
+		// Subscription routes for store
+		subscriptions := api.Group("/subscriptions")
+		subscriptions.Use(handlers.AuthMiddleware())
+		{
+			subscriptions.GET("/plans", subscriptionHandler.GetPlans)
+			subscriptions.GET("/payment-channels", subscriptionHandler.GetPaymentChannels)
+			subscriptions.POST("/checkout", subscriptionHandler.Checkout)
+			subscriptions.GET("/transactions/:reference", subscriptionHandler.GetTransactionByRef)
+		}
+
+		// Tripay Callback Webhook (Public, verified via signature)
+		api.POST("/tripay/callback", subscriptionHandler.TripayCallback)
+
 		// Admin routes
 		adminRoutes := api.Group("/admin")
 		adminRoutes.Use(handlers.AuthMiddleware())
@@ -115,6 +129,13 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 			adminRoutes.GET("/dashboard", adminHandler.GetDashboardStats)
 			adminRoutes.POST("/products/:id/approve", adminHandler.ApproveProduct)
 			adminRoutes.POST("/products/:id/reject", adminHandler.RejectProduct)
+
+			// Admin Subscription Management
+			adminRoutes.GET("/subscription-plans", subscriptionHandler.AdminListPlans)
+			adminRoutes.POST("/subscription-plans", subscriptionHandler.AdminCreatePlan)
+			adminRoutes.PUT("/subscription-plans/:id", subscriptionHandler.AdminUpdatePlan)
+			adminRoutes.DELETE("/subscription-plans/:id", subscriptionHandler.AdminDeletePlan)
+			adminRoutes.GET("/subscription-transactions", subscriptionHandler.AdminListTransactions)
 		}
 
 		// Feedback route

@@ -81,7 +81,9 @@ fun SalesStatsScreen(
     viewModel: ReportsViewModel,
     onNavigateToEditProfile: () -> Unit,
     onLogout: () -> Unit,
-    onOpenDrawer: () -> Unit
+    onOpenDrawer: () -> Unit,
+    isPro: Boolean = false,
+    onProRequired: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     var showDatePicker by remember { mutableStateOf(false) }
@@ -233,6 +235,10 @@ fun SalesStatsScreen(
                         .weight(0.6f)
                         .height(44.dp)
                         .clickable(enabled = !isExporting) {
+                            if (!isPro) {
+                                onProRequired()
+                                return@clickable
+                            }
                             if (!isExporting) {
                                 isExporting = true
                                 coroutineScope.launch {
