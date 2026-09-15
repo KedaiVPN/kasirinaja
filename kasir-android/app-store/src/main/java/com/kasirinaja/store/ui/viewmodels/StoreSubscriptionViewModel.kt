@@ -18,11 +18,20 @@ sealed class ProSubscriptionState {
     data class Error(val message: String) : ProSubscriptionState()
 }
 
+sealed class ChannelsUiState {
+    object Loading : ChannelsUiState()
+    data class Success(val channels: List<PaymentChannelDto>) : ChannelsUiState()
+    data class Error(val message: String) : ChannelsUiState()
+}
+
 class StoreSubscriptionViewModel : ViewModel() {
     private val api = RetrofitClient.subscriptionApi
 
     private val _proState = MutableStateFlow<ProSubscriptionState>(ProSubscriptionState.Loading)
     val proState: StateFlow<ProSubscriptionState> = _proState.asStateFlow()
+
+    private val _channelsUiState = MutableStateFlow<ChannelsUiState>(ChannelsUiState.Loading)
+    val channelsUiState: StateFlow<ChannelsUiState> = _channelsUiState.asStateFlow()
 
     private val _channelsState = MutableStateFlow<List<PaymentChannelDto>>(emptyList())
     val channelsState: StateFlow<List<PaymentChannelDto>> = _channelsState.asStateFlow()
@@ -74,13 +83,26 @@ class StoreSubscriptionViewModel : ViewModel() {
 
     fun loadPaymentChannels() {
         viewModelScope.launch {
+            _channelsUiState.value = ChannelsUiState.Loading
             try {
                 val resp = api.getPaymentChannels()
                 if (resp.isSuccessful && resp.body() != null) {
-                    _channelsState.value = resp.body()!!.channels.filter { it.active }
+                    val activeChannels = resp.body()!!.channels.filter { it.active }
+                    _channelsState.value = activeChannels
+                    if (activeChannels.isEmpty()) {
+                        _channelsUiState.value = ChannelsUiState.Error("Tidak ada kanal pembayaran aktif")
+                    } else {
+                        _channelsUiState.value = ChannelsUiState.Success(activeChannels)
+                    }
+                } else {
+                    val errText = resp.errorBody()?.string() ?: "Gagal memuat kanal pembayaran"
+                    _channelsUiState.value = ChannelsUiState.Error(errText)
+                    _errorMessage.value = errText
                 }
             } catch (e: Exception) {
-                _errorMessage.value = "Gagal memuat kanal pembayaran: ${e.message}"
+                val errText = e.message ?: "Terjadi kesalahan koneksi"
+                _channelsUiState.value = ChannelsUiState.Error(errText)
+                _errorMessage.value = errText
             }
         }
     }
@@ -96,7 +118,8 @@ class StoreSubscriptionViewModel : ViewModel() {
                     val ref = resp.body()!!.transaction.reference
                     onCheckoutSuccess(ref)
                 } else {
-                    _errorMessage.value = "Gagal memproses transaksi"
+                    val errText = resp.errorBody()?.string() ?: "Gagal memproses transaksi"
+                    _errorMessage.value = errText
                 }
             } catch (e: Exception) {
                 _errorMessage.value = e.message
