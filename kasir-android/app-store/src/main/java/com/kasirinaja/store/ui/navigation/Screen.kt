@@ -37,4 +37,9 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object VerifyOtp : Screen("verify_otp", "Verify OTP", Icons.Filled.Home) // Not in bottom bar
     object Payment : Screen("payment", "Pembayaran", Icons.Filled.Add) // Not in bottom bar
     object Receipt : Screen("receipt", "Struk", Icons.Filled.Add) // Not in bottom bar
+    object SubscriptionPackages : Screen("subscription_packages", "Fitur Pro", Icons.Filled.Add)
+    object SubscriptionChannels : Screen("subscription_channels", "Pilih Pembayaran", Icons.Filled.Add)
+    object SubscriptionDetail : Screen("subscription_detail/{reference}", "Detail Pembayaran", Icons.Filled.Add) {
+        fun createRoute(reference: String) = "subscription_detail/$reference"
+    }
 }

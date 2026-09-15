@@ -20,6 +20,8 @@ type Querier interface {
 	CreateStockMovement(ctx context.Context, arg CreateStockMovementParams) (StockMovement, error)
 	CreateStore(ctx context.Context, arg CreateStoreParams) (Store, error)
 	CreateStoreProduct(ctx context.Context, arg CreateStoreProductParams) (StoreProduct, error)
+	CreateSubscriptionPlan(ctx context.Context, arg CreateSubscriptionPlanParams) (SubscriptionPlan, error)
+	CreateSubscriptionTransaction(ctx context.Context, arg CreateSubscriptionTransactionParams) (SubscriptionTransaction, error)
 	CreateTransaction(ctx context.Context, arg CreateTransactionParams) (Transaction, error)
 	CreateTransactionItem(ctx context.Context, arg CreateTransactionItemParams) (TransactionItem, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
@@ -29,6 +31,7 @@ type Querier interface {
 	DeleteStockMovementsByMasterProduct(ctx context.Context, masterProductID pgtype.UUID) error
 	DeleteStoreProduct(ctx context.Context, id pgtype.UUID) error
 	DeleteStoreProductsByMasterID(ctx context.Context, masterProductID pgtype.UUID) error
+	DeleteSubscriptionPlan(ctx context.Context, id int32) error
 	DeleteTransactionItemsByMasterProduct(ctx context.Context, masterProductID pgtype.UUID) error
 	DeleteUser(ctx context.Context, id pgtype.UUID) error
 	GetAllStoreTransactions(ctx context.Context, storeID pgtype.UUID) ([]Transaction, error)
@@ -44,23 +47,33 @@ type Querier interface {
 	GetStore(ctx context.Context, id pgtype.UUID) (Store, error)
 	GetStoreDashboardStats(ctx context.Context, storeID pgtype.UUID) (GetStoreDashboardStatsRow, error)
 	GetStoreDashboardStatsByCashier(ctx context.Context, arg GetStoreDashboardStatsByCashierParams) (GetStoreDashboardStatsByCashierRow, error)
+	GetStoreProStatus(ctx context.Context, id pgtype.UUID) (GetStoreProStatusRow, error)
 	GetStoreProduct(ctx context.Context, id pgtype.UUID) (StoreProduct, error)
+	GetSubscriptionPlanByID(ctx context.Context, id int32) (SubscriptionPlan, error)
+	GetSubscriptionTransactionByMerchantRef(ctx context.Context, merchantRef string) (GetSubscriptionTransactionByMerchantRefRow, error)
+	GetSubscriptionTransactionByReference(ctx context.Context, reference string) (GetSubscriptionTransactionByReferenceRow, error)
 	GetTransactionItemsByTransactionId(ctx context.Context, transactionID pgtype.UUID) ([]TransactionItem, error)
 	GetUnreportedTransactionsByCashier(ctx context.Context, arg GetUnreportedTransactionsByCashierParams) ([]Transaction, error)
 	GetUser(ctx context.Context, id pgtype.UUID) (User, error)
 	GetUserByEmail(ctx context.Context, email pgtype.Text) (User, error)
+	ListActiveSubscriptionPlans(ctx context.Context) ([]SubscriptionPlan, error)
+	ListAllSubscriptionPlans(ctx context.Context) ([]SubscriptionPlan, error)
 	ListMasterProducts(ctx context.Context) ([]ListMasterProductsRow, error)
 	ListPendingProducts(ctx context.Context) ([]PendingProduct, error)
 	ListStoreOwners(ctx context.Context, storeID pgtype.UUID) ([]User, error)
 	ListStoreProductsByStore(ctx context.Context, storeID pgtype.UUID) ([]ListStoreProductsByStoreRow, error)
+	ListSubscriptionTransactions(ctx context.Context) ([]ListSubscriptionTransactionsRow, error)
 	ListUsers(ctx context.Context) ([]User, error)
 	ListUsersByStore(ctx context.Context, storeID pgtype.UUID) ([]User, error)
 	MarkTransactionsAsReported(ctx context.Context, arg MarkTransactionsAsReportedParams) error
 	UnmarkTransactionsAsReported(ctx context.Context, arg UnmarkTransactionsAsReportedParams) error
 	UpdatePendingProduct(ctx context.Context, arg UpdatePendingProductParams) error
 	UpdateStore(ctx context.Context, arg UpdateStoreParams) (Store, error)
+	UpdateStoreProExpiry(ctx context.Context, arg UpdateStoreProExpiryParams) (Store, error)
 	UpdateStoreProduct(ctx context.Context, arg UpdateStoreProductParams) error
 	UpdateStoreProductStock(ctx context.Context, arg UpdateStoreProductStockParams) error
+	UpdateSubscriptionPlan(ctx context.Context, arg UpdateSubscriptionPlanParams) (SubscriptionPlan, error)
+	UpdateSubscriptionTransactionStatus(ctx context.Context, arg UpdateSubscriptionTransactionStatusParams) (SubscriptionTransaction, error)
 	UpdateTransactionReportStatus(ctx context.Context, arg UpdateTransactionReportStatusParams) error
 	UpdateUserFCMToken(ctx context.Context, arg UpdateUserFCMTokenParams) error
 	UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) (User, error)

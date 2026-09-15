@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Assignment
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -18,11 +19,13 @@ import androidx.navigation.compose.rememberNavController
 import com.kasirinaja.admin.ui.dashboard.DashboardScreen
 import com.kasirinaja.admin.ui.product.ProductListScreen
 import com.kasirinaja.admin.ui.request.RequestProductScreen
+import com.kasirinaja.admin.ui.subscription.AdminSubscriptionScreen
 
 sealed class BottomNavItem(val route: String, val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
     object Dashboard : BottomNavItem("dashboard", "Dashboard", Icons.Default.Home)
     object ProductList : BottomNavItem("products", "List Produk", Icons.Default.List)
     object RequestProduct : BottomNavItem("requests", "Request Produk", Icons.Default.Assignment)
+    object Subscriptions : BottomNavItem("subscriptions", "Paket Pro", Icons.Default.Star)
 }
 
 @Composable
@@ -31,7 +34,8 @@ fun MainScreen(onLogout: () -> Unit) {
     val items = listOf(
         BottomNavItem.Dashboard,
         BottomNavItem.ProductList,
-        BottomNavItem.RequestProduct
+        BottomNavItem.RequestProduct,
+        BottomNavItem.Subscriptions
     )
 
     Scaffold(
@@ -62,6 +66,7 @@ fun MainScreen(onLogout: () -> Unit) {
             composable(BottomNavItem.Dashboard.route) { DashboardScreen() }
             composable(BottomNavItem.ProductList.route) { ProductListScreen() }
             composable(BottomNavItem.RequestProduct.route) { RequestProductScreen() }
+            composable(BottomNavItem.Subscriptions.route) { AdminSubscriptionScreen() }
         }
     }
 }
