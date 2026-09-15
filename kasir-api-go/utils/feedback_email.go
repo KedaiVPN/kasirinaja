@@ -10,7 +10,7 @@ import (
 )
 
 // SendFeedbackEmail sends user feedback/critique/suggestion to EMAIL_KRITIK_SARAN
-func SendFeedbackEmail(senderName, senderEmail, storeName, feedbackText string) error {
+func SendFeedbackEmail(senderName, senderEmail, senderRole, storeName, feedbackText string) error {
 	host := os.Getenv("SMTP_HOST")
 	portStr := os.Getenv("SMTP_PORT")
 	user := os.Getenv("SMTP_USER")
@@ -42,17 +42,27 @@ func SendFeedbackEmail(senderName, senderEmail, storeName, feedbackText string) 
 		m.SetHeader("From", user)
 	}
 
+	// Set Reply-To header so replying in email client goes directly to the sender's email
+	if senderEmail != "" {
+		if senderName != "" {
+			m.SetAddressHeader("Reply-To", senderEmail, senderName)
+		} else {
+			m.SetHeader("Reply-To", senderEmail)
+		}
+	}
+
 	m.SetHeader("To", recipient)
 	m.SetHeader("Subject", fmt.Sprintf("Kritik & Saran dari %s - %s", senderName, storeName))
 
 	htmlBody := fmt.Sprintf(`
 		<h3>Kritik & Saran Baru</h3>
 		<p><b>Dari:</b> %s</p>
+		<p><b>Role:</b> %s</p>
 		<p><b>Toko:</b> %s</p>
 		<hr />
 		<p><b>Pesan:</b></p>
 		<p style="white-space: pre-wrap; background-color: #f4f4f4; padding: 12px; border-radius: 8px;">%s</p>
-	`, senderName, storeName, feedbackText)
+	`, senderName, senderEmail, senderRole, storeName, feedbackText)
 
 	m.SetBody("text/html", htmlBody)
 
