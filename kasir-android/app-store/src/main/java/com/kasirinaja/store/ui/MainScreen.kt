@@ -1009,6 +1009,11 @@ fun MainScreen(initialRoute: String? = null) {
                 )
                 com.kasirinaja.store.ui.screens.FeedbackScreen(
                     viewModel = feedbackViewModel,
+                    onNavigateToDashboard = {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Dashboard.route) { inclusive = true }
+                        }
+                    },
                     onNavigateToEditProfile = { navController.navigate("edit_profile") },
                     onLogout = { handleLogoutAttempt() },
                     onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
