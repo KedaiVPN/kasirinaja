@@ -65,6 +65,7 @@ func (h *FeedbackHandler) SendFeedback(c *gin.Context) {
 
 	senderName := user.FullName
 	senderEmail := strings.TrimSpace(req.SenderEmail)
+	senderRole := user.Role
 
 	// If owner or senderEmail not provided, fallback to user's registered email
 	if senderEmail == "" || user.Role == "owner" {
@@ -79,7 +80,7 @@ func (h *FeedbackHandler) SendFeedback(c *gin.Context) {
 		}
 	}
 
-	err = utils.SendFeedbackEmail(senderName, senderEmail, storeName, req.Message)
+	err = utils.SendFeedbackEmail(senderName, senderEmail, senderRole, storeName, req.Message)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengirim email kritik & saran: " + err.Error()})
 		return
