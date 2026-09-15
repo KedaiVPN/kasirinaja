@@ -1,4 +1,5 @@
--- subscription_plans table
+-- +goose Up
+-- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS subscription_plans (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -10,7 +11,6 @@ CREATE TABLE IF NOT EXISTS subscription_plans (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
--- subscription_transactions table
 CREATE TABLE IF NOT EXISTS subscription_transactions (
     id SERIAL PRIMARY KEY,
     reference VARCHAR(255) UNIQUE NOT NULL,
@@ -31,5 +31,12 @@ CREATE TABLE IF NOT EXISTS subscription_transactions (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
--- Add pro_expires_at to stores
 ALTER TABLE stores ADD COLUMN IF NOT EXISTS pro_expires_at TIMESTAMP WITH TIME ZONE;
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+ALTER TABLE stores DROP COLUMN IF EXISTS pro_expires_at;
+DROP TABLE IF EXISTS subscription_transactions;
+DROP TABLE IF EXISTS subscription_plans;
+-- +goose StatementEnd
