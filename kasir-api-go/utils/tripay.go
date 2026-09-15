@@ -21,25 +21,21 @@ type TripayClient struct {
 	BaseURL      string
 }
 
+type TripayFee struct {
+	Flat    int         `json:"flat"`
+	Percent interface{} `json:"percent"`
+}
+
 type TripayPaymentChannel struct {
-	Group       string `json:"group"`
-	Code        string `json:"code"`
-	Name        string `json:"name"`
-	Type        string `json:"type"`
-	FeeMerchant struct {
-		Flat    int `json:"flat"`
-		Percent float64 `json:"percent"`
-	} `json:"fee_merchant"`
-	FeeCustomer struct {
-		Flat    int `json:"flat"`
-		Percent float64 `json:"percent"`
-	} `json:"fee_customer"`
-	TotalFee struct {
-		Flat    int `json:"flat"`
-		Percent float64 `json:"percent"`
-	} `json:"total_fee"`
-	IconURL string `json:"icon_url"`
-	Active  bool   `json:"active"`
+	Group       string    `json:"group"`
+	Code        string    `json:"code"`
+	Name        string    `json:"name"`
+	Type        string    `json:"type"`
+	FeeMerchant TripayFee `json:"fee_merchant"`
+	FeeCustomer TripayFee `json:"fee_customer"`
+	TotalFee    TripayFee `json:"total_fee"`
+	IconURL     string    `json:"icon_url"`
+	Active      bool      `json:"active"`
 }
 
 type TripayInstruction struct {

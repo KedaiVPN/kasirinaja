@@ -22,6 +22,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.kasirinaja.core.network.PaymentChannelDto
 import com.kasirinaja.core.network.RetrofitClient
 import com.kasirinaja.core.utils.FormatUtils
+import com.kasirinaja.store.ui.viewmodels.ChannelsUiState
 import com.kasirinaja.store.ui.viewmodels.StoreSubscriptionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,7 +32,7 @@ fun SubscriptionChannelsScreen(
     onBack: () -> Unit,
     onCheckoutSuccess: (reference: String) -> Unit
 ) {
-    val channels by viewModel.channelsState.collectAsState()
+    val channelsUiState by viewModel.channelsUiState.collectAsState()
     val selectedPlan by viewModel.selectedPlan.collectAsState()
     val isProcessing by viewModel.isProcessing.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
@@ -39,14 +40,18 @@ fun SubscriptionChannelsScreen(
 
     var selectedChannelCode by remember { mutableStateOf("") }
 
+    LaunchedEffect(Unit) {
+        if (channelsUiState is ChannelsUiState.Loading) {
+            viewModel.loadPaymentChannels()
+        }
+    }
+
     LaunchedEffect(errorMessage) {
         errorMessage?.let {
             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
             viewModel.clearErrorMessage()
         }
     }
-
-    val groupedChannels = channels.groupBy { it.group }
 
     Scaffold(
         topBar = {
@@ -100,96 +105,113 @@ fun SubscriptionChannelsScreen(
                 }
             }
 
-            if (channels.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+            when (val state = channelsUiState) {
+                is ChannelsUiState.Loading -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
                 }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .weight(1f),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    groupedChannels.forEach { (groupName, channelList) ->
-                        item {
-                            Text(
-                                groupName,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-
-                        items(channelList) { channel ->
-                            val isSelected = selectedChannelCode == channel.code
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { selectedChannelCode = channel.code },
-                                shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = if (isSelected) Color(0xFFE8F5E9) else Color.White
-                                ),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        if (!channel.iconUrl.isNullOrEmpty()) {
-                                            Image(
-                                                painter = rememberAsyncImagePainter(channel.iconUrl),
-                                                contentDescription = channel.name,
-                                                modifier = Modifier.size(40.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(12.dp))
-                                        }
-                                        Column {
-                                            Text(channel.name, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-                                            Text(channel.type, fontSize = 12.sp, color = Color.Gray)
-                                        }
-                                    }
-                                    RadioButton(
-                                        selected = isSelected,
-                                        onClick = { selectedChannelCode = channel.code }
-                                    )
-                                }
+                is ChannelsUiState.Error -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(16.dp)) {
+                            Text(state.message, color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.SemiBold)
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Button(onClick = { viewModel.loadPaymentChannels() }) {
+                                Text("Coba Lagi")
                             }
                         }
                     }
                 }
+                is ChannelsUiState.Success -> {
+                    val channels = state.channels
+                    val groupedChannels = channels.groupBy { it.group }
 
-                Surface(
-                    shadowElevation = 8.dp,
-                    color = Color.White
-                ) {
-                    Box(modifier = Modifier.padding(16.dp)) {
-                        Button(
-                            onClick = {
-                                if (selectedChannelCode.isNotEmpty()) {
-                                    viewModel.checkout(selectedChannelCode, onCheckoutSuccess)
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .weight(1f),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        groupedChannels.forEach { (groupName, channelList) ->
+                            item {
+                                Text(
+                                    groupName,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+
+                            items(channelList) { channel ->
+                                val isSelected = selectedChannelCode == channel.code
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { selectedChannelCode = channel.code },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (isSelected) Color(0xFFE8F5E9) else Color.White
+                                    ),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            if (!channel.iconUrl.isNullOrEmpty()) {
+                                                Image(
+                                                    painter = rememberAsyncImagePainter(channel.iconUrl),
+                                                    contentDescription = channel.name,
+                                                    modifier = Modifier.size(40.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(12.dp))
+                                            }
+                                            Column {
+                                                Text(channel.name, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                                                Text(channel.type, fontSize = 12.sp, color = Color.Gray)
+                                            }
+                                        }
+                                        RadioButton(
+                                            selected = isSelected,
+                                            onClick = { selectedChannelCode = channel.code }
+                                        )
+                                    }
                                 }
-                            },
-                            enabled = selectedChannelCode.isNotEmpty() && !isProcessing,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                        ) {
-                            if (isProcessing) {
-                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                            } else {
-                                Text("Bayar Sekarang", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            }
+                        }
+                    }
+
+                    Surface(
+                        shadowElevation = 8.dp,
+                        color = Color.White
+                    ) {
+                        Box(modifier = Modifier.padding(16.dp)) {
+                            Button(
+                                onClick = {
+                                    if (selectedChannelCode.isNotEmpty()) {
+                                        viewModel.checkout(selectedChannelCode, onCheckoutSuccess)
+                                    }
+                                },
+                                enabled = selectedChannelCode.isNotEmpty() && !isProcessing,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                            ) {
+                                if (isProcessing) {
+                                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                                } else {
+                                    Text("Bayar Sekarang", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                }
                             }
                         }
                     }
