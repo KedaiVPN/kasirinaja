@@ -5,7 +5,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"gopkg.in/gomail.v2"
 )
@@ -46,18 +45,14 @@ func SendFeedbackEmail(senderName, senderEmail, storeName, feedbackText string) 
 	m.SetHeader("To", recipient)
 	m.SetHeader("Subject", fmt.Sprintf("Kritik & Saran dari %s - %s", senderName, storeName))
 
-	currentDate := time.Now().Format("02 January 2006 15:04 WIB")
-
 	htmlBody := fmt.Sprintf(`
 		<h3>Kritik & Saran Baru</h3>
-		<p><b>Dari:</b> %s &bull; %s</p>
-		<p><b>Kepada:</b> %s</p>
+		<p><b>Dari:</b> %s</p>
 		<p><b>Toko:</b> %s</p>
-		<p><b>Tanggal:</b> %s</p>
 		<hr />
 		<p><b>Pesan:</b></p>
 		<p style="white-space: pre-wrap; background-color: #f4f4f4; padding: 12px; border-radius: 8px;">%s</p>
-	`, senderName, senderEmail, recipient, storeName, currentDate, feedbackText)
+	`, senderName, storeName, feedbackText)
 
 	m.SetBody("text/html", htmlBody)
 
