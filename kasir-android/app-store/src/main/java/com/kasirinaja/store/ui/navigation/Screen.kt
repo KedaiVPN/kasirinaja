@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.RateReview
+import androidx.compose.material.icons.filled.SupportAgent
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
@@ -24,6 +25,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object Master : Screen("master", "Master Produk", Icons.Filled.List)
     object Settings : Screen("settings", "Karyawan", Icons.Filled.People)
     object Feedback : Screen("feedback", "Kritik & Saran", Icons.Filled.RateReview)
+    object Support : Screen("support", "Support", Icons.Filled.SupportAgent)
     object SalesStats : Screen("sales_stats", "Statistik Penjualan", Icons.Filled.BarChart)
     object Reports : Screen("reports", "Laporan", Icons.Filled.Assignment)
     object More : Screen("more", "Lainnya", Icons.Filled.Menu)

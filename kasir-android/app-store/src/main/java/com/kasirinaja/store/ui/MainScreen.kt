@@ -669,6 +669,28 @@ fun MainScreen(initialRoute: String? = null) {
                         modifier = Modifier.padding(vertical = 4.dp)
                     )
 
+                    NavigationDrawerItem(
+                        label = { Text(Screen.Support.title) },
+                        selected = false,
+                        onClick = {
+                            coroutineScope.launch { drawerState.close() }
+                            val storeName = tokenManager.getStoreName() ?: ""
+                            val displayRole = if (userRole.equals("owner", ignoreCase = true)) "Owner" else if (userRole.equals("kasir", ignoreCase = true)) "Kasir" else userRole.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.ROOT) else it.toString() }
+                            val supportMessage = "| Nama: $userName\n| Status: $displayRole\n| Nama toko: $storeName\n-----------------------------\n(Silahkan sampaikan keluhan anda di sini)"
+                            val encodedMessage = android.net.Uri.encode(supportMessage)
+                            val whatsappUrl = "https://wa.me/6287777694482?text=$encodedMessage"
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(whatsappUrl))
+                            try {
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                android.widget.Toast.makeText(context, "Tidak dapat membuka WhatsApp", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        icon = { Icon(Screen.Support.icon, contentDescription = Screen.Support.title) },
+                        colors = drawerItemColors,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+
                     androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
 
                     if (userRole == "kasir") {
