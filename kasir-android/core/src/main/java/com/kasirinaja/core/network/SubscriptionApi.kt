@@ -106,31 +106,31 @@ data class AdminTransactionsResponse(
 
 interface SubscriptionApi {
     // Store Endpoints
-    @GET("api/subscriptions/plans")
+    @GET("subscriptions/plans")
     suspend fun getPlans(): Response<PlansResponse>
 
-    @GET("api/subscriptions/payment-channels")
+    @GET("subscriptions/payment-channels")
     suspend fun getPaymentChannels(): Response<PaymentChannelsResponse>
 
-    @POST("api/subscriptions/checkout")
+    @POST("subscriptions/checkout")
     suspend fun checkout(@Body request: CheckoutRequestDto): Response<CheckoutResponse>
 
-    @GET("api/subscriptions/transactions/{reference}")
+    @GET("subscriptions/transactions/{reference}")
     suspend fun getTransactionByRef(@Path("reference") reference: String): Response<TransactionDetailResponse>
 
     // Admin Endpoints
-    @GET("api/admin/subscription-plans")
+    @GET("admin/subscription-plans")
     suspend fun adminListPlans(): Response<PlansResponse>
 
-    @POST("api/admin/subscription-plans")
+    @POST("admin/subscription-plans")
     suspend fun adminCreatePlan(@Body request: CreatePlanRequest): Response<PlanDetailResponse>
 
-    @PUT("api/admin/subscription-plans/{id}")
+    @PUT("admin/subscription-plans/{id}")
     suspend fun adminUpdatePlan(@Path("id") id: Int, @Body request: CreatePlanRequest): Response<PlanDetailResponse>
 
-    @DELETE("api/admin/subscription-plans/{id}")
+    @DELETE("admin/subscription-plans/{id}")
     suspend fun adminDeletePlan(@Path("id") id: Int): Response<Map<String, String>>
 
-    @GET("api/admin/subscription-transactions")
+    @GET("admin/subscription-transactions")
     suspend fun adminListTransactions(): Response<AdminTransactionsResponse>
 }
