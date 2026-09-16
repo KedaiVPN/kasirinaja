@@ -53,6 +53,10 @@ data class PaymentChannelsResponse(
     @SerializedName("channels") val channels: List<PaymentChannelDto>
 )
 
+data class PaymentInstructionsResponse(
+    @SerializedName("instructions") val instructions: List<TripayInstructionDto>
+)
+
 data class CheckoutRequestDto(
     @SerializedName("plan_id") val planId: Int,
     @SerializedName("payment_method") val paymentMethod: String
@@ -111,6 +115,13 @@ interface SubscriptionApi {
 
     @GET("subscriptions/payment-channels")
     suspend fun getPaymentChannels(): Response<PaymentChannelsResponse>
+
+    @GET("subscriptions/payment-instructions")
+    suspend fun getPaymentInstructions(
+        @Query("code") code: String,
+        @Query("pay_code") payCode: String? = null,
+        @Query("amount") amount: Long? = null
+    ): Response<PaymentInstructionsResponse>
 
     @POST("subscriptions/checkout")
     suspend fun checkout(@Body request: CheckoutRequestDto): Response<CheckoutResponse>

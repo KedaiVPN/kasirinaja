@@ -3,12 +3,15 @@ package com.kasirinaja.store.ui.screens
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -36,6 +39,7 @@ fun SubscriptionDetailScreen(
 ) {
     val context = LocalContext.current
     val transaction by viewModel.transactionDetail.collectAsState()
+    val instructions by viewModel.paymentInstructions.collectAsState()
     val isProcessing by viewModel.isProcessing.collectAsState()
     val checkoutResult by viewModel.checkoutResult.collectAsState()
 
@@ -209,6 +213,31 @@ fun SubscriptionDetailScreen(
                         }
                     }
 
+                    if (!isPaid && instructions.isNotEmpty()) {
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Text(
+                                        "Instruksi Pembayaran",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+
+                                    instructions.forEach { instruction ->
+                                        InstructionAccordionItem(instruction = instruction)
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     if (!isPaid) {
                         item {
                             Button(
@@ -241,6 +270,66 @@ fun SubscriptionDetailScreen(
                         ) {
                             Text("Kembali Ke Dashboard", fontWeight = FontWeight.Bold)
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun InstructionAccordionItem(instruction: TripayInstructionDto) {
+    var isExpanded by remember { mutableStateOf(false) }
+    val titleText = when (val title = instruction.title) {
+        is String -> title
+        is Map<*, *> -> (title["id"] ?: title["en"] ?: title.toString()).toString()
+        else -> instruction.title?.toString() ?: "Instruksi Pembayaran"
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { isExpanded = !isExpanded },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = titleText,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp,
+                    color = Color.Black
+                )
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (isExpanded) "Tutup" else "Buka"
+                )
+            }
+
+            if (isExpanded) {
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                instruction.steps.forEachIndexed { index, stepHtml ->
+                    val cleanStep = android.text.Html.fromHtml(stepHtml, android.text.Html.FROM_HTML_MODE_LEGACY).toString()
+                    Row(
+                        modifier = Modifier.padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Text(
+                            text = "${index + 1}. ",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = cleanStep,
+                            fontSize = 13.sp,
+                            color = Color.DarkGray
+                        )
                     }
                 }
             }

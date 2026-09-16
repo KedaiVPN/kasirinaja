@@ -72,6 +72,29 @@ func (h *SubscriptionHandler) GetPaymentChannels(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"channels": channels})
 }
 
+func (h *SubscriptionHandler) GetPaymentInstructions(c *gin.Context) {
+	code := c.Query("code")
+	if code == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Parameter code diperlukan"})
+		return
+	}
+
+	payCode := c.Query("pay_code")
+	amountStr := c.Query("amount")
+	var amount int64
+	if amountStr != "" {
+		amount, _ = strconv.ParseInt(amountStr, 10, 64)
+	}
+
+	instructions, err := h.tripayClient.GetPaymentInstructions(code, payCode, amount)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil instruksi pembayaran: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"instructions": instructions})
+}
+
 type CheckoutRequest struct {
 	PlanID        int32  `json:"plan_id" binding:"required"`
 	PaymentMethod string `json:"payment_method" binding:"required"`
@@ -222,7 +245,10 @@ func (h *SubscriptionHandler) TripayCallback(c *gin.Context) {
 		return
 	}
 
-	callbackSig := c.GetHeader("X-Tripay-Signature")
+	callbackSig := c.GetHeader("X-Callback-Signature")
+	if callbackSig == "" {
+		callbackSig = c.GetHeader("X-Tripay-Signature")
+	}
 	if !h.tripayClient.VerifyCallbackSignature(bodyBytes, callbackSig) {
 		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "Invalid signature"})
 		return

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 )
@@ -190,4 +191,43 @@ func (c *TripayClient) CreateTransaction(reqPayload TripayCreateTransactionReque
 	}
 
 	return &result.Data, nil
+}
+
+func (c *TripayClient) GetPaymentInstructions(code string, payCode string, amount int64) ([]TripayInstruction, error) {
+	reqURL := fmt.Sprintf("%s/payment/instruction?code=%s&allow_html=1", c.BaseURL, url.QueryEscape(code))
+	if payCode != "" {
+		reqURL += "&pay_code=" + url.QueryEscape(payCode)
+	}
+	if amount > 0 {
+		reqURL += fmt.Sprintf("&amount=%d", amount)
+	}
+
+	req, err := http.NewRequest("GET", reqURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+c.ApiKey)
+
+	client := &http.Client{Timeout: 15 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var result TripayResponse[[]TripayInstruction]
+	if err := json.Unmarshal(bodyBytes, &result); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal instructions: %v, raw: %s", err, string(bodyBytes))
+	}
+
+	if !result.Success {
+		return nil, fmt.Errorf("tripay error: %s", result.Message)
+	}
+
+	return result.Data, nil
 }

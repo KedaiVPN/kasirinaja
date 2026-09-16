@@ -45,6 +45,9 @@ class StoreSubscriptionViewModel : ViewModel() {
     private val _transactionDetail = MutableStateFlow<SubscriptionTransactionDto?>(null)
     val transactionDetail: StateFlow<SubscriptionTransactionDto?> = _transactionDetail.asStateFlow()
 
+    private val _paymentInstructions = MutableStateFlow<List<TripayInstructionDto>>(emptyList())
+    val paymentInstructions: StateFlow<List<TripayInstructionDto>> = _paymentInstructions.asStateFlow()
+
     private val _isProcessing = MutableStateFlow(false)
     val isProcessing: StateFlow<Boolean> = _isProcessing.asStateFlow()
 
@@ -135,15 +138,46 @@ class StoreSubscriptionViewModel : ViewModel() {
             try {
                 val resp = api.getTransactionByRef(reference)
                 if (resp.isSuccessful && resp.body() != null) {
-                    _transactionDetail.value = resp.body()!!.transaction
-                    if (resp.body()!!.transaction.status == "PAID") {
+                    val trx = resp.body()!!.transaction
+                    _transactionDetail.value = trx
+                    if (trx.status == "PAID") {
                         loadProStatusAndPlans()
+                    }
+
+                    if (!trx.instructionsJson.isNullOrEmpty()) {
+                        try {
+                            val type = object : com.google.gson.reflect.TypeToken<List<TripayInstructionDto>>() {}.type
+                            val parsed: List<TripayInstructionDto>? = com.google.gson.Gson().fromJson(trx.instructionsJson, type)
+                            if (!parsed.isNullOrEmpty()) {
+                                _paymentInstructions.value = parsed
+                            } else {
+                                fetchPaymentInstructions(trx.paymentMethod, trx.payCode, trx.amount)
+                            }
+                        } catch (e: Exception) {
+                            fetchPaymentInstructions(trx.paymentMethod, trx.payCode, trx.amount)
+                        }
+                    } else {
+                        fetchPaymentInstructions(trx.paymentMethod, trx.payCode, trx.amount)
                     }
                 }
             } catch (e: Exception) {
                 _errorMessage.value = e.message
             } finally {
                 _isProcessing.value = false
+            }
+        }
+    }
+
+    fun fetchPaymentInstructions(code: String, payCode: String? = null, amount: Long? = null) {
+        if (code.isEmpty()) return
+        viewModelScope.launch {
+            try {
+                val resp = api.getPaymentInstructions(code, payCode, amount)
+                if (resp.isSuccessful && resp.body() != null) {
+                    _paymentInstructions.value = resp.body()!!.instructions
+                }
+            } catch (e: Exception) {
+                // Ignore
             }
         }
     }
