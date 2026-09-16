@@ -102,13 +102,48 @@ func (h *SubscriptionHandler) Checkout(c *gin.Context) {
 	}
 
 	merchantRef := "SUB-" + strconv.FormatInt(time.Now().UnixNano(), 10)
-	userEmail := c.GetString("email")
-	userName := c.GetString("full_name")
-	if userName == "" {
-		userName = "Owner Toko"
+
+	userName := "Owner Toko"
+	userEmail := "owner@kasirinaja.com"
+	userPhone := ""
+
+	userIDVal, exists := c.Get("user_id")
+	if exists && userIDVal != nil {
+		var userUUID pgtype.UUID
+		switch v := userIDVal.(type) {
+		case uuid.UUID:
+			userUUID = pgtype.UUID{Bytes: v, Valid: true}
+		case string:
+			parsed, err := uuid.Parse(v)
+			if err == nil {
+				userUUID = pgtype.UUID{Bytes: parsed, Valid: true}
+			}
+		}
+
+		if userUUID.Valid {
+			user, err := h.queries.GetUser(c.Request.Context(), userUUID)
+			if err == nil {
+				if user.FullName != "" {
+					userName = user.FullName
+				}
+				if user.Email.Valid && user.Email.String != "" {
+					userEmail = user.Email.String
+				}
+				if user.Phone.Valid && user.Phone.String != "" {
+					userPhone = user.Phone.String
+				}
+			}
+		}
 	}
-	if userEmail == "" {
-		userEmail = "owner@kasirinaja.com"
+
+	if userPhone == "" {
+		store, err := h.queries.GetStore(c.Request.Context(), pgtype.UUID{Bytes: storeUUID, Valid: true})
+		if err == nil && store.Phone.Valid && store.Phone.String != "" {
+			userPhone = store.Phone.String
+		}
+	}
+	if userPhone == "" {
+		userPhone = "08123456789"
 	}
 
 	tripayReq := utils.TripayCreateTransactionRequest{
@@ -117,6 +152,7 @@ func (h *SubscriptionHandler) Checkout(c *gin.Context) {
 		Amount:        plan.Price,
 		CustomerName:  userName,
 		CustomerEmail: userEmail,
+		CustomerPhone: userPhone,
 		OrderItems: []utils.TripayTransactionItem{
 			{
 				SKU:      "PLAN-" + strconv.Itoa(int(plan.ID)),

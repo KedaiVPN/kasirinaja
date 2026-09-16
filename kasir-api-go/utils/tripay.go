@@ -39,9 +39,7 @@ type TripayPaymentChannel struct {
 }
 
 type TripayInstruction struct {
-	Title struct {
-		ID string `json:"id"`
-	} `json:"title"`
+	Title string   `json:"title"`
 	Steps []string `json:"steps"`
 }
 
