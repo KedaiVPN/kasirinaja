@@ -95,6 +95,29 @@ func (h *SubscriptionHandler) GetPaymentInstructions(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"instructions": instructions})
 }
 
+func (h *SubscriptionHandler) GetFeeCalculator(c *gin.Context) {
+	code := c.Query("code")
+	amountStr := c.Query("amount")
+	if code == "" || amountStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Parameter code dan amount diperlukan"})
+		return
+	}
+
+	amount, err := strconv.ParseInt(amountStr, 10, 64)
+	if err != nil || amount <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Amount tidak valid"})
+		return
+	}
+
+	fees, err := h.tripayClient.GetFeeCalculator(code, amount)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghitung biaya: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"fees": fees})
+}
+
 type CheckoutRequest struct {
 	PlanID        int32  `json:"plan_id" binding:"required"`
 	PaymentMethod string `json:"payment_method" binding:"required"`

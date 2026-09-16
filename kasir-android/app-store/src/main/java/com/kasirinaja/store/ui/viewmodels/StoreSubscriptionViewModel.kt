@@ -48,6 +48,9 @@ class StoreSubscriptionViewModel : ViewModel() {
     private val _paymentInstructions = MutableStateFlow<List<TripayInstructionDto>>(emptyList())
     val paymentInstructions: StateFlow<List<TripayInstructionDto>> = _paymentInstructions.asStateFlow()
 
+    private val _feeCalculatorData = MutableStateFlow<FeeCalculatorItemDto?>(null)
+    val feeCalculatorData: StateFlow<FeeCalculatorItemDto?> = _feeCalculatorData.asStateFlow()
+
     private val _isProcessing = MutableStateFlow(false)
     val isProcessing: StateFlow<Boolean> = _isProcessing.asStateFlow()
 
@@ -144,6 +147,8 @@ class StoreSubscriptionViewModel : ViewModel() {
                         loadProStatusAndPlans()
                     }
 
+                    fetchFeeCalculator(trx.paymentMethod, trx.amount)
+
                     if (!trx.instructionsJson.isNullOrEmpty()) {
                         try {
                             val type = object : com.google.gson.reflect.TypeToken<List<TripayInstructionDto>>() {}.type
@@ -164,6 +169,23 @@ class StoreSubscriptionViewModel : ViewModel() {
                 _errorMessage.value = e.message
             } finally {
                 _isProcessing.value = false
+            }
+        }
+    }
+
+    fun fetchFeeCalculator(code: String, amount: Long) {
+        if (code.isEmpty() || amount <= 0) return
+        viewModelScope.launch {
+            try {
+                val resp = api.getFeeCalculator(code, amount)
+                if (resp.isSuccessful && resp.body() != null) {
+                    val list = resp.body()!!.fees
+                    if (list.isNotEmpty()) {
+                        _feeCalculatorData.value = list.first()
+                    }
+                }
+            } catch (e: Exception) {
+                // Ignore
             }
         }
     }

@@ -46,6 +46,7 @@ fun SubscriptionDetailScreen(
     val clipboardManager = LocalClipboardManager.current
     val transaction by viewModel.transactionDetail.collectAsState()
     val instructions by viewModel.paymentInstructions.collectAsState()
+    val feeCalculatorData by viewModel.feeCalculatorData.collectAsState()
     val isProcessing by viewModel.isProcessing.collectAsState()
 
     var remainingTimeText by remember { mutableStateOf("24:00:00") }
@@ -233,6 +234,49 @@ fun SubscriptionDetailScreen(
                                     Text(trx.paymentName.ifEmpty { trx.paymentMethod }, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
+
+                                val flatFee = feeCalculatorData?.fee?.flat ?: 0L
+                                val percentFeeVal = feeCalculatorData?.fee?.percent?.toString() ?: "0"
+                                val formattedPercent = if (percentFeeVal.contains("%")) percentFeeVal else "$percentFeeVal%"
+                                val feeText = "${FormatUtils.formatCurrency(flatFee)} + $formattedPercent"
+
+                                val totalFee = (feeCalculatorData?.totalFee?.customer ?: 0L) + (feeCalculatorData?.totalFee?.merchant ?: 0L)
+                                val nominalPokok = if (totalFee > 0 && trx.amount > totalFee) trx.amount - totalFee else trx.amount
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Nominal Pokok", color = Color.Gray, fontSize = 14.sp)
+                                    Text(FormatUtils.formatCurrency(nominalPokok), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                if (feeCalculatorData != null) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text("Fee", color = Color.Gray, fontSize = 14.sp)
+                                        Text(feeText, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    if (totalFee > 0) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text("Total Fee", color = Color.Gray, fontSize = 14.sp)
+                                            Text(FormatUtils.formatCurrency(totalFee), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                                        }
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                    }
+                                }
+
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
