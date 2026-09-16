@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Refresh
@@ -18,7 +19,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -29,6 +32,8 @@ import com.google.gson.reflect.TypeToken
 import com.kasirinaja.core.network.TripayInstructionDto
 import com.kasirinaja.core.utils.FormatUtils
 import com.kasirinaja.store.ui.viewmodels.StoreSubscriptionViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,13 +43,46 @@ fun SubscriptionDetailScreen(
     onBackToDashboard: () -> Unit
 ) {
     val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
     val transaction by viewModel.transactionDetail.collectAsState()
     val instructions by viewModel.paymentInstructions.collectAsState()
     val isProcessing by viewModel.isProcessing.collectAsState()
-    val checkoutResult by viewModel.checkoutResult.collectAsState()
+
+    var remainingTimeText by remember { mutableStateOf("24:00:00") }
 
     LaunchedEffect(reference) {
         viewModel.fetchTransactionDetail(reference)
+    }
+
+    LaunchedEffect(transaction) {
+        val trx = transaction
+        if (trx != null && trx.status != "PAID") {
+            var targetEpoch = parseToEpochMillis(trx.expiresAt)
+            if (targetEpoch == null || targetEpoch <= System.currentTimeMillis()) {
+                val createdEpoch = parseToEpochMillis(trx.createdAt)
+                if (createdEpoch != null) {
+                    targetEpoch = createdEpoch + (24 * 3600 * 1000L)
+                }
+            }
+            if (targetEpoch == null || targetEpoch <= System.currentTimeMillis()) {
+                targetEpoch = System.currentTimeMillis() + (24 * 3600 * 1000L)
+            }
+
+            while (isActive) {
+                val now = System.currentTimeMillis()
+                val diff = targetEpoch - now
+                if (diff <= 0) {
+                    remainingTimeText = "Waktu Habis"
+                    break
+                } else {
+                    val hours = diff / (1000 * 3600)
+                    val minutes = (diff % (1000 * 3600)) / (1000 * 60)
+                    val seconds = (diff % (1000 * 60)) / 1000
+                    remainingTimeText = String.format("%02d:%02d:%02d", hours, minutes, seconds)
+                }
+                delay(1000L)
+            }
+        }
     }
 
     Scaffold(
@@ -132,6 +170,20 @@ fun SubscriptionDetailScreen(
                                         color = Color.Gray,
                                         textAlign = TextAlign.Center
                                     )
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Surface(
+                                        shape = RoundedCornerShape(20.dp),
+                                        color = Color(0xFFFFE0B2),
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = "Batas Waktu: $remainingTimeText",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 14.sp,
+                                            color = Color(0xFFD84315),
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -150,15 +202,32 @@ fun SubscriptionDetailScreen(
 
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text("Ref Transaksi", color = Color.Gray, fontSize = 14.sp)
-                                    Text(trx.reference, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.clickable {
+                                            clipboardManager.setText(AnnotatedString(trx.reference))
+                                            Toast.makeText(context, "Ref transaksi berhasil disalin", Toast.LENGTH_SHORT).show()
+                                        }
+                                    ) {
+                                        Text(trx.reference, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Icon(
+                                            Icons.Default.ContentCopy,
+                                            contentDescription = "Salin Ref Transaksi",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text("Metode Pembayaran", color = Color.Gray, fontSize = 14.sp)
                                     Text(trx.paymentName.ifEmpty { trx.paymentMethod }, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
@@ -166,15 +235,31 @@ fun SubscriptionDetailScreen(
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text("Total Tagihan", color = Color.Gray, fontSize = 14.sp)
-                                    Text(
-                                        FormatUtils.formatCurrency(trx.amount),
-                                        fontWeight = FontWeight.ExtraBold,
-                                        fontSize = 18.sp,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.clickable {
+                                            clipboardManager.setText(AnnotatedString(trx.amount.toString()))
+                                            Toast.makeText(context, "Nominal tagihan berhasil disalin", Toast.LENGTH_SHORT).show()
+                                        }
+                                    ) {
+                                        Text(
+                                            FormatUtils.formatCurrency(trx.amount),
+                                            fontWeight = FontWeight.ExtraBold,
+                                            fontSize = 18.sp,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Icon(
+                                            Icons.Default.ContentCopy,
+                                            contentDescription = "Salin Total Tagihan",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
                                 }
 
                                 if (!isPaid) {
@@ -184,13 +269,32 @@ fun SubscriptionDetailScreen(
                                     val payCode = trx.payCode
                                     if (!payCode.isNullOrEmpty()) {
                                         Text("Kode Bayar / Virtual Account:", fontSize = 13.sp, color = Color.Gray)
-                                        Text(
-                                            payCode,
-                                            fontWeight = FontWeight.ExtraBold,
-                                            fontSize = 24.sp,
-                                            color = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.padding(vertical = 4.dp)
-                                        )
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 4.dp)
+                                        ) {
+                                            Text(
+                                                payCode,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                fontSize = 22.sp,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                            IconButton(
+                                                onClick = {
+                                                    clipboardManager.setText(AnnotatedString(payCode))
+                                                    Toast.makeText(context, "Kode bayar berhasil disalin", Toast.LENGTH_SHORT).show()
+                                                }
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.ContentCopy,
+                                                    contentDescription = "Salin Kode Bayar",
+                                                    tint = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                        }
                                     }
 
                                     if (!trx.qrUrl.isNullOrEmpty()) {
@@ -273,6 +377,24 @@ fun SubscriptionDetailScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+private fun parseToEpochMillis(dateStr: String?): Long? {
+    if (dateStr.isNullOrEmpty()) return null
+    return try {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            java.time.Instant.parse(dateStr).toEpochMilli()
+        } else {
+            val sdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
+            sdf.parse(dateStr)?.time
+        }
+    } catch (e: Exception) {
+        try {
+            dateStr.toLong()
+        } catch (e2: Exception) {
+            null
         }
     }
 }
