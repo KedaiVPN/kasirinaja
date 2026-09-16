@@ -57,6 +57,27 @@ data class PaymentInstructionsResponse(
     @SerializedName("instructions") val instructions: List<TripayInstructionDto>
 )
 
+data class TripayFeeDetailDto(
+    @SerializedName("flat") val flat: Long = 0,
+    @SerializedName("percent") val percent: Any? = 0
+)
+
+data class TripayTotalFeeDetailDto(
+    @SerializedName("merchant") val merchant: Long = 0,
+    @SerializedName("customer") val customer: Long = 0
+)
+
+data class FeeCalculatorItemDto(
+    @SerializedName("code") val code: String,
+    @SerializedName("name") val name: String,
+    @SerializedName("fee") val fee: TripayFeeDetailDto?,
+    @SerializedName("total_fee") val totalFee: TripayTotalFeeDetailDto?
+)
+
+data class FeeCalculatorResponse(
+    @SerializedName("fees") val fees: List<FeeCalculatorItemDto>
+)
+
 data class CheckoutRequestDto(
     @SerializedName("plan_id") val planId: Int,
     @SerializedName("payment_method") val paymentMethod: String
@@ -122,6 +143,12 @@ interface SubscriptionApi {
         @Query("pay_code") payCode: String? = null,
         @Query("amount") amount: Long? = null
     ): Response<PaymentInstructionsResponse>
+
+    @GET("subscriptions/fee-calculator")
+    suspend fun getFeeCalculator(
+        @Query("code") code: String,
+        @Query("amount") amount: Long
+    ): Response<FeeCalculatorResponse>
 
     @POST("subscriptions/checkout")
     suspend fun checkout(@Body request: CheckoutRequestDto): Response<CheckoutResponse>
