@@ -115,6 +115,7 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 		{
 			subscriptions.GET("/plans", subscriptionHandler.GetPlans)
 			subscriptions.GET("/payment-channels", subscriptionHandler.GetPaymentChannels)
+			subscriptions.GET("/payment-instructions", subscriptionHandler.GetPaymentInstructions)
 			subscriptions.POST("/checkout", subscriptionHandler.Checkout)
 			subscriptions.GET("/transactions/:reference", subscriptionHandler.GetTransactionByRef)
 		}
