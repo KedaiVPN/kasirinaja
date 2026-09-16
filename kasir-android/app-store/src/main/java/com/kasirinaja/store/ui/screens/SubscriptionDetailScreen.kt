@@ -236,9 +236,24 @@ fun SubscriptionDetailScreen(
                                 Spacer(modifier = Modifier.height(8.dp))
 
                                 val flatFee = feeCalculatorData?.fee?.flat ?: 0L
-                                val percentFeeVal = feeCalculatorData?.fee?.percent?.toString() ?: "0"
-                                val formattedPercent = if (percentFeeVal.contains("%")) percentFeeVal else "$percentFeeVal%"
-                                val feeText = "${FormatUtils.formatCurrency(flatFee)} + $formattedPercent"
+                                val percentDouble = when (val p = feeCalculatorData?.fee?.percent) {
+                                    is Number -> p.toDouble()
+                                    is String -> p.replace("%", "").toDoubleOrNull() ?: 0.0
+                                    else -> 0.0
+                                }
+                                val percentStr = if (percentDouble % 1.0 == 0.0) {
+                                    percentDouble.toLong().toString()
+                                } else {
+                                    percentDouble.toString()
+                                }
+                                val hasFlat = flatFee > 0
+                                val hasPercent = percentDouble > 0.0
+                                val feeText = when {
+                                    hasFlat && hasPercent -> "${FormatUtils.formatCurrency(flatFee)} + $percentStr%"
+                                    hasFlat -> FormatUtils.formatCurrency(flatFee)
+                                    hasPercent -> "$percentStr%"
+                                    else -> FormatUtils.formatCurrency(0)
+                                }
 
                                 val totalFee = (feeCalculatorData?.totalFee?.customer ?: 0L) + (feeCalculatorData?.totalFee?.merchant ?: 0L)
                                 val nominalPokok = if (totalFee > 0 && trx.amount > totalFee) trx.amount - totalFee else trx.amount
