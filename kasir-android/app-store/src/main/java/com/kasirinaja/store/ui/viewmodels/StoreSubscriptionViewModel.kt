@@ -24,7 +24,9 @@ sealed class ChannelsUiState {
     data class Error(val message: String) : ChannelsUiState()
 }
 
-class StoreSubscriptionViewModel : ViewModel() {
+class StoreSubscriptionViewModel(
+    private val tokenManager: TokenManager? = null
+) : ViewModel() {
     private val api = RetrofitClient.subscriptionApi
 
     private val _proState = MutableStateFlow<ProSubscriptionState>(ProSubscriptionState.Loading)
@@ -62,6 +64,9 @@ class StoreSubscriptionViewModel : ViewModel() {
     }
 
     fun loadProStatusAndPlans() {
+        if (tokenManager != null && tokenManager.getToken().isNullOrEmpty()) {
+            return
+        }
         viewModelScope.launch {
             _proState.value = ProSubscriptionState.Loading
             try {

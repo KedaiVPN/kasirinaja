@@ -35,6 +35,10 @@ fun SubscriptionPackagesScreen(
     val proState by viewModel.proState.collectAsState()
     val selectedPlan by viewModel.selectedPlan.collectAsState()
 
+    LaunchedEffect(Unit) {
+        viewModel.loadProStatusAndPlans()
+    }
+
     val benefits = listOf(
         "Kelola akun Karyawan / Kasir tanpa batas",
         "Akses Laporan Lengkap (Laporan Stok & Riwayat Shift)",
