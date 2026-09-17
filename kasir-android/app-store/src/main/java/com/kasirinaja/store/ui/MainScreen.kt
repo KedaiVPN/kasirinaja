@@ -127,6 +127,16 @@ fun MainScreen(initialRoute: String? = null) {
         tokenManager
     )
 
+    val storeSubscriptionViewModel: StoreSubscriptionViewModel = viewModel(
+        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                return StoreSubscriptionViewModel(tokenManager) as T
+            }
+        }
+    )
+    val proState by storeSubscriptionViewModel.proState.collectAsState()
+    val isProStore = (proState as? ProSubscriptionState.Success)?.isPro ?: false
+
     // Auth ViewModel
     val authViewModel: AuthViewModel = viewModel(
         factory = AuthViewModelFactory(authRepository)
@@ -210,6 +220,7 @@ fun MainScreen(initialRoute: String? = null) {
                         com.kasirinaja.store.data.local.AppDatabase.getDatabase(context).productDao()
                     )
                     transactionRepository.fetchAndSaveAllTransactions()
+                    storeSubscriptionViewModel.loadProStatusAndPlans()
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -310,10 +321,6 @@ fun MainScreen(initialRoute: String? = null) {
     val historyViewModel: HistoryViewModel = viewModel(
         factory = HistoryViewModelFactory(transactionDao, transactionRepository, tokenManager)
     )
-
-    val storeSubscriptionViewModel: StoreSubscriptionViewModel = viewModel()
-    val proState by storeSubscriptionViewModel.proState.collectAsState()
-    val isProStore = (proState as? ProSubscriptionState.Success)?.isPro ?: false
 
     var showProDialog by remember { mutableStateOf(false) }
 
@@ -954,6 +961,7 @@ fun MainScreen(initialRoute: String? = null) {
                                 productRepository.syncStoreProducts()
                                 transactionRepository.fetchAndSaveAllTransactions()
                                 dashboardViewModel.fetchServerStats()
+                                storeSubscriptionViewModel.loadProStatusAndPlans()
                             } catch (e: Exception) {
                                 e.printStackTrace()
                             } finally {
