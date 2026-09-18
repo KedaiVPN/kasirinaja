@@ -1,7 +1,7 @@
 package com.kasirinaja.store.ui
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.DrawerValue
@@ -739,7 +739,7 @@ fun MainScreen(initialRoute: String? = null) {
                                 coroutineScope.launch { drawerState.close() }
                                 navController.navigate(Screen.SubscriptionPackages.route)
                             },
-                            icon = { Icon(Icons.Default.Star, contentDescription = "Fitur Pro", tint = Color(0xFFFFB300)) },
+                            icon = { Icon(Icons.Default.WorkspacePremium, contentDescription = "Fitur Pro") },
                             colors = drawerItemColors,
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
