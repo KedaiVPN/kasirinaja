@@ -1006,7 +1006,8 @@ fun MainScreen(initialRoute: String? = null) {
                         navController.navigate("edit_profile")
                     },
                     onLogout = { handleLogoutAttempt() },
-                    onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
+                    onOpenDrawer = { coroutineScope.launch { drawerState.open() } },
+                    isPro = isProStore
                 )
             }
             composable("edit_store") {

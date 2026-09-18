@@ -52,7 +52,8 @@ fun DashboardScreen(
     viewModel: DashboardViewModel,
     onNavigateToEditProfile: () -> Unit = {},
     onLogout: () -> Unit = {},
-    onOpenDrawer: () -> Unit = {}
+    onOpenDrawer: () -> Unit = {},
+    isPro: Boolean = false
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
@@ -102,6 +103,7 @@ fun DashboardScreen(
                     logoUrl = state.logoUrl,
                     role = state.role,
                     isOwner = state.role.lowercase() == "owner",
+                    isPro = isPro,
                     onEditClick = onNavigateToEditStore
                 )
             }
@@ -304,6 +306,7 @@ fun StoreProfileCard(
     logoUrl: String?,
     role: String,
     isOwner: Boolean,
+    isPro: Boolean = false,
     onEditClick: () -> Unit
 ) {
     val context = LocalContext.current
@@ -370,13 +373,45 @@ fun StoreProfileCard(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = storeName,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f, fill = false)
+                        ) {
+                            Text(
+                                text = storeName,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1
+                            )
+                            if (isPro) {
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = MaterialTheme.colorScheme.primary
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.WorkspacePremium,
+                                            contentDescription = "Pro Toko",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(12.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(2.dp))
+                                        Text(
+                                            text = "PRO",
+                                            color = Color.White,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 10.sp
+                                        )
+                                    }
+                                }
+                            }
+                        }
 
                         // Role Badge
                         Surface(
