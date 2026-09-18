@@ -5,7 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -35,14 +35,14 @@ fun ProFeatureDialog(
             ) {
                 Surface(
                     shape = RoundedCornerShape(50),
-                    color = Color(0xFFFFF8E1),
+                    color = Color(0xFFE8F5E9),
                     modifier = Modifier.size(64.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = Icons.Default.Star,
+                            imageVector = Icons.Default.WorkspacePremium,
                             contentDescription = null,
-                            tint = Color(0xFFFFB300),
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(36.dp)
                         )
                     }
