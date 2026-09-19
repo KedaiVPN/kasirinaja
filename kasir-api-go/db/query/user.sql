@@ -17,6 +17,7 @@ RETURNING *;
 -- name: ListUsers :many
 SELECT * FROM users
 ORDER BY id;
+
 -- name: UpdateUserStoreID :exec
 UPDATE users SET store_id = $2 WHERE id = $1;
 
@@ -44,3 +45,6 @@ UPDATE users SET fcm_token = $2 WHERE id = $1;
 -- name: ListStoreOwners :many
 SELECT * FROM users
 WHERE store_id = $1 AND role = 'owner';
+
+-- name: ListAdminFCMTokens :many
+SELECT fcm_token FROM users WHERE LOWER(role) = 'admin' AND fcm_token IS NOT NULL AND fcm_token != '';

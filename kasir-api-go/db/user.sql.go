@@ -232,7 +232,7 @@ func (q *Queries) ListUsersByStore(ctx context.Context, storeID pgtype.UUID) ([]
 }
 
 const listAdminFCMTokens = `-- name: ListAdminFCMTokens :many
-SELECT fcm_token FROM users WHERE role = 'admin' AND fcm_token IS NOT NULL AND fcm_token != ''
+SELECT fcm_token FROM users WHERE LOWER(role) = 'admin' AND fcm_token IS NOT NULL AND fcm_token != ''
 `
 
 func (q *Queries) ListAdminFCMTokens(ctx context.Context) ([]pgtype.Text, error) {

@@ -1,12 +1,14 @@
 package com.kasirinaja.admin
 
 import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,7 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -29,11 +30,25 @@ import com.kasirinaja.core.network.TokenManager
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            Log.d("MainActivity", "POST_NOTIFICATIONS permission granted")
+        } else {
+            Log.d("MainActivity", "POST_NOTIFICATIONS permission denied")
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         val tokenManager = TokenManager(this)
         RetrofitClient.initialize { tokenManager.getToken() }
+
+        createNotificationChannel()
+        checkAndRequestNotificationPermission()
 
         setContent {
             MaterialTheme {
@@ -46,57 +61,61 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channelId = "admin_pro_alerts"
+            val channelName = "Notifikasi Admin Pro"
+            val channelDescription = "Pemberitahuan ketika ada toko yang upgrade ke versi Pro"
+            val importance = NotificationManager.IMPORTANCE_HIGH
+            val channel = NotificationChannel(channelId, channelName, importance).apply {
+                description = channelDescription
+                enableVibration(true)
+                enableLights(true)
+            }
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    private fun checkAndRequestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
 }
 
 @Composable
 fun AdminApp(tokenManager: TokenManager) {
     val navController = rememberNavController()
-    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val startDestination = if (tokenManager.getToken().isNullOrEmpty()) "login" else "main"
 
-    val notificationPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            Log.d("AdminApp", "Notification permission granted")
-        } else {
-            Log.d("AdminApp", "Notification permission denied")
+    fun syncFcmToken() {
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (!task.isSuccessful) {
+                Log.w("AdminApp", "Fetching FCM registration token failed", task.exception)
+                return@addOnCompleteListener
+            }
+
+            val token = task.result
+            Log.d("AdminApp", "Admin FCM token: $token")
+            coroutineScope.launch {
+                try {
+                    RetrofitClient.authApi.updateFcmToken(mapOf("fcm_token" to token))
+                    Log.d("AdminApp", "Admin FCM token successfully updated to backend")
+                } catch (e: Exception) {
+                    Log.e("AdminApp", "Failed to update FCM token to backend", e)
+                }
+            }
         }
     }
 
     LaunchedEffect(Unit) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val permissionCheckResult = ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.POST_NOTIFICATIONS
-            )
-            if (permissionCheckResult != PackageManager.PERMISSION_GRANTED) {
-                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        }
-    }
-
-    val isLoggedIn = !tokenManager.getToken().isNullOrEmpty()
-
-    LaunchedEffect(isLoggedIn) {
-        if (isLoggedIn) {
-            FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-                if (!task.isSuccessful) {
-                    Log.w("AdminApp", "Fetching FCM registration token failed", task.exception)
-                    return@addOnCompleteListener
-                }
-
-                val token = task.result
-                Log.d("AdminApp", "Admin FCM token: $token")
-                coroutineScope.launch {
-                    try {
-                        RetrofitClient.authApi.updateFcmToken(mapOf("fcm_token" to token))
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-            }
+        if (!tokenManager.getToken().isNullOrEmpty()) {
+            syncFcmToken()
         }
     }
 
@@ -104,6 +123,7 @@ fun AdminApp(tokenManager: TokenManager) {
         composable("login") {
             LoginScreen(
                 onLoginSuccess = {
+                    syncFcmToken()
                     navController.navigate("main") {
                         popUpTo("login") { inclusive = true }
                     }
