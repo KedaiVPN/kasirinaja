@@ -20,6 +20,8 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 	feedbackHandler := handlers.NewFeedbackHandler(queries)
 	subscriptionHandler := handlers.NewSubscriptionHandler(queries)
 
+	authMw := handlers.AuthMiddleware(queries)
+
 	// Root route to prevent 404 on base domain
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
@@ -41,38 +43,38 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 			users.GET("/:id", userHandler.GetUser)
 			users.GET("/", userHandler.ListUsers)
 			usersAuth := users.Group("/store")
-			usersAuth.Use(handlers.AuthMiddleware())
+			usersAuth.Use(authMw)
 			usersAuth.GET("/", userHandler.ListStoreUsers)
 			usersAuth.POST("/add-employee", userHandler.AddStoreEmployee)
 			usersAuth.PUT("/profile", userHandler.UpdateProfile)
 			usersAuth.DELETE("/employees/:id", userHandler.DeleteStoreEmployee)
-			users.PUT("/fcm-token", handlers.AuthMiddleware(), userHandler.UpdateFCMToken)
+			users.PUT("/fcm-token", authMw, userHandler.UpdateFCMToken)
 		}
 
 		// Product routes
 		products := api.Group("/products")
 		{
-			products.GET("/stock-report", handlers.AuthMiddleware(), productHandler.GetStockReport)
-			products.POST("/master", handlers.AuthMiddleware(), productHandler.CreateMasterProduct)
+			products.GET("/stock-report", authMw, productHandler.GetStockReport)
+			products.POST("/master", authMw, productHandler.CreateMasterProduct)
 			products.GET("/master/:id", productHandler.GetMasterProduct)
 			products.GET("/master", productHandler.ListMasterProducts)
 
-			products.POST("/store", handlers.AuthMiddleware(), productHandler.CreateStoreProduct)
+			products.POST("/store", authMw, productHandler.CreateStoreProduct)
 			products.GET("/store/:id", productHandler.GetStoreProduct)
 			products.GET("/store", productHandler.ListStoreProducts)
-			products.PUT("/store/:id/stock", handlers.AuthMiddleware(), productHandler.AddStoreProductStock)
+			products.PUT("/store/:id/stock", authMw, productHandler.AddStoreProductStock)
 
-			products.POST("/pending", handlers.AuthMiddleware(), productHandler.SubmitPendingProduct)
+			products.POST("/pending", authMw, productHandler.SubmitPendingProduct)
 			products.GET("/pending", productHandler.ListPendingProducts)
 
-			products.DELETE("/store/:id", handlers.AuthMiddleware(), productHandler.DeleteStoreProductSpecific)
-			products.DELETE("/:id", handlers.AuthMiddleware(), productHandler.DeleteProduct)
-			products.PUT("/:id", handlers.AuthMiddleware(), productHandler.UpdateProduct)
+			products.DELETE("/store/:id", authMw, productHandler.DeleteStoreProductSpecific)
+			products.DELETE("/:id", authMw, productHandler.DeleteProduct)
+			products.PUT("/:id", authMw, productHandler.UpdateProduct)
 		}
 
 		// Report routes
 		reports := api.Group("/reports")
-		reports.Use(handlers.AuthMiddleware())
+		reports.Use(authMw)
 		{
 			reports.POST("/", reportHandler.SubmitReport)
 			reports.GET("/", reportHandler.GetStoreReports)
@@ -81,7 +83,7 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 
 		// Transaction routes
 		transactions := api.Group("/transactions")
-		transactions.Use(handlers.AuthMiddleware())
+		transactions.Use(authMw)
 		{
 			transactions.POST("/", transactionHandler.CreateTransaction)
 			transactions.GET("/dashboard", transactionHandler.GetDashboardStats)
@@ -90,7 +92,7 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 
 		// Store routes
 		stores := api.Group("/stores")
-		stores.Use(handlers.AuthMiddleware())
+		stores.Use(authMw)
 		{
 			stores.PUT("/update", storeHandler.UpdateStore)
 			stores.POST("/upload-logo", storeHandler.UploadStoreLogo)
@@ -106,12 +108,12 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 		api.POST("/auth/verify-otp", authHandler.VerifyOTP)
 		api.POST("/auth/resend-otp", authHandler.ResendOTP)
 		authGroup := api.Group("/auth")
-		authGroup.Use(handlers.AuthMiddleware())
+		authGroup.Use(authMw)
 		authGroup.POST("/switch-user", authHandler.SwitchUser)
 
 		// Subscription routes for store
 		subscriptions := api.Group("/subscriptions")
-		subscriptions.Use(handlers.AuthMiddleware())
+		subscriptions.Use(authMw)
 		{
 			subscriptions.GET("/plans", subscriptionHandler.GetPlans)
 			subscriptions.GET("/payment-channels", subscriptionHandler.GetPaymentChannels)
@@ -126,7 +128,7 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 
 		// Admin routes
 		adminRoutes := api.Group("/admin")
-		adminRoutes.Use(handlers.AuthMiddleware())
+		adminRoutes.Use(authMw)
 		{
 			adminRoutes.GET("/dashboard", adminHandler.GetDashboardStats)
 			adminRoutes.POST("/products/:id/approve", adminHandler.ApproveProduct)
@@ -146,7 +148,7 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 		}
 
 		// Feedback route
-		api.POST("/feedback", handlers.AuthMiddleware(), feedbackHandler.SendFeedback)
+		api.POST("/feedback", authMw, feedbackHandler.SendFeedback)
 
 		// Upload route
 		api.POST("/upload", handlers.UploadImage)

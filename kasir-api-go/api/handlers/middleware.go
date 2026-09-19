@@ -5,12 +5,17 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
+
+	"kasir-api-go/db"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
-func AuthMiddleware() gin.HandlerFunc {
+func AuthMiddleware(queries *db.Queries) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -53,9 +58,25 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		c.Set("user_id", claims["user_id"])
-		c.Set("role", claims["role"])
-		if storeID, exists := claims["store_id"]; exists {
-			c.Set("store_id", storeID)
+		role, _ := claims["role"].(string)
+		c.Set("role", role)
+
+		if storeIDVal, exists := claims["store_id"]; exists {
+			c.Set("store_id", storeIDVal)
+
+			if role == "kasir" && queries != nil {
+				if storeIDStr, ok := storeIDVal.(string); ok && storeIDStr != "" {
+					parsedUUID, err := uuid.Parse(storeIDStr)
+					if err == nil {
+						storeStatus, err := queries.GetStoreProStatus(c.Request.Context(), pgtype.UUID{Bytes: parsedUUID, Valid: true})
+						if err != nil || !storeStatus.ProExpiresAt.Valid || storeStatus.ProExpiresAt.Time.Before(time.Now()) {
+							c.JSON(http.StatusUnauthorized, gin.H{"error": "Masa aktif Pro toko telah berakhir. Sesi login karyawan dikunci."})
+							c.Abort()
+							return
+						}
+					}
+				}
+			}
 		}
 		c.Next()
 	}
