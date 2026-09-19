@@ -29,7 +29,17 @@ class StoreSubscriptionViewModel(
 ) : ViewModel() {
     private val api = RetrofitClient.subscriptionApi
 
-    private val _proState = MutableStateFlow<ProSubscriptionState>(ProSubscriptionState.Loading)
+    private val _proState = MutableStateFlow<ProSubscriptionState>(
+        if (tokenManager != null) {
+            ProSubscriptionState.Success(
+                plans = emptyList(),
+                isPro = tokenManager.getIsPro(),
+                proExpiresAt = tokenManager.getProExpiresAt()
+            )
+        } else {
+            ProSubscriptionState.Loading
+        }
+    )
     val proState: StateFlow<ProSubscriptionState> = _proState.asStateFlow()
 
     private val _channelsUiState = MutableStateFlow<ChannelsUiState>(ChannelsUiState.Loading)
@@ -68,21 +78,40 @@ class StoreSubscriptionViewModel(
             return
         }
         viewModelScope.launch {
-            _proState.value = ProSubscriptionState.Loading
+            if (_proState.value is ProSubscriptionState.Loading) {
+                _proState.value = ProSubscriptionState.Loading
+            }
             try {
                 val resp = api.getPlans()
                 if (resp.isSuccessful && resp.body() != null) {
                     val body = resp.body()!!
+                    tokenManager?.saveProStatus(body.isPro, body.proExpiresAt)
                     _proState.value = ProSubscriptionState.Success(
                         plans = body.plans,
                         isPro = body.isPro,
                         proExpiresAt = body.proExpiresAt
                     )
                 } else {
-                    _proState.value = ProSubscriptionState.Error("Gagal memuat paket langganan")
+                    if (tokenManager != null) {
+                        _proState.value = ProSubscriptionState.Success(
+                            plans = emptyList(),
+                            isPro = tokenManager.getIsPro(),
+                            proExpiresAt = tokenManager.getProExpiresAt()
+                        )
+                    } else {
+                        _proState.value = ProSubscriptionState.Error("Gagal memuat paket langganan")
+                    }
                 }
             } catch (e: Exception) {
-                _proState.value = ProSubscriptionState.Error(e.message ?: "Terjadi kesalahan koneksi")
+                if (tokenManager != null) {
+                    _proState.value = ProSubscriptionState.Success(
+                        plans = emptyList(),
+                        isPro = tokenManager.getIsPro(),
+                        proExpiresAt = tokenManager.getProExpiresAt()
+                    )
+                } else {
+                    _proState.value = ProSubscriptionState.Error(e.message ?: "Terjadi kesalahan koneksi")
+                }
             }
         }
     }
