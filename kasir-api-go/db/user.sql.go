@@ -231,6 +231,30 @@ func (q *Queries) ListUsersByStore(ctx context.Context, storeID pgtype.UUID) ([]
 	return items, nil
 }
 
+const listAdminFCMTokens = `-- name: ListAdminFCMTokens :many
+SELECT fcm_token FROM users WHERE role = 'admin' AND fcm_token IS NOT NULL AND fcm_token != ''
+`
+
+func (q *Queries) ListAdminFCMTokens(ctx context.Context) ([]pgtype.Text, error) {
+	rows, err := q.db.Query(ctx, listAdminFCMTokens)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []pgtype.Text
+	for rows.Next() {
+		var i pgtype.Text
+		if err := rows.Scan(&i); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateUserFCMToken = `-- name: UpdateUserFCMToken :exec
 UPDATE users SET fcm_token = $2 WHERE id = $1
 `

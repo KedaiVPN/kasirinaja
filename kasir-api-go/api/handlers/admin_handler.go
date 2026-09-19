@@ -138,6 +138,10 @@ func (h *AdminHandler) UpdateStoreProStatus(c *gin.Context) {
 		return
 	}
 
+	if req.Days > 0 {
+		NotifyProUpgrade(c.Request.Context(), h.queries, storeUUID)
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"message":        "Pro status updated successfully",
 		"store_id":       updatedStore.ID,

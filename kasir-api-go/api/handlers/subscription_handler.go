@@ -337,6 +337,8 @@ func (h *SubscriptionHandler) TripayCallback(c *gin.Context) {
 				ProExpiresAt: pgtype.Timestamptz{Time: newExpiry, Valid: true},
 				ID:           updatedTrx.StoreID,
 			})
+
+			NotifyProUpgrade(c.Request.Context(), h.queries, updatedTrx.StoreID)
 		}
 	}
 
