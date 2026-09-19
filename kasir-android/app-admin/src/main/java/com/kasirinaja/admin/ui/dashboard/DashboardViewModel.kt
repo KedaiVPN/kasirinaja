@@ -7,11 +7,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import com.google.gson.JsonObject
 
 data class DashboardStats(
     val approvedCount: Int = 0,
-    val pendingCount: Int = 0
+    val pendingCount: Int = 0,
+    val totalStores: Int = 0,
+    val proStores: Int = 0,
+    val nonProStores: Int = 0
 )
 
 sealed class DashboardState {
@@ -35,9 +37,19 @@ class DashboardViewModel : ViewModel() {
                 val response = RetrofitClient.adminApi.getDashboardStats()
                 if (response.isSuccessful) {
                     val body = response.body()
-                    val approved = body?.get("approved_count")?.asInt ?: 0
-                    val pending = body?.get("pending_count")?.asInt ?: 0
-                    _uiState.value = DashboardState.Success(DashboardStats(approved, pending))
+                    if (body != null) {
+                        _uiState.value = DashboardState.Success(
+                            DashboardStats(
+                                approvedCount = body.approved_count,
+                                pendingCount = body.pending_count,
+                                totalStores = body.total_stores,
+                                proStores = body.pro_stores,
+                                nonProStores = body.non_pro_stores
+                            )
+                        )
+                    } else {
+                        _uiState.value = DashboardState.Error("Empty response body")
+                    }
                 } else {
                     _uiState.value = DashboardState.Error("HTTP Error: ${response.code()}")
                 }
