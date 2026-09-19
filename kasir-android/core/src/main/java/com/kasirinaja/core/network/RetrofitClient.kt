@@ -12,9 +12,14 @@ object RetrofitClient {
     const val IMAGE_BASE_URL = "https://api-go-v1.free-account.my.id"
 
     private var tokenProvider: (() -> String?)? = null
+    private var onUnauthorizedListener: (() -> Unit)? = null
 
     fun initialize(tokenProvider: () -> String?) {
         this.tokenProvider = tokenProvider
+    }
+
+    fun setOnUnauthorizedListener(listener: (() -> Unit)?) {
+        this.onUnauthorizedListener = listener
     }
 
     private val authInterceptor = Interceptor { chain ->
@@ -25,12 +30,21 @@ object RetrofitClient {
         chain.proceed(requestBuilder.build())
     }
 
+    private val unauthorizedInterceptor = Interceptor { chain ->
+        val response = chain.proceed(chain.request())
+        if (response.code == 401) {
+            onUnauthorizedListener?.invoke()
+        }
+        response
+    }
+
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }
 
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor(authInterceptor)
+        .addInterceptor(unauthorizedInterceptor)
         .addInterceptor(loggingInterceptor)
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)

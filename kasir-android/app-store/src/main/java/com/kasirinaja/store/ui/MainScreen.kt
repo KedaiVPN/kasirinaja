@@ -1,4 +1,5 @@
 package com.kasirinaja.store.ui
+
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.WorkspacePremium
@@ -25,7 +26,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.height
@@ -39,8 +39,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.NavigationDrawerItemDefaults
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.runtime.Composable
@@ -48,7 +46,6 @@ import com.kasirinaja.store.ui.viewmodels.ScanViewModel
 import com.kasirinaja.store.ui.screens.BarcodeScannerFormScreen
 import com.kasirinaja.store.ui.screens.StockScreen
 import androidx.compose.runtime.remember
-import androidx.compose.ui.unit.dp
 import com.kasirinaja.store.ui.screens.CameraCaptureScreen
 import androidx.compose.foundation.layout.width
 import com.kasirinaja.store.data.local.AppDatabase
@@ -65,7 +62,6 @@ import com.kasirinaja.store.ui.screens.HistoryScreen
 import com.kasirinaja.store.ui.viewmodels.HistoryViewModel
 import com.kasirinaja.store.ui.viewmodels.HistoryViewModelFactory
 import androidx.compose.material3.Scaffold
-import androidx.compose.foundation.layout.size
 import com.kasirinaja.store.presentation.auth.AuthViewModel
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
@@ -76,15 +72,12 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.setValue
 import com.kasirinaja.store.presentation.auth.AuthViewModelFactory
 import com.kasirinaja.store.ui.screens.ScanScreen
-import androidx.compose.foundation.layout.padding
 import com.kasirinaja.store.ui.viewmodels.ScanViewModelFactory
 import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.compose.material3.Text
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.foundation.layout.Box
 import com.kasirinaja.store.ui.screens.MasterScreen
-import androidx.compose.material3.Icon
 import com.kasirinaja.store.ui.navigation.Screen
 import androidx.compose.material3.NavigationBarItem
 import com.kasirinaja.store.presentation.auth.VerifyOtpScreen
@@ -111,10 +104,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.kasirinaja.store.ui.screens.ReceiptScreen
 import androidx.navigation.compose.NavHost
 import androidx.compose.runtime.mutableStateOf
-import kotlinx.coroutines.launch
-import androidx.compose.runtime.remember
 import com.kasirinaja.store.ui.viewmodels.ReceiptViewModelFactory
-
 
 @Composable
 fun MainScreen(initialRoute: String? = null) {
@@ -142,9 +132,9 @@ fun MainScreen(initialRoute: String? = null) {
         factory = AuthViewModelFactory(authRepository)
     )
 
-    // Scan ViewModel scoped to MainScreen so it persists between Scan and Payment
     val productDao = AppDatabase.getDatabase(context).productDao()
     val transactionDao = AppDatabase.getDatabase(context).transactionDao()
+    val database = AppDatabase.getDatabase(context)
     val productRepository = ProductRepository(productDao, transactionDao, context)
 
     val webSocketManager = remember {
@@ -162,6 +152,51 @@ fun MainScreen(initialRoute: String? = null) {
     }
 
     val isUserLoggedIn = tokenManager.getToken() != null
+    val userRole = tokenManager.getRole() ?: "owner"
+
+    var startDest by remember { mutableStateOf(Screen.Login.route) }
+
+    fun performLogout() {
+        coroutineScope.launch {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                database.clearAllTables()
+            }
+            tokenManager.clearToken()
+            startDest = Screen.Login.route
+            authViewModel.resetState()
+            navController.navigate(Screen.Login.route) {
+                popUpTo(navController.graph.id) { inclusive = true }
+            }
+        }
+    }
+
+    // Automatically trigger logout for cashiers if 401 response or Pro expires
+    LaunchedEffect(Unit) {
+        RetrofitClient.setOnUnauthorizedListener {
+            val role = tokenManager.getRole()
+            if (role == "kasir") {
+                coroutineScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                    android.widget.Toast.makeText(
+                        context,
+                        "Masa aktif Pro toko telah berakhir. Sesi login karyawan dikunci.",
+                        android.widget.Toast.LENGTH_LONG
+                    ).show()
+                    performLogout()
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(proState, userRole) {
+        if (userRole == "kasir" && proState is ProSubscriptionState.Success && !isProStore) {
+            android.widget.Toast.makeText(
+                context,
+                "Masa aktif Pro toko telah berakhir. Sesi login karyawan dikunci.",
+                android.widget.Toast.LENGTH_LONG
+            ).show()
+            performLogout()
+        }
+    }
 
     // Request permission for Post Notifications (Android 13+)
     val notificationPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
@@ -230,7 +265,6 @@ fun MainScreen(initialRoute: String? = null) {
         }
     }
 
-    val database = com.kasirinaja.store.data.local.AppDatabase.getDatabase(context)
     val transactionRepository = com.kasirinaja.store.data.repository.TransactionRepository(
         database.transactionDao(),
         com.kasirinaja.core.network.RetrofitClient.transactionApi,
@@ -238,7 +272,7 @@ fun MainScreen(initialRoute: String? = null) {
     )
     val workManager = androidx.work.WorkManager.getInstance(context)
 
-        val dashboardViewModel: com.kasirinaja.store.ui.viewmodels.DashboardViewModel = viewModel(
+    val dashboardViewModel: com.kasirinaja.store.ui.viewmodels.DashboardViewModel = viewModel(
         factory = com.kasirinaja.store.ui.viewmodels.DashboardViewModel.Factory(
             database.transactionDao(),
             database.productDao(),
@@ -323,10 +357,7 @@ fun MainScreen(initialRoute: String? = null) {
     )
 
     var showProDialog by remember { mutableStateOf(false) }
-
-    var startDest by remember { mutableStateOf(Screen.Login.route) }
     var isCheckingToken by remember { mutableStateOf(true) }
-
     var targetDeepLink by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(initialRoute) {
@@ -349,12 +380,11 @@ fun MainScreen(initialRoute: String? = null) {
 
     LaunchedEffect(isCheckingToken, targetDeepLink) {
         if (!isCheckingToken && targetDeepLink != null) {
-            kotlinx.coroutines.delay(100) // Wait for NavHost to initialize
+            kotlinx.coroutines.delay(100)
             navController.navigate(targetDeepLink!!)
             targetDeepLink = null
         }
     }
-
 
     var showLogoutConfirmDialog by remember { mutableStateOf(false) }
     var showReportDialog by remember { mutableStateOf(false) }
@@ -367,21 +397,6 @@ fun MainScreen(initialRoute: String? = null) {
                 navController.navigate(Screen.SubscriptionPackages.route)
             }
         )
-    }
-
-    fun performLogout() {
-        coroutineScope.launch {
-            // Clear local database to prevent old store data from bleeding into new login
-            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                database.clearAllTables()
-            }
-            tokenManager.clearToken()
-            startDest = Screen.Login.route
-            authViewModel.resetState()
-            navController.navigate(Screen.Login.route) {
-                popUpTo(navController.graph.id) { inclusive = true }
-            }
-        }
     }
 
     fun handleLogoutAttempt() {
@@ -421,11 +436,8 @@ fun MainScreen(initialRoute: String? = null) {
     }
 
     if (isCheckingToken) {
-        return // Or a splash screen
+        return
     }
-
-
-    val userRole = tokenManager.getRole() ?: "owner"
 
     val bottomBarScreens = listOf(
         Screen.Dashboard,
@@ -467,7 +479,6 @@ fun MainScreen(initialRoute: String? = null) {
                                     transactionDao.markTransactionsAsReported(cashierId)
                                     android.widget.Toast.makeText(context, "Berhasil dilaporkan ke Owner", android.widget.Toast.LENGTH_SHORT).show()
                                 } else {
-                                    // Parse error message
                                     val errorBody = response.errorBody()?.string() ?: ""
                                     if (errorBody.contains("NO_UNREPORTED_TRANSACTIONS")) {
                                         android.widget.Toast.makeText(context, "Semua transaksi sudah dilaporkan!", android.widget.Toast.LENGTH_LONG).show()
@@ -793,7 +804,7 @@ fun MainScreen(initialRoute: String? = null) {
                         modifier = Modifier.padding(vertical = 4.dp)
                     )
 
-                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
+                    Spacer(modifier = Modifier.weight(1f))
 
                     if (userRole == "kasir") {
                         androidx.compose.material3.Card(
@@ -837,8 +848,6 @@ fun MainScreen(initialRoute: String? = null) {
                             }
                         }
                     }
-
-
                 }
             }
         }
@@ -860,7 +869,6 @@ fun MainScreen(initialRoute: String? = null) {
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
-                        // Indicator logic
                         var indicatorOffsetX by remember { androidx.compose.runtime.mutableStateOf(0f) }
                         var indicatorWidth by remember { androidx.compose.runtime.mutableStateOf(0f) }
                         var indicatorHeight by remember { androidx.compose.runtime.mutableStateOf(0f) }
@@ -875,7 +883,6 @@ fun MainScreen(initialRoute: String? = null) {
                             animationSpec = androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioLowBouncy, stiffness = androidx.compose.animation.core.Spring.StiffnessLow)
                         )
 
-                        // Animated Pill Background
                         if (indicatorWidth > 0f) {
                             Box(
                                 modifier = Modifier
@@ -936,7 +943,6 @@ fun MainScreen(initialRoute: String? = null) {
                                             )
                                         }
                                     }
-
                                 }
                             }
                         }
@@ -993,7 +999,7 @@ fun MainScreen(initialRoute: String? = null) {
                     email = email,
                     onNavigateToDashboard = {
                         navController.navigate(Screen.Dashboard.route) {
-                            popUpTo(0) // Clear backstack so user can't go back to auth
+                            popUpTo(0)
                         }
                     }
                 )
@@ -1056,7 +1062,7 @@ fun MainScreen(initialRoute: String? = null) {
                     onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
                 )
             }
-                        composable(Screen.Scan.route) {
+            composable(Screen.Scan.route) {
                 ScanScreen(
                     viewModel = scanViewModel,
                     onNavigateToPayment = { navController.navigate(Screen.Payment.route) },
@@ -1230,12 +1236,10 @@ fun MainScreen(initialRoute: String? = null) {
             ) { backStackEntry ->
                 val productId = backStackEntry.arguments?.getString("productId")
 
-                // Read results from Camera/Scanner screens
                 val savedStateHandle = backStackEntry.savedStateHandle
                 val capturedImageUri = savedStateHandle.get<String>("captured_image_uri")
                 val scannedBarcode = savedStateHandle.get<String>("scanned_barcode")
 
-                // Clear state handles after reading to prevent re-triggering
                 if (capturedImageUri != null) savedStateHandle.remove<String>("captured_image_uri")
                 if (scannedBarcode != null) savedStateHandle.remove<String>("scanned_barcode")
 
