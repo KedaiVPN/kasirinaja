@@ -76,7 +76,7 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 		{
 			reports.POST("/", reportHandler.SubmitReport)
 			reports.GET("/", reportHandler.GetStoreReports)
-		reports.DELETE("/:id", reportHandler.DeleteReport)
+			reports.DELETE("/:id", reportHandler.DeleteReport)
 		}
 
 		// Transaction routes
@@ -131,6 +131,11 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 			adminRoutes.GET("/dashboard", adminHandler.GetDashboardStats)
 			adminRoutes.POST("/products/:id/approve", adminHandler.ApproveProduct)
 			adminRoutes.POST("/products/:id/reject", adminHandler.RejectProduct)
+
+			// Admin Store Management
+			adminRoutes.GET("/stores", adminHandler.ListStores)
+			adminRoutes.GET("/stores/:id", adminHandler.GetStoreDetail)
+			adminRoutes.PUT("/stores/:id/pro", adminHandler.UpdateStoreProStatus)
 
 			// Admin Subscription Management
 			adminRoutes.GET("/subscription-plans", subscriptionHandler.AdminListPlans)

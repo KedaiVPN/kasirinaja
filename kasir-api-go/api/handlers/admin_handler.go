@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"kasir-api-go/db"
 
@@ -21,6 +22,10 @@ func NewAdminHandler(queries *db.Queries) *AdminHandler {
 	return &AdminHandler{queries: queries}
 }
 
+type UpdateProRequest struct {
+	Days int `json:"days"`
+}
+
 func (h *AdminHandler) GetDashboardStats(c *gin.Context) {
 	approvedCount, err := h.queries.CountMasterProducts(c.Request.Context())
 	if err != nil {
@@ -34,9 +39,109 @@ func (h *AdminHandler) GetDashboardStats(c *gin.Context) {
 		return
 	}
 
+	totalStores, err := h.queries.CountTotalStores(c.Request.Context())
+	if err != nil {
+		totalStores = 0
+	}
+
+	proStores, err := h.queries.CountProStores(c.Request.Context())
+	if err != nil {
+		proStores = 0
+	}
+
+	nonProStores, err := h.queries.CountNonProStores(c.Request.Context())
+	if err != nil {
+		nonProStores = 0
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"approved_count": approvedCount,
 		"pending_count":  pendingCount,
+		"total_stores":   totalStores,
+		"pro_stores":     proStores,
+		"non_pro_stores": nonProStores,
+	})
+}
+
+func (h *AdminHandler) ListStores(c *gin.Context) {
+	stores, err := h.queries.ListAdminStores(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch stores"})
+		return
+	}
+
+	if stores == nil {
+		stores = []db.AdminStoreListItem{}
+	}
+
+	c.JSON(http.StatusOK, stores)
+}
+
+func (h *AdminHandler) GetStoreDetail(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid store ID"})
+		return
+	}
+
+	detail, err := h.queries.GetAdminStoreDetail(c.Request.Context(), pgtype.UUID{Bytes: id, Valid: true})
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Store not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, detail)
+}
+
+func (h *AdminHandler) UpdateStoreProStatus(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid store ID"})
+		return
+	}
+
+	var req UpdateProRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	storeUUID := pgtype.UUID{Bytes: id, Valid: true}
+	storeStatus, err := h.queries.GetStoreProStatus(c.Request.Context(), storeUUID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Store not found"})
+		return
+	}
+
+	now := time.Now()
+	var newExpiry time.Time
+
+	if req.Days > 0 {
+		duration := time.Duration(req.Days) * 24 * time.Hour
+		if storeStatus.ProExpiresAt.Valid && storeStatus.ProExpiresAt.Time.After(now) {
+			newExpiry = storeStatus.ProExpiresAt.Time.Add(duration)
+		} else {
+			newExpiry = now.Add(duration)
+		}
+	} else {
+		newExpiry = now
+	}
+
+	updatedStore, err := h.queries.UpdateStoreProExpiry(c.Request.Context(), db.UpdateStoreProExpiryParams{
+		ProExpiresAt: pgtype.Timestamptz{Time: newExpiry, Valid: true},
+		ID:           storeUUID,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update store Pro status"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":        "Pro status updated successfully",
+		"store_id":       updatedStore.ID,
+		"pro_expires_at": updatedStore.ProExpiresAt,
 	})
 }
 
