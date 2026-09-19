@@ -70,6 +70,39 @@ class TokenManager(context: Context) {
         return prefs.getString("jwt_token", null)
     }
 
+    fun saveProStatus(isPro: Boolean, expiresAt: String?) {
+        prefs.edit()
+            .putBoolean("is_pro", isPro)
+            .putString("pro_expires_at", expiresAt)
+            .apply()
+    }
+
+    fun getIsPro(): Boolean {
+        val isPro = prefs.getBoolean("is_pro", false)
+        val expiresAtStr = prefs.getString("pro_expires_at", null)
+        if (!isPro) return false
+        if (expiresAtStr.isNullOrEmpty()) return isPro
+
+        return try {
+            val cleanDateStr = expiresAtStr.take(19)
+            val format = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault()).apply {
+                timeZone = java.util.TimeZone.getTimeZone("UTC")
+            }
+            val expiryDate = format.parse(cleanDateStr)
+            if (expiryDate != null) {
+                expiryDate.after(java.util.Date())
+            } else {
+                isPro
+            }
+        } catch (e: Exception) {
+            isPro
+        }
+    }
+
+    fun getProExpiresAt(): String? {
+        return prefs.getString("pro_expires_at", null)
+    }
+
     fun clearToken() {
         prefs.edit().remove("jwt_token").apply()
         prefs.edit().remove("role").apply()
@@ -81,6 +114,8 @@ class TokenManager(context: Context) {
         prefs.edit().remove("store_name").apply()
         prefs.edit().remove("store_address").apply()
         prefs.edit().remove("store_logo_url").apply()
+        prefs.edit().remove("is_pro").apply()
+        prefs.edit().remove("pro_expires_at").apply()
     }
 
     fun getUserName(): String {
