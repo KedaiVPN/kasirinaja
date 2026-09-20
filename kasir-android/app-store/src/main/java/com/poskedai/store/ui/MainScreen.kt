@@ -57,6 +57,8 @@ import com.poskedai.store.ui.screens.EditStoreScreen
 import com.poskedai.store.ui.viewmodels.EditStoreViewModel
 import com.poskedai.store.data.repository.StoreRepository
 import com.poskedai.store.presentation.auth.RegisterStoreScreen
+import com.poskedai.store.presentation.auth.ForgotPasswordScreen
+import com.poskedai.store.presentation.auth.ResetPasswordScreen
 import com.poskedai.store.ui.screens.PaymentScreen
 import com.poskedai.store.ui.screens.HistoryScreen
 import com.poskedai.store.ui.viewmodels.HistoryViewModel
@@ -960,6 +962,7 @@ fun MainScreen(initialRoute: String? = null) {
                 LoginScreen(
                     viewModel = authViewModel,
                     onNavigateToRegister = { navController.navigate(Screen.Register.route) },
+                    onNavigateToForgotPassword = { navController.navigate(Screen.ForgotPassword.route) },
                     onLoginSuccess = {
                         coroutineScope.launch {
                             try {
@@ -1000,6 +1003,37 @@ fun MainScreen(initialRoute: String? = null) {
                     onNavigateToDashboard = {
                         navController.navigate(Screen.Dashboard.route) {
                             popUpTo(0)
+                        }
+                    }
+                )
+            }
+            composable(Screen.ForgotPassword.route) {
+                ForgotPasswordScreen(
+                    viewModel = authViewModel,
+                    onNavigateToResetPassword = { role, identifier ->
+                        navController.navigate(Screen.ResetPassword.createRoute(role, identifier))
+                    },
+                    onNavigateToLogin = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+            composable(
+                route = Screen.ResetPassword.route,
+                arguments = listOf(
+                    androidx.navigation.navArgument("role") { type = androidx.navigation.NavType.StringType },
+                    androidx.navigation.navArgument("identifier") { type = androidx.navigation.NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val role = backStackEntry.arguments?.getString("role") ?: "owner"
+                val identifier = backStackEntry.arguments?.getString("identifier") ?: ""
+                ResetPasswordScreen(
+                    viewModel = authViewModel,
+                    role = role,
+                    identifier = identifier,
+                    onNavigateToLogin = {
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
                         }
                     }
                 )

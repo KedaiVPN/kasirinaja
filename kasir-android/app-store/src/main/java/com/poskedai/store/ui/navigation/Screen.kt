@@ -35,6 +35,10 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object Login : Screen("login", "Login", Icons.Filled.Home) // Not in bottom bar
     object Register : Screen("register", "Register", Icons.Filled.Home) // Not in bottom bar
     object VerifyOtp : Screen("verify_otp", "Verify OTP", Icons.Filled.Home) // Not in bottom bar
+    object ForgotPassword : Screen("forgot_password", "Lupa Password", Icons.Filled.Home) // Not in bottom bar
+    object ResetPassword : Screen("reset_password/{role}/{identifier}", "Reset Password", Icons.Filled.Home) {
+        fun createRoute(role: String, identifier: String) = "reset_password/$role/$identifier"
+    }
     object Payment : Screen("payment", "Pembayaran", Icons.Filled.Add) // Not in bottom bar
     object Receipt : Screen("receipt", "Struk", Icons.Filled.Add) // Not in bottom bar
     object SubscriptionPackages : Screen("subscription_packages", "Fitur Pro", Icons.Filled.Add)

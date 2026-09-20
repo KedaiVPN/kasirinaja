@@ -141,6 +141,44 @@ class AuthRepository(
         }
     }
 
+    suspend fun forgotPassword(role: String, identifier: String): Result<String> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val request = mapOf("role" to role, "identifier" to identifier)
+                val response = authApi.forgotPassword(request)
+                val message = response["message"]?.toString() ?: "OTP dikirim"
+                Result.success(message)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    suspend fun resetPassword(
+        role: String,
+        identifier: String,
+        otp: String,
+        newPassword: String,
+        confirmPassword: String
+    ): Result<String> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val request = mapOf(
+                    "role" to role,
+                    "identifier" to identifier,
+                    "otp" to otp,
+                    "newPassword" to newPassword,
+                    "confirmPassword" to confirmPassword
+                )
+                val response = authApi.resetPassword(request)
+                val message = response["message"]?.toString() ?: "Password berhasil diperbarui"
+                Result.success(message)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
     suspend fun switchUser(targetUserId: String, password: String? = null): Result<String> {
         return withContext(Dispatchers.IO) {
             try {

@@ -1,10 +1,19 @@
--- name: GetUser :one
-SELECT * FROM users
-WHERE id = $1 LIMIT 1;
-
 -- name: GetUserByEmail :one
 SELECT * FROM users
 WHERE email = $1 LIMIT 1;
+
+-- name: GetUserByIdentifier :one
+SELECT * FROM users
+WHERE (LOWER(email) = LOWER($1) OR LOWER(full_name) = LOWER($1)) LIMIT 1;
+
+-- name: UpdateUserPassword :exec
+UPDATE users
+SET password_hash = $2, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1;
+
+-- name: GetUser :one
+SELECT * FROM users
+WHERE id = $1 LIMIT 1;
 
 -- name: CreateUser :one
 INSERT INTO users (
