@@ -77,7 +77,9 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 
 	var targetUser db.User
 	var ownerEmail string
+	var ownerName string
 	var err error
+	var emailCategory utils.OTPEmailCategory
 
 	if req.Role == "owner" {
 		targetUser, err = h.queries.GetUserByEmail(c.Request.Context(), pgtype.Text{String: req.Identifier, Valid: true})
@@ -90,6 +92,8 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 			return
 		}
 		ownerEmail = targetUser.Email.String
+		ownerName = targetUser.FullName
+		emailCategory = utils.OTPCategoryForgotPasswordOwner
 	} else if req.Role == "kasir" || req.Role == "karyawan" {
 		targetUser, err = h.queries.GetUserByIdentifier(c.Request.Context(), req.Identifier)
 		if err != nil {
@@ -112,6 +116,8 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 			return
 		}
 		ownerEmail = owners[0].Email.String
+		ownerName = owners[0].FullName
+		emailCategory = utils.OTPCategoryForgotPasswordKasir
 	} else {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Role tidak valid"})
 		return
@@ -141,7 +147,15 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 	}
 
 	go func() {
-		err := utils.SendOTPEmail(ownerEmail, otp)
+		emailOpts := utils.OTPEmailOptions{
+			ToEmail:          ownerEmail,
+			OTP:              otp,
+			Category:         emailCategory,
+			RecipientName:    ownerName,
+			TargetName:       targetUser.FullName,
+			TargetIdentifier: req.Identifier,
+		}
+		err := utils.SendOTPEmail(emailOpts)
 		if err != nil {
 			log.Printf("Gagal mengirim email OTP lupa password ke %s: %v", ownerEmail, err)
 		}
@@ -247,7 +261,13 @@ func (h *AuthHandler) RegisterStore(c *gin.Context) {
 
 	// Send Email
 	go func() {
-		err := utils.SendOTPEmail(req.Email, otp)
+		emailOpts := utils.OTPEmailOptions{
+			ToEmail:       req.Email,
+			OTP:           otp,
+			Category:      utils.OTPCategoryRegistration,
+			RecipientName: req.FullName,
+		}
+		err := utils.SendOTPEmail(emailOpts)
 		if err != nil {
 			log.Printf("Failed to send OTP email to %s: %v", req.Email, err)
 		}
@@ -394,7 +414,13 @@ func (h *AuthHandler) ResendOTP(c *gin.Context) {
 
 	// Send Email
 	go func() {
-		err := utils.SendOTPEmail(req.Email, newOtp)
+		emailOpts := utils.OTPEmailOptions{
+			ToEmail:       req.Email,
+			OTP:           newOtp,
+			Category:      utils.OTPCategoryRegistration,
+			RecipientName: regData.FullName,
+		}
+		err := utils.SendOTPEmail(emailOpts)
 		if err != nil {
 			log.Printf("Failed to resend OTP email to %s: %v", req.Email, err)
 		}
