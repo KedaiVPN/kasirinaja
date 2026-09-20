@@ -13,6 +13,8 @@ sealed class AuthState {
     object Loading : AuthState()
     data class Success(val message: String) : AuthState()
     data class OtpSent(val message: String, val email: String) : AuthState()
+    data class ForgotOtpSent(val message: String, val role: String, val identifier: String) : AuthState()
+    data class PasswordResetSuccess(val message: String) : AuthState()
     data class Error(val message: String) : AuthState()
 }
 
@@ -63,10 +65,37 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
             val result = repository.resendOtp(email)
             if (result.isSuccess) {
                 _authState.value = AuthState.Success("OTP resent successfully")
-                // Kembalikan ke state idle agar tidak langsung pindah ke layar login (karena tidak diverifikasi)
                 _authState.value = AuthState.Idle
             } else {
                 _authState.value = AuthState.Error(result.exceptionOrNull()?.message ?: "Unknown error")
+            }
+        }
+    }
+
+    fun forgotPassword(role: String, identifier: String) {
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            val result = repository.forgotPassword(role, identifier)
+            if (result.isSuccess) {
+                _authState.value = AuthState.ForgotOtpSent(
+                    message = result.getOrDefault("OTP dikirim"),
+                    role = role,
+                    identifier = identifier
+                )
+            } else {
+                _authState.value = AuthState.Error(result.exceptionOrNull()?.message ?: "Gagal mengirim OTP")
+            }
+        }
+    }
+
+    fun resetPassword(role: String, identifier: String, otp: String, newPassword: String, confirmPassword: String) {
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            val result = repository.resetPassword(role, identifier, otp, newPassword, confirmPassword)
+            if (result.isSuccess) {
+                _authState.value = AuthState.PasswordResetSuccess(result.getOrDefault("Password berhasil diperbarui"))
+            } else {
+                _authState.value = AuthState.Error(result.exceptionOrNull()?.message ?: "Gagal mengubah password")
             }
         }
     }

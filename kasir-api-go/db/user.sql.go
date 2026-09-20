@@ -116,6 +116,47 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email pgtype.Text) (User, 
 	return i, err
 }
 
+const getUserByIdentifier = `-- name: GetUserByIdentifier :one
+SELECT id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at, photo_url, fcm_token FROM users
+WHERE (LOWER(email) = LOWER($1) OR LOWER(full_name) = LOWER($1)) LIMIT 1
+`
+
+func (q *Queries) GetUserByIdentifier(ctx context.Context, identifier string) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByIdentifier, identifier)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.FullName,
+		&i.Email,
+		&i.Phone,
+		&i.PasswordHash,
+		&i.Role,
+		&i.StoreID,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.PhotoUrl,
+		&i.FcmToken,
+	)
+	return i, err
+}
+
+const updateUserPassword = `-- name: UpdateUserPassword :exec
+UPDATE users
+SET password_hash = $2, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+`
+
+type UpdateUserPasswordParams struct {
+	ID           pgtype.UUID `json:"id"`
+	PasswordHash string      `json:"password_hash"`
+}
+
+func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
+	_, err := q.db.Exec(ctx, updateUserPassword, arg.ID, arg.PasswordHash)
+	return err
+}
+
 const listStoreOwners = `-- name: ListStoreOwners :many
 SELECT id, full_name, email, phone, password_hash, role, store_id, is_active, created_at, updated_at, photo_url, fcm_token FROM users
 WHERE store_id = $1 AND role = 'owner'

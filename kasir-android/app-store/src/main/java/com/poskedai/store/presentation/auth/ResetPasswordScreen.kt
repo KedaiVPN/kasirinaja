@@ -1,15 +1,17 @@
 package com.poskedai.store.presentation.auth
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -17,8 +19,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -26,21 +30,28 @@ import androidx.compose.ui.unit.sp
 import com.poskedai.store.R
 
 @Composable
-fun LoginScreen(
+fun ResetPasswordScreen(
     viewModel: AuthViewModel,
-    onNavigateToRegister: () -> Unit,
-    onNavigateToForgotPassword: () -> Unit,
-    onLoginSuccess: () -> Unit
+    role: String,
+    identifier: String,
+    onNavigateToLogin: () -> Unit
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var otp by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+
     var passwordVisible by remember { mutableStateOf(false) }
+    var confirmPasswordVisible by remember { mutableStateOf(false) }
 
     val authState by viewModel.authState.collectAsState()
+    val context = LocalContext.current
 
     LaunchedEffect(authState) {
-        if (authState is AuthState.Success) {
-            onLoginSuccess()
+        if (authState is AuthState.PasswordResetSuccess) {
+            val message = (authState as AuthState.PasswordResetSuccess).message
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            viewModel.resetState()
+            onNavigateToLogin()
         }
     }
 
@@ -78,7 +89,7 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "Selamat Datang",
+                text = "Password Baru",
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold
                 ),
@@ -86,14 +97,14 @@ fun LoginScreen(
             )
 
             Text(
-                text = "Silakan masuk ke akun toko Anda",
+                text = "Masukkan kode OTP yang diterima dan buat password baru",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // Card Container for Form
+            // Card Container
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
@@ -109,16 +120,17 @@ fun LoginScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     OutlinedTextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        label = { Text("Email atau Username") },
+                        value = otp,
+                        onValueChange = { if (it.length <= 6) otp = it },
+                        label = { Text("Kode OTP (6 digit)") },
                         leadingIcon = {
                             Icon(
-                                imageVector = Icons.Filled.Person,
+                                imageVector = Icons.Filled.Key,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.fillMaxWidth()
@@ -127,9 +139,9 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     OutlinedTextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        label = { Text("Password") },
+                        value = newPassword,
+                        onValueChange = { newPassword = it },
+                        label = { Text("Password Baru") },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Filled.Lock,
@@ -139,15 +151,9 @@ fun LoginScreen(
                         },
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
-                            val image = if (passwordVisible)
-                                Icons.Filled.Visibility
-                            else Icons.Filled.VisibilityOff
-
+                            val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Icon(
-                                    imageVector = image,
-                                    contentDescription = if (passwordVisible) "Sembunyikan password" else "Tampilkan password"
-                                )
+                                Icon(imageVector = image, contentDescription = "Toggle visibility")
                             }
                         },
                         singleLine = true,
@@ -155,29 +161,33 @@ fun LoginScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                    // Lupa Password Button
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        TextButton(
-                            onClick = onNavigateToForgotPassword,
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text(
-                                text = "Lupa Password?",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    fontWeight = FontWeight.SemiBold
-                                ),
-                                color = MaterialTheme.colorScheme.primary
+                    OutlinedTextField(
+                        value = confirmPassword,
+                        onValueChange = { confirmPassword = it },
+                        label = { Text("Konfirmasi Password Baru") },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Filled.Lock,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
                             )
-                        }
-                    }
+                        },
+                        visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            val image = if (confirmPasswordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                            IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
+                                Icon(imageVector = image, contentDescription = "Toggle visibility")
+                            }
+                        },
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
 
                     if (authState is AuthState.Error) {
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             text = (authState as AuthState.Error).message,
                             color = MaterialTheme.colorScheme.error,
@@ -186,10 +196,20 @@ fun LoginScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
                     Button(
-                        onClick = { viewModel.login(email, password) },
+                        onClick = {
+                            if (otp.length != 6) {
+                                Toast.makeText(context, "Harap masukkan 6 digit kode OTP", Toast.LENGTH_SHORT).show()
+                            } else if (newPassword.isBlank() || confirmPassword.isBlank()) {
+                                Toast.makeText(context, "Harap isi password baru dan konfirmasi password", Toast.LENGTH_SHORT).show()
+                            } else if (newPassword != confirmPassword) {
+                                Toast.makeText(context, "Password baru dan konfirmasi password tidak cocok", Toast.LENGTH_SHORT).show()
+                            } else {
+                                viewModel.resetPassword(role, identifier, otp, newPassword, confirmPassword)
+                            }
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
@@ -204,7 +224,7 @@ fun LoginScreen(
                             )
                         } else {
                             Text(
-                                text = "Masuk",
+                                text = "Ubah Password",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -215,11 +235,9 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            TextButton(
-                onClick = onNavigateToRegister
-            ) {
+            TextButton(onClick = onNavigateToLogin) {
                 Text(
-                    text = "Belum punya akun? Daftar Toko Sekarang",
+                    text = "Batal dan Kembali ke Login",
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.SemiBold
                     ),

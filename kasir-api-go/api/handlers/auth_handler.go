@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"kasir-api-go/db"
@@ -49,6 +50,160 @@ type ResendOTPRequest struct {
 type LoginRequest struct {
 	Email    string `json:"email" binding:"required"`
 	Password string `json:"password" binding:"required"`
+}
+
+type ForgotPasswordRequest struct {
+	Role       string `json:"role" binding:"required"`       // "owner" atau "kasir"
+	Identifier string `json:"identifier" binding:"required"` // email (owner) / username (kasir)
+}
+
+type ResetPasswordRequest struct {
+	Role            string `json:"role" binding:"required"`       // "owner" atau "kasir"
+	Identifier      string `json:"identifier" binding:"required"` // email / username
+	OTP             string `json:"otp" binding:"required"`
+	NewPassword     string `json:"newPassword" binding:"required"`
+	ConfirmPassword string `json:"confirmPassword" binding:"required"`
+}
+
+func (h *AuthHandler) ForgotPassword(c *gin.Context) {
+	var req ForgotPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Parameter tidak valid"})
+		return
+	}
+
+	req.Role = strings.ToLower(strings.TrimSpace(req.Role))
+	req.Identifier = strings.TrimSpace(req.Identifier)
+
+	var targetUser db.User
+	var ownerEmail string
+	var err error
+
+	if req.Role == "owner" {
+		targetUser, err = h.queries.GetUserByEmail(c.Request.Context(), pgtype.Text{String: req.Identifier, Valid: true})
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Email owner tidak ditemukan"})
+			return
+		}
+		if targetUser.Role != "owner" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Akun bukan merupakan akun owner"})
+			return
+		}
+		ownerEmail = targetUser.Email.String
+	} else if req.Role == "kasir" || req.Role == "karyawan" {
+		targetUser, err = h.queries.GetUserByIdentifier(c.Request.Context(), req.Identifier)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Username kasir/karyawan tidak ditemukan"})
+			return
+		}
+		if targetUser.Role != "kasir" && targetUser.Role != "karyawan" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Akun bukan merupakan akun kasir/karyawan"})
+			return
+		}
+
+		if !targetUser.StoreID.Valid {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Kasir/karyawan tidak terhubung ke toko manapun"})
+			return
+		}
+
+		owners, err := h.queries.ListStoreOwners(c.Request.Context(), targetUser.StoreID)
+		if err != nil || len(owners) == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Email owner toko tidak ditemukan"})
+			return
+		}
+		ownerEmail = owners[0].Email.String
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Role tidak valid"})
+		return
+	}
+
+	if ownerEmail == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Email tujuan pengiriman OTP tidak valid"})
+		return
+	}
+
+	otp := utils.GenerateOTP()
+
+	targetUserIDUUID, _ := uuid.FromBytes(targetUser.ID.Bytes[:])
+
+	resetData := utils.PasswordResetData{
+		UserID:     targetUserIDUUID.String(),
+		TargetUser: req.Identifier,
+		Role:       req.Role,
+		OwnerEmail: ownerEmail,
+		OTP:        otp,
+	}
+
+	redisKey := fmt.Sprintf("%s:%s", req.Role, req.Identifier)
+	if err := utils.SavePasswordResetData(c.Request.Context(), redisKey, resetData); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan data reset password"})
+		return
+	}
+
+	go func() {
+		err := utils.SendOTPEmail(ownerEmail, otp)
+		if err != nil {
+			log.Printf("Gagal mengirim email OTP lupa password ke %s: %v", ownerEmail, err)
+		}
+	}()
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":     "OTP berhasil dikirim",
+		"owner_email": ownerEmail,
+	})
+}
+
+func (h *AuthHandler) ResetPassword(c *gin.Context) {
+	var req ResetPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Parameter tidak valid"})
+		return
+	}
+
+	if req.NewPassword != req.ConfirmPassword {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Password baru dan konfirmasi password tidak cocok"})
+		return
+	}
+
+	req.Role = strings.ToLower(strings.TrimSpace(req.Role))
+	req.Identifier = strings.TrimSpace(req.Identifier)
+
+	redisKey := fmt.Sprintf("%s:%s", req.Role, req.Identifier)
+	resetData, err := utils.GetPasswordResetData(c.Request.Context(), redisKey)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Sesi OTP telah kedaluwarsa atau tidak ditemukan"})
+		return
+	}
+
+	if resetData.OTP != req.OTP {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Kode OTP tidak valid"})
+		return
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memproses password baru"})
+		return
+	}
+
+	targetUUID, err := uuid.Parse(resetData.UserID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ID pengguna tidak valid"})
+		return
+	}
+
+	err = h.queries.UpdateUserPassword(c.Request.Context(), db.UpdateUserPasswordParams{
+		ID:           pgtype.UUID{Bytes: targetUUID, Valid: true},
+		PasswordHash: string(hashedPassword),
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memperbarui password"})
+		return
+	}
+
+	utils.DeletePasswordResetData(c.Request.Context(), redisKey)
+
+	c.JSON(http.StatusOK, gin.H{"message": "Password berhasil diperbarui"})
 }
 
 func (h *AuthHandler) RegisterStore(c *gin.Context) {
