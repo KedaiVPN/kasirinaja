@@ -1,0 +1,1277 @@
+package com.poskedai.store.ui
+
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.WorkspacePremium
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.paddingFromBaseline
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.poskedai.core.network.RetrofitClient
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Divider
+import androidx.compose.material3.Icon
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.NavigationDrawerItemDefaults
+import androidx.compose.ui.Modifier
+import androidx.navigation.compose.rememberNavController
+import androidx.compose.runtime.Composable
+import com.poskedai.store.ui.viewmodels.ScanViewModel
+import com.poskedai.store.ui.screens.BarcodeScannerFormScreen
+import com.poskedai.store.ui.screens.StockScreen
+import androidx.compose.runtime.remember
+import com.poskedai.store.ui.screens.CameraCaptureScreen
+import androidx.compose.foundation.layout.width
+import com.poskedai.store.data.local.AppDatabase
+import com.poskedai.store.ui.screens.AddProductScreen
+import androidx.navigation.compose.currentBackStackEntryAsState
+import com.poskedai.store.ui.viewmodels.ReceiptViewModel
+import com.poskedai.store.ui.screens.DashboardScreen
+import com.poskedai.store.ui.screens.EditStoreScreen
+import com.poskedai.store.ui.viewmodels.EditStoreViewModel
+import com.poskedai.store.data.repository.StoreRepository
+import com.poskedai.store.presentation.auth.RegisterStoreScreen
+import com.poskedai.store.ui.screens.PaymentScreen
+import com.poskedai.store.ui.screens.HistoryScreen
+import com.poskedai.store.ui.viewmodels.HistoryViewModel
+import com.poskedai.store.ui.viewmodels.HistoryViewModelFactory
+import androidx.compose.material3.Scaffold
+import com.poskedai.store.presentation.auth.AuthViewModel
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+
+import com.poskedai.core.network.WebSocketManager
+import kotlinx.coroutines.launch
+
+import androidx.compose.runtime.setValue
+import com.poskedai.store.presentation.auth.AuthViewModelFactory
+import com.poskedai.store.ui.screens.ScanScreen
+import com.poskedai.store.ui.viewmodels.ScanViewModelFactory
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.foundation.layout.Box
+import com.poskedai.store.ui.screens.MasterScreen
+import com.poskedai.store.ui.navigation.Screen
+import androidx.compose.material3.NavigationBarItem
+import com.poskedai.store.presentation.auth.VerifyOtpScreen
+import com.poskedai.store.ui.screens.ReportsScreen
+import com.poskedai.store.ui.screens.SalesStatsScreen
+import com.poskedai.store.ui.screens.SubscriptionPackagesScreen
+import com.poskedai.store.ui.screens.SubscriptionChannelsScreen
+import com.poskedai.store.ui.screens.SubscriptionDetailScreen
+import com.poskedai.store.ui.components.ProFeatureDialog
+import com.poskedai.store.ui.viewmodels.StoreSubscriptionViewModel
+import com.poskedai.store.ui.viewmodels.ProSubscriptionState
+import com.poskedai.store.ui.viewmodels.ReportsViewModel
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import com.poskedai.store.data.repository.ProductRepository
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.runtime.collectAsState
+import androidx.compose.material3.NavigationBar
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.poskedai.store.presentation.auth.LoginScreen
+import androidx.navigation.compose.composable
+import com.poskedai.store.ui.screens.SettingsScreen
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import com.poskedai.store.ui.screens.ReceiptScreen
+import androidx.navigation.compose.NavHost
+import androidx.compose.runtime.mutableStateOf
+import com.poskedai.store.ui.viewmodels.ReceiptViewModelFactory
+
+@Composable
+fun MainScreen(initialRoute: String? = null) {
+    val navController = rememberNavController()
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val tokenManager = com.poskedai.core.network.TokenManager(context)
+    val authRepository = com.poskedai.store.data.repository.AuthRepository(
+        com.poskedai.core.network.RetrofitClient.authApi,
+        tokenManager
+    )
+
+    val storeSubscriptionViewModel: StoreSubscriptionViewModel = viewModel(
+        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                return StoreSubscriptionViewModel(tokenManager) as T
+            }
+        }
+    )
+    val proState by storeSubscriptionViewModel.proState.collectAsState()
+    val isProStore = (proState as? ProSubscriptionState.Success)?.isPro ?: false
+
+    // Auth ViewModel
+    val authViewModel: AuthViewModel = viewModel(
+        factory = AuthViewModelFactory(authRepository)
+    )
+
+    val productDao = AppDatabase.getDatabase(context).productDao()
+    val transactionDao = AppDatabase.getDatabase(context).transactionDao()
+    val database = AppDatabase.getDatabase(context)
+    val productRepository = ProductRepository(productDao, transactionDao, context)
+
+    val webSocketManager = remember {
+        WebSocketManager(
+            onSyncProduct = {
+                coroutineScope.launch {
+                    try {
+                        productRepository.syncStoreProducts()
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        )
+    }
+
+    val isUserLoggedIn = tokenManager.getToken() != null
+    val userRole = tokenManager.getRole() ?: "owner"
+
+    var startDest by remember { mutableStateOf(Screen.Login.route) }
+
+    fun performLogout() {
+        coroutineScope.launch {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                database.clearAllTables()
+            }
+            tokenManager.clearToken()
+            startDest = Screen.Login.route
+            authViewModel.resetState()
+            navController.navigate(Screen.Login.route) {
+                popUpTo(navController.graph.id) { inclusive = true }
+            }
+        }
+    }
+
+    // Automatically trigger logout for cashiers if 401 response or Pro expires
+    LaunchedEffect(Unit) {
+        RetrofitClient.setOnUnauthorizedListener {
+            val role = tokenManager.getRole()
+            if (role == "kasir") {
+                coroutineScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                    android.widget.Toast.makeText(
+                        context,
+                        "Masa aktif Pro toko telah berakhir. Sesi login karyawan dikunci.",
+                        android.widget.Toast.LENGTH_LONG
+                    ).show()
+                    performLogout()
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(proState, userRole) {
+        if (userRole == "kasir" && proState is ProSubscriptionState.Success && !isProStore) {
+            android.widget.Toast.makeText(
+                context,
+                "Masa aktif Pro toko telah berakhir. Sesi login karyawan dikunci.",
+                android.widget.Toast.LENGTH_LONG
+            ).show()
+            performLogout()
+        }
+    }
+
+    // Request permission for Post Notifications (Android 13+)
+    val notificationPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            android.util.Log.d("FCM", "Notification permission granted")
+        } else {
+            android.util.Log.d("FCM", "Notification permission denied")
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            val permissionCheckResult = androidx.core.content.ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            )
+            if (permissionCheckResult != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+
+    LaunchedEffect(isUserLoggedIn) {
+        if (isUserLoggedIn) {
+            tokenManager.getStoreId()?.let {
+                webSocketManager.connect(it)
+            }
+
+            com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                if (!task.isSuccessful) {
+                    android.util.Log.w("FCM", "Fetching FCM registration token failed", task.exception)
+                    return@addOnCompleteListener
+                }
+
+                val token = task.result
+                android.util.Log.d("FCM", "FCM token: $token")
+                coroutineScope.launch {
+                    try {
+                        val authApi = com.poskedai.core.network.RetrofitClient.authApi
+                        authApi.updateFcmToken(mapOf("fcm_token" to token))
+                    } catch(e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+
+            // Perform one-time initial sync on startup/login
+            coroutineScope.launch {
+                try {
+                    productRepository.syncStoreProducts()
+                    val transactionRepository = com.poskedai.store.data.repository.TransactionRepository(
+                        com.poskedai.store.data.local.AppDatabase.getDatabase(context).transactionDao(),
+                        com.poskedai.core.network.RetrofitClient.transactionApi,
+                        com.poskedai.store.data.local.AppDatabase.getDatabase(context).productDao()
+                    )
+                    transactionRepository.fetchAndSaveAllTransactions()
+                    storeSubscriptionViewModel.loadProStatusAndPlans()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        } else {
+            webSocketManager.disconnect()
+        }
+    }
+
+    val transactionRepository = com.poskedai.store.data.repository.TransactionRepository(
+        database.transactionDao(),
+        com.poskedai.core.network.RetrofitClient.transactionApi,
+        database.productDao()
+    )
+    val workManager = androidx.work.WorkManager.getInstance(context)
+
+    val dashboardViewModel: com.poskedai.store.ui.viewmodels.DashboardViewModel = viewModel(
+        factory = com.poskedai.store.ui.viewmodels.DashboardViewModel.Factory(
+            database.transactionDao(),
+            database.productDao(),
+            transactionRepository,
+            tokenManager
+        )
+    )
+
+    var showSyncDialog by remember { mutableStateOf(false) }
+    var showInitialSyncDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        com.poskedai.store.data.repository.TransactionSyncState.syncStatus.collect { status ->
+            when (status) {
+                "sync_started" -> {
+                    showSyncDialog = true
+                    android.widget.Toast.makeText(context, "Sinkronisasi dimulai...", android.widget.Toast.LENGTH_SHORT).show()
+                }
+                "sync_success" -> {
+                    showSyncDialog = false
+                    android.widget.Toast.makeText(context, "Sinkronisasi berhasil!", android.widget.Toast.LENGTH_SHORT).show()
+                    dashboardViewModel.fetchServerStats()
+                }
+                "sync_failed" -> {
+                    showSyncDialog = false
+                    android.widget.Toast.makeText(context, "Sinkronisasi gagal. Akan mencoba lagi nanti.", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    if (showSyncDialog) {
+        androidx.compose.ui.window.Dialog(onDismissRequest = { /* Cannot dismiss */ }) {
+            androidx.compose.material3.Surface(
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                color = androidx.compose.material3.MaterialTheme.colorScheme.surface
+            ) {
+                androidx.compose.foundation.layout.Row(
+                    modifier = androidx.compose.ui.Modifier.padding(16.dp),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                ) {
+                    androidx.compose.material3.CircularProgressIndicator(modifier = androidx.compose.ui.Modifier.size(24.dp))
+                    androidx.compose.foundation.layout.Spacer(modifier = androidx.compose.ui.Modifier.width(16.dp))
+                    androidx.compose.material3.Text("Sedang menyinkronkan transaksi...")
+                }
+            }
+        }
+    }
+
+    if (showInitialSyncDialog) {
+        androidx.compose.ui.window.Dialog(onDismissRequest = { /* Cannot dismiss */ }) {
+            androidx.compose.material3.Surface(
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                color = androidx.compose.material3.MaterialTheme.colorScheme.surface
+            ) {
+                androidx.compose.foundation.layout.Row(
+                    modifier = androidx.compose.ui.Modifier.padding(16.dp),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                ) {
+                    androidx.compose.material3.CircularProgressIndicator(modifier = androidx.compose.ui.Modifier.size(24.dp))
+                    androidx.compose.foundation.layout.Spacer(modifier = androidx.compose.ui.Modifier.width(16.dp))
+                    androidx.compose.material3.Text("Sedang menyinkronkan data, mohon tunggu...")
+                }
+            }
+        }
+    }
+
+    val scanViewModel: ScanViewModel = viewModel(
+        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                return ScanViewModel(productRepository, transactionRepository, workManager) as T
+            }
+        }
+    )
+
+    val receiptViewModel: ReceiptViewModel = viewModel(
+        factory = ReceiptViewModelFactory(productRepository, transactionRepository)
+    )
+
+    val historyViewModel: HistoryViewModel = viewModel(
+        factory = HistoryViewModelFactory(transactionDao, transactionRepository, tokenManager)
+    )
+
+    var showProDialog by remember { mutableStateOf(false) }
+    var isCheckingToken by remember { mutableStateOf(true) }
+    var targetDeepLink by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(initialRoute) {
+        val token = tokenManager.getToken()
+        if (!token.isNullOrEmpty()) {
+            if (isCheckingToken) {
+                startDest = Screen.Dashboard.route
+            }
+
+            if (initialRoute == "reports_stock") {
+                targetDeepLink = Screen.Reports.route
+            } else if (initialRoute?.startsWith("receipt/") == true) {
+                targetDeepLink = initialRoute
+            }
+        } else {
+            startDest = Screen.Login.route
+        }
+        isCheckingToken = false
+    }
+
+    LaunchedEffect(isCheckingToken, targetDeepLink) {
+        if (!isCheckingToken && targetDeepLink != null) {
+            kotlinx.coroutines.delay(100)
+            navController.navigate(targetDeepLink!!)
+            targetDeepLink = null
+        }
+    }
+
+    var showLogoutConfirmDialog by remember { mutableStateOf(false) }
+    var showReportDialog by remember { mutableStateOf(false) }
+    var isReporting by remember { mutableStateOf(false) }
+
+    if (showProDialog) {
+        ProFeatureDialog(
+            onDismiss = { showProDialog = false },
+            onUpgradeClick = {
+                navController.navigate(Screen.SubscriptionPackages.route)
+            }
+        )
+    }
+
+    fun handleLogoutAttempt() {
+        coroutineScope.launch {
+            val pendingTx = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { transactionDao.getPendingTransactions() }
+            if (pendingTx.isNotEmpty()) {
+                showLogoutConfirmDialog = true
+            } else {
+                performLogout()
+            }
+        }
+    }
+
+    if (showLogoutConfirmDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showLogoutConfirmDialog = false },
+            title = { androidx.compose.material3.Text("Konfirmasi Logout") },
+            text = { androidx.compose.material3.Text("Ada transaksi yang belum disinkronisasi. Jika Anda keluar, data transaksi offline tersebut akan hilang. Lanjutkan?") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        showLogoutConfirmDialog = false
+                        performLogout()
+                    }
+                ) {
+                    androidx.compose.material3.Text("Lanjutkan", color = androidx.compose.material3.MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = { showLogoutConfirmDialog = false }
+                ) {
+                    androidx.compose.material3.Text("Batal")
+                }
+            }
+        )
+    }
+
+    if (isCheckingToken) {
+        return
+    }
+
+    val bottomBarScreens = listOf(
+        Screen.Dashboard,
+        Screen.History,
+        Screen.Scan
+    )
+
+    val bottomBarVisibleScreens = listOf(
+        Screen.Dashboard.route,
+        Screen.History.route,
+        Screen.Scan.route
+    )
+
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val userEmail = tokenManager.getEmail() ?: ""
+    val userName = tokenManager.getUserName()
+    val userPhotoUrl = tokenManager.getPhotoUrl()
+
+    if (showReportDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { if (!isReporting) showReportDialog = false },
+            title = { androidx.compose.material3.Text("Tutup Kasir") },
+            text = { androidx.compose.material3.Text("Apakah Anda yakin ingin menutup shift dan melaporkan transaksi ke Owner? Transaksi yang belum dilaporkan akan dikirim.") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    enabled = !isReporting,
+                    onClick = {
+                        isReporting = true
+                        coroutineScope.launch {
+                            try {
+                                val emptyReq = com.poskedai.core.network.SubmitReportRequest("", "", 0, 0L, 0L)
+                                val response = com.poskedai.core.network.RetrofitClient.reportApi.submitReport(emptyReq)
+
+                                if (response.isSuccessful) {
+                                    val cashierId = tokenManager.getUserId() ?: ""
+                                    transactionDao.markTransactionsAsReported(cashierId)
+                                    android.widget.Toast.makeText(context, "Berhasil dilaporkan ke Owner", android.widget.Toast.LENGTH_SHORT).show()
+                                } else {
+                                    val errorBody = response.errorBody()?.string() ?: ""
+                                    if (errorBody.contains("NO_UNREPORTED_TRANSACTIONS")) {
+                                        android.widget.Toast.makeText(context, "Semua transaksi sudah dilaporkan!", android.widget.Toast.LENGTH_LONG).show()
+                                    } else {
+                                        android.widget.Toast.makeText(context, "Gagal melapor: Server error", android.widget.Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                android.widget.Toast.makeText(context, "Gagal melapor: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                            } finally {
+                                isReporting = false
+                                showReportDialog = false
+                            }
+                        }
+                    }
+                ) {
+                    androidx.compose.material3.Text(if (isReporting) "Mengirim..." else "Laporkan Transaksi")
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(
+                    enabled = !isReporting,
+                    onClick = { showReportDialog = false }
+                ) {
+                    androidx.compose.material3.Text("Batal")
+                }
+            }
+        )
+    }
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        gesturesEnabled = drawerState.isOpen,
+        drawerContent = {
+            ModalDrawerSheet {
+                Column(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth()
+                        .padding(24.dp)
+                ) {
+                    // Header
+                    Row(
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).clickable {
+                            coroutineScope.launch { drawerState.close() }
+                            navController.navigate("edit_profile")
+                        }.padding(8.dp)
+                    ) {
+                        if (!userPhotoUrl.isNullOrEmpty()) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data("${RetrofitClient.IMAGE_BASE_URL}${userPhotoUrl}")
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = "Profile Photo",
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            androidx.compose.foundation.layout.Box(
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                                contentAlignment = androidx.compose.ui.Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Filled.Person,
+                                    contentDescription = "Profile Icon",
+                                    modifier = Modifier.size(32.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+
+                        androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(16.dp))
+
+                        Column {
+                            Text(
+                                text = if (userName.isNotEmpty()) userName else "Pengguna",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            if (userEmail.isNotEmpty()) {
+                                Text(
+                                    text = userEmail,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            androidx.compose.material3.Surface(
+                                color = if (userRole == "owner") Color(0xFFFFF9C4) else Color(0xFFE3F2FD),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp),
+                                modifier = Modifier.padding(top = 4.dp)
+                            ) {
+                                Text(
+                                    text = if (userRole == "owner") "Owner" else "Kasir",
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (userRole == "owner") Color(0xFFF57F17) else Color(0xFF1565C0)
+                                )
+                            }
+                        }
+                    }
+
+                    Divider(modifier = Modifier.padding(vertical = 16.dp))
+
+                    if (userRole == "owner") {
+                        val drawerItemColors = NavigationDrawerItemDefaults.colors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        NavigationDrawerItem(
+                            label = { Text(Screen.SalesStats.title) },
+                            selected = currentRoute == Screen.SalesStats.route,
+                            onClick = {
+                                coroutineScope.launch { drawerState.close() }
+                                navController.navigate(Screen.SalesStats.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            icon = { Icon(Screen.SalesStats.icon, contentDescription = Screen.SalesStats.title) },
+                            colors = drawerItemColors,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                        NavigationDrawerItem(
+                            label = {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                                ) {
+                                    Text(Screen.Reports.title)
+                                    if (!isProStore) {
+                                        androidx.compose.material3.Surface(
+                                            color = Color(0xFFFFE082),
+                                            shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+                                        ) {
+                                            Text("PRO", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE65100), modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                        }
+                                    }
+                                }
+                            },
+                            selected = currentRoute == Screen.Reports.route,
+                            onClick = {
+                                coroutineScope.launch { drawerState.close() }
+                                if (!isProStore) {
+                                    showProDialog = true
+                                } else {
+                                    navController.navigate(Screen.Reports.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            },
+                            icon = { Icon(Screen.Reports.icon, contentDescription = Screen.Reports.title) },
+                            colors = drawerItemColors,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                        NavigationDrawerItem(
+                            label = { Text(Screen.Stock.title) },
+                            selected = currentRoute == Screen.Stock.route,
+                            onClick = {
+                                coroutineScope.launch { drawerState.close() }
+                                navController.navigate(Screen.Stock.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            icon = { Icon(Screen.Stock.icon, contentDescription = Screen.Stock.title) },
+                            colors = drawerItemColors,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                        NavigationDrawerItem(
+                            label = {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                                ) {
+                                    Text(Screen.Master.title)
+                                    if (!isProStore) {
+                                        androidx.compose.material3.Surface(
+                                            color = Color(0xFFFFE082),
+                                            shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+                                        ) {
+                                            Text("PRO", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE65100), modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                        }
+                                    }
+                                }
+                            },
+                            selected = currentRoute == Screen.Master.route,
+                            onClick = {
+                                coroutineScope.launch { drawerState.close() }
+                                if (!isProStore) {
+                                    showProDialog = true
+                                } else {
+                                    navController.navigate(Screen.Master.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            },
+                            icon = { Icon(Screen.Master.icon, contentDescription = Screen.Master.title) },
+                            colors = drawerItemColors,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                        NavigationDrawerItem(
+                            label = {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                                ) {
+                                    Text(Screen.Settings.title)
+                                    if (!isProStore) {
+                                        androidx.compose.material3.Surface(
+                                            color = Color(0xFFFFE082),
+                                            shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+                                        ) {
+                                            Text("PRO", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE65100), modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                        }
+                                    }
+                                }
+                            },
+                            selected = currentRoute == Screen.Settings.route,
+                            onClick = {
+                                coroutineScope.launch { drawerState.close() }
+                                if (!isProStore) {
+                                    showProDialog = true
+                                } else {
+                                    navController.navigate(Screen.Settings.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            },
+                            icon = { Icon(Screen.Settings.icon, contentDescription = Screen.Settings.title) },
+                            colors = drawerItemColors,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                        NavigationDrawerItem(
+                            label = { Text("Langganan Pro") },
+                            selected = currentRoute == Screen.SubscriptionPackages.route,
+                            onClick = {
+                                coroutineScope.launch { drawerState.close() }
+                                navController.navigate(Screen.SubscriptionPackages.route)
+                            },
+                            icon = { Icon(Icons.Default.WorkspacePremium, contentDescription = "Fitur Pro") },
+                            colors = drawerItemColors,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                    }
+
+                    val drawerItemColors = NavigationDrawerItemDefaults.colors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    NavigationDrawerItem(
+                        label = { Text(Screen.Feedback.title) },
+                        selected = currentRoute == Screen.Feedback.route,
+                        onClick = {
+                            coroutineScope.launch { drawerState.close() }
+                            navController.navigate(Screen.Feedback.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        icon = { Icon(Screen.Feedback.icon, contentDescription = Screen.Feedback.title) },
+                        colors = drawerItemColors,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+
+                    NavigationDrawerItem(
+                        label = { Text(Screen.Support.title) },
+                        selected = false,
+                        onClick = {
+                            coroutineScope.launch { drawerState.close() }
+                            val storeName = tokenManager.getStoreName() ?: ""
+                            val displayRole = if (userRole.equals("owner", ignoreCase = true)) "Owner" else if (userRole.equals("kasir", ignoreCase = true)) "Kasir" else userRole.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.ROOT) else it.toString() }
+                            val supportMessage = "| Nama: $userName\n| Status: $displayRole\n| Nama toko: $storeName\n-----------------------------\n(Silahkan sampaikan keluhan anda di sini)"
+                            val encodedMessage = android.net.Uri.encode(supportMessage)
+                            val whatsappUrl = "https://wa.me/6287777694482?text=$encodedMessage"
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(whatsappUrl))
+                            try {
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                android.widget.Toast.makeText(context, "Tidak dapat membuka WhatsApp", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        icon = { Icon(Screen.Support.icon, contentDescription = Screen.Support.title) },
+                        colors = drawerItemColors,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    if (userRole == "kasir") {
+                        androidx.compose.material3.Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                            colors = androidx.compose.material3.CardDefaults.cardColors(
+                                containerColor = androidx.compose.ui.graphics.Color.White
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color.LightGray)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                            ) {
+                                Text(
+                                    text = "Selesaikan transaksi dan setor hasil ke pemilik.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = androidx.compose.ui.graphics.Color.Gray,
+                                    modifier = Modifier.padding(bottom = 12.dp)
+                                )
+                                androidx.compose.material3.Button(
+                                    onClick = {
+                                        coroutineScope.launch { drawerState.close() }
+                                        showReportDialog = true
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary
+                                    )
+                                ) {
+                                    Text(
+                                        text = "Laporkan Transaksi",
+                                        color = androidx.compose.ui.graphics.Color.White,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ) {
+    Scaffold(
+        bottomBar = {
+            val currentDestination = navBackStackEntry?.destination
+            if (bottomBarVisibleScreens.contains(currentRoute)) {
+                androidx.compose.material3.Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(32.dp),
+                    color = androidx.compose.ui.graphics.Color.White,
+                    shadowElevation = 8.dp
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        var indicatorOffsetX by remember { androidx.compose.runtime.mutableStateOf(0f) }
+                        var indicatorWidth by remember { androidx.compose.runtime.mutableStateOf(0f) }
+                        var indicatorHeight by remember { androidx.compose.runtime.mutableStateOf(0f) }
+                        val density = androidx.compose.ui.platform.LocalDensity.current
+
+                        val animatedOffsetX by androidx.compose.animation.core.animateFloatAsState(
+                            targetValue = indicatorOffsetX,
+                            animationSpec = androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioLowBouncy, stiffness = androidx.compose.animation.core.Spring.StiffnessLow)
+                        )
+                        val animatedWidth by androidx.compose.animation.core.animateFloatAsState(
+                            targetValue = indicatorWidth,
+                            animationSpec = androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioLowBouncy, stiffness = androidx.compose.animation.core.Spring.StiffnessLow)
+                        )
+
+                        if (indicatorWidth > 0f) {
+                            Box(
+                                modifier = Modifier
+                                    .offset { androidx.compose.ui.unit.IntOffset(animatedOffsetX.toInt(), 0) }
+                                    .width(with(density) { animatedWidth.toDp() })
+                                    .height(with(density) { indicatorHeight.toDp() })
+                                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(24.dp))
+                                    .background(androidx.compose.material3.MaterialTheme.colorScheme.primary)
+                                    .align(androidx.compose.ui.Alignment.CenterStart)
+                            )
+                        }
+
+                        androidx.compose.foundation.layout.Row(
+                            modifier = Modifier.fillMaxWidth().animateContentSize(animationSpec = androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioLowBouncy, stiffness = androidx.compose.animation.core.Spring.StiffnessLow)),
+                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceEvenly,
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                        ) {
+                            bottomBarScreens.forEach { screen ->
+                                val isSelected = currentDestination?.hierarchy?.any {
+                                    it.route == screen.route
+                                } == true
+
+                                Box(modifier = Modifier.onGloballyPositioned { coordinates ->
+                                    if (isSelected) {
+                                        indicatorOffsetX = coordinates.positionInParent().x
+                                        indicatorWidth = coordinates.size.width.toFloat()
+                                        indicatorHeight = coordinates.size.height.toFloat()
+                                    }
+                                }) {
+                                    androidx.compose.foundation.layout.Row(
+                                        modifier = Modifier
+                                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(24.dp))
+                                            .clickable {
+                                                navController.navigate(screen.route) {
+                                                    popUpTo(navController.graph.findStartDestination().id) {
+                                                        saveState = true
+                                                    }
+                                                    launchSingleTop = true
+                                                    restoreState = true
+                                                }
+                                            }
+                                            .padding(horizontal = if (isSelected) 16.dp else 12.dp, vertical = 12.dp),
+                                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = screen.icon,
+                                            contentDescription = screen.title,
+                                            tint = if (isSelected) androidx.compose.ui.graphics.Color.White else androidx.compose.ui.graphics.Color(0xFF2C3E50)
+                                        )
+                                        if (isSelected) {
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = screen.title,
+                                                color = androidx.compose.ui.graphics.Color.White,
+                                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                                fontSize = 14.sp,
+                                                maxLines = 1
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = startDest,
+            modifier = Modifier.padding(innerPadding)
+        ) {
+            composable(Screen.Login.route) {
+                LoginScreen(
+                    viewModel = authViewModel,
+                    onNavigateToRegister = { navController.navigate(Screen.Register.route) },
+                    onLoginSuccess = {
+                        coroutineScope.launch {
+                            try {
+                                showInitialSyncDialog = true
+                                productRepository.syncStoreProducts()
+                                transactionRepository.fetchAndSaveAllTransactions()
+                                dashboardViewModel.fetchServerStats()
+                                storeSubscriptionViewModel.loadProStatusAndPlans()
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            } finally {
+                                showInitialSyncDialog = false
+                                navController.navigate(Screen.Dashboard.route) {
+                                    popUpTo(Screen.Login.route) { inclusive = true }
+                                }
+                            }
+                        }
+                    }
+                )
+            }
+            composable(Screen.Register.route) {
+                RegisterStoreScreen(
+                    viewModel = authViewModel,
+                    onNavigateToLogin = { navController.popBackStack() },
+                    onNavigateToVerifyOtp = { email ->
+                        navController.navigate("${Screen.VerifyOtp.route}/$email")
+                    }
+                )
+            }
+            composable(
+                route = "${Screen.VerifyOtp.route}/{email}",
+                arguments = listOf(androidx.navigation.navArgument("email") { type = androidx.navigation.NavType.StringType })
+            ) { backStackEntry ->
+                val email = backStackEntry.arguments?.getString("email") ?: ""
+                VerifyOtpScreen(
+                    viewModel = authViewModel,
+                    email = email,
+                    onNavigateToDashboard = {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(0)
+                        }
+                    }
+                )
+            }
+            composable(Screen.Dashboard.route) {
+                DashboardScreen(
+                    viewModel = dashboardViewModel,
+                    onNavigateToEditStore = { navController.navigate("edit_store") },
+                    onNavigateToEditProfile = {
+                        navController.navigate("edit_profile")
+                    },
+                    onLogout = { handleLogoutAttempt() },
+                    onOpenDrawer = { coroutineScope.launch { drawerState.open() } },
+                    isPro = isProStore
+                )
+            }
+            composable("edit_store") {
+                val storeRepository = com.poskedai.store.data.repository.StoreRepository(com.poskedai.core.network.RetrofitClient.storeApi)
+                val editStoreViewModel: com.poskedai.store.ui.viewmodels.EditStoreViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                    factory = com.poskedai.store.ui.viewmodels.EditStoreViewModel.Factory(storeRepository, tokenManager)
+                )
+                com.poskedai.store.ui.screens.EditStoreScreen(
+                    viewModel = editStoreViewModel,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.Stock.route) {
+                if (userRole == "owner") {
+                    StockScreen(
+                        onNavigateToAddProduct = {
+                            navController.navigate(Screen.AddProduct.route)
+                        },
+                        onNavigateToEditProduct = { productId ->
+                            navController.navigate("${Screen.AddProduct.route}?productId=$productId")
+                        },
+                        onNavigateToEditProfile = {
+                            navController.navigate("edit_profile")
+                        },
+                        onLogout = { handleLogoutAttempt() },
+                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
+                    )
+                } else {
+                    androidx.compose.runtime.LaunchedEffect(Unit) {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Dashboard.route) { inclusive = true }
+                        }
+                    }
+                }
+            }
+            composable(Screen.History.route) {
+                HistoryScreen(
+                    viewModel = historyViewModel,
+                    onNavigateToReceipt = { transactionId ->
+                        navController.navigate("${Screen.Receipt.route}/$transactionId")
+                    },
+                    onNavigateToEditProfile = {
+                        navController.navigate("edit_profile")
+                    },
+                    onLogout = { handleLogoutAttempt() },
+                    onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
+                )
+            }
+            composable(Screen.Scan.route) {
+                ScanScreen(
+                    viewModel = scanViewModel,
+                    onNavigateToPayment = { navController.navigate(Screen.Payment.route) },
+                    onNavigateToEditProfile = {
+                        navController.navigate("edit_profile")
+                    },
+                    onLogout = { handleLogoutAttempt() },
+                    onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
+                )
+            }
+
+            composable(Screen.Payment.route) {
+                PaymentScreen(
+                    viewModel = scanViewModel,
+                    onNavigateBack = { navController.popBackStack() },
+                    onPaymentSuccess = { transactionId ->
+                        navController.navigate("${Screen.Receipt.route}/$transactionId") {
+                            popUpTo(Screen.Scan.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            composable(
+                route = "${Screen.Receipt.route}/{transactionId}",
+                arguments = listOf(androidx.navigation.navArgument("transactionId") { type = androidx.navigation.NavType.StringType })
+            ) { backStackEntry ->
+                val transactionId = backStackEntry.arguments?.getString("transactionId") ?: ""
+                ReceiptScreen(
+                    viewModel = receiptViewModel,
+                    transactionId = transactionId,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+            composable(Screen.Master.route) {
+                if (userRole == "owner") {
+                    MasterScreen(
+                        onNavigateToEditProfile = {
+                            navController.navigate("edit_profile")
+                        },
+                        onLogout = { handleLogoutAttempt() },
+                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
+                    )
+                } else {
+                    androidx.compose.runtime.LaunchedEffect(Unit) {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Dashboard.route) { inclusive = true }
+                        }
+                    }
+                }
+            }
+            composable(Screen.Settings.route) {
+                if (userRole == "owner") {
+                    SettingsScreen(
+                        onNavigateToEditProfile = {
+                            navController.navigate("edit_profile")
+                        },
+                        onLogout = { handleLogoutAttempt() },
+                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
+                    )
+                } else {
+                    androidx.compose.runtime.LaunchedEffect(Unit) {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Dashboard.route) { inclusive = true }
+                        }
+                    }
+                }
+            }
+
+            composable(Screen.Feedback.route) {
+                val userRepository = com.poskedai.store.data.repository.UserRepository(com.poskedai.core.network.RetrofitClient.userApi)
+                val feedbackViewModel: com.poskedai.store.ui.viewmodels.FeedbackViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                    factory = com.poskedai.store.ui.viewmodels.FeedbackViewModel.Factory(userRepository, tokenManager)
+                )
+                com.poskedai.store.ui.screens.FeedbackScreen(
+                    viewModel = feedbackViewModel,
+                    onNavigateToDashboard = {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Dashboard.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateToEditProfile = { navController.navigate("edit_profile") },
+                    onLogout = { handleLogoutAttempt() },
+                    onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
+                )
+            }
+
+            composable(Screen.SalesStats.route) {
+                if (userRole == "owner") {
+                    val reportsViewModel: ReportsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                        factory = ReportsViewModel.Factory(database.transactionDao(), productRepository)
+                    )
+                    SalesStatsScreen(
+                        viewModel = reportsViewModel,
+                        onNavigateToEditProfile = { navController.navigate("edit_profile") },
+                        onLogout = { handleLogoutAttempt() },
+                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } },
+                        isPro = isProStore,
+                        onProRequired = { showProDialog = true }
+                    )
+                } else {
+                    androidx.compose.runtime.LaunchedEffect(Unit) { navController.popBackStack() }
+                }
+            }
+
+            composable(Screen.SubscriptionPackages.route) {
+                SubscriptionPackagesScreen(
+                    viewModel = storeSubscriptionViewModel,
+                    onBack = { navController.popBackStack() },
+                    onNavigateToChannels = { navController.navigate(Screen.SubscriptionChannels.route) }
+                )
+            }
+
+            composable(Screen.SubscriptionChannels.route) {
+                SubscriptionChannelsScreen(
+                    viewModel = storeSubscriptionViewModel,
+                    onBack = { navController.popBackStack() },
+                    onCheckoutSuccess = { ref ->
+                        navController.navigate(Screen.SubscriptionDetail.createRoute(ref)) {
+                            popUpTo(Screen.SubscriptionPackages.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            composable(
+                route = Screen.SubscriptionDetail.route,
+                arguments = listOf(androidx.navigation.navArgument("reference") { type = androidx.navigation.NavType.StringType })
+            ) { backStackEntry ->
+                val ref = backStackEntry.arguments?.getString("reference") ?: ""
+                SubscriptionDetailScreen(
+                    reference = ref,
+                    viewModel = storeSubscriptionViewModel,
+                    onBackToDashboard = {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Dashboard.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            composable(Screen.Reports.route) {
+                if (userRole == "owner") {
+                    val reportsViewModel: ReportsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                        factory = ReportsViewModel.Factory(database.transactionDao(), productRepository)
+                    )
+                    ReportsScreen(
+                        viewModel = reportsViewModel,
+                        onNavigateToEditProfile = { navController.navigate("edit_profile") },
+                        onLogout = { handleLogoutAttempt() },
+                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
+                    )
+                } else {
+                    androidx.compose.runtime.LaunchedEffect(Unit) { navController.popBackStack() }
+                }
+            }
+            composable("edit_profile") {
+                val editProfileViewModel: com.poskedai.store.ui.viewmodels.EditProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                    factory = com.poskedai.store.ui.viewmodels.EditProfileViewModel.Factory(tokenManager)
+                )
+                com.poskedai.store.ui.screens.EditProfileScreen(viewModel = editProfileViewModel, onNavigateBack = { navController.popBackStack() })
+            }
+            composable(
+                route = "${Screen.AddProduct.route}?productId={productId}",
+                arguments = listOf(androidx.navigation.navArgument("productId") {
+                    type = androidx.navigation.NavType.StringType
+                    nullable = true
+                })
+            ) { backStackEntry ->
+                val productId = backStackEntry.arguments?.getString("productId")
+
+                val savedStateHandle = backStackEntry.savedStateHandle
+                val capturedImageUri = savedStateHandle.get<String>("captured_image_uri")
+                val scannedBarcode = savedStateHandle.get<String>("scanned_barcode")
+
+                if (capturedImageUri != null) savedStateHandle.remove<String>("captured_image_uri")
+                if (scannedBarcode != null) savedStateHandle.remove<String>("scanned_barcode")
+
+                AddProductScreen(
+                    productId = productId,
+                    capturedImageUri = capturedImageUri,
+                    scannedBarcode = scannedBarcode,
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToCamera = { navController.navigate(Screen.CameraCapture.route) },
+                    onNavigateToScanner = { navController.navigate(Screen.BarcodeScannerForm.route) }
+                )
+            }
+
+            composable(Screen.CameraCapture.route) {
+                CameraCaptureScreen(
+                    onImageCaptured = { uriString ->
+                        navController.previousBackStackEntry?.savedStateHandle?.set("captured_image_uri", uriString)
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            composable(Screen.BarcodeScannerForm.route) {
+                BarcodeScannerFormScreen(
+                    onBarcodeScanned = { barcode ->
+                        navController.previousBackStackEntry?.savedStateHandle?.set("scanned_barcode", barcode)
+                        navController.popBackStack()
+                    },
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+        }
+    }
+}
+}

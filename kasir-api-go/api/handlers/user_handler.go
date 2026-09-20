@@ -139,7 +139,7 @@ func (h *UserHandler) AddStoreEmployee(c *gin.Context) {
 	// If no username (email) is provided, fallback to a dummy one just in case.
 	email := req.Email
 	if email == "" {
-		email = req.Phone + "@dummy.kasirinaja.com"
+		email = req.Phone + "@dummy.poskedai.com"
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)

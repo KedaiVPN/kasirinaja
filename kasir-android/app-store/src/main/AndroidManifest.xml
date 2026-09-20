@@ -12,14 +12,14 @@
     <application
         android:allowBackup="true"
 
-        android:label="Kasirnya UMKM" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="POS Kedai - Aplikasi Kasir UMKM" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round"
 
         android:supportsRtl="true"
-        android:theme="@style/Theme.KasirinAja">
+        android:theme="@style/Theme.PosKedai">
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.KasirinAja">
+            android:theme="@style/Theme.PosKedai">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

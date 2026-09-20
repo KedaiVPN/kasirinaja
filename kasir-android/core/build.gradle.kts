@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.kasirinaja.core"
+    namespace = "com.poskedai.core"
     compileSdk = 34
 
     defaultConfig {

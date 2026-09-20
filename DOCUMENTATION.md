@@ -1,6 +1,6 @@
-# Dokumentasi Build & Deploy (KASIRINAJA)
+# Dokumentasi Build & Deploy (POS KEDAI)
 
-Dokumen ini adalah panduan lengkap untuk melakukan konfigurasi, *build*, dan proses *deploy* sistem KASIRINAJA baik untuk *backend* maupun aplikasi *Android*.
+Dokumen ini adalah panduan lengkap untuk melakukan konfigurasi, *build*, dan proses *deploy* sistem POS KEDAI baik untuk *backend* maupun aplikasi *Android*.
 
 ---
 
@@ -9,9 +9,9 @@ Dokumen ini adalah panduan lengkap untuk melakukan konfigurasi, *build*, dan pro
 Membangun aplikasi Android (`.apk`) maupun backend Java (`.jar`) biasanya membutuhkan spesifikasi komputer atau laptop yang tinggi. Namun, Anda tidak perlu khawatir karena Anda bisa melakukan kompilasi proyek ini sepenuhnya melalui *Cloud* gratis dari GitHub Actions menggunakan HP.
 
 ### A. Build Aplikasi Android (`.apk`):
-1. Buka repositori KASIRINAJA Anda di GitHub melalui browser HP.
+1. Buka repositori POS KEDAI Anda di GitHub melalui browser HP.
 2. (Opsional) Jika Anda perlu mengubah `BASE_URL` API agar mengarah ke domain VPS Anda:
-   - Cari file `kasir-android/core/src/main/java/com/kasirinaja/core/network/RetrofitClient.kt`.
+   - Cari file `kasir-android/core/src/main/java/com/poskedai/core/network/RetrofitClient.kt`.
    - Klik ikon **Pensil** untuk mengedit file, ubah `"http://10.0.2.2:8080/api/"` menjadi `"https://api.domainkamu.com/api/"`.
    - Simpan (*Commit changes*).
 3. Pindah ke menu/tab **Actions** di atas repositori GitHub Anda.
@@ -105,7 +105,7 @@ Agar aplikasi Spring Boot terus menyala meskipun terminal Anda tutup, buat sebua
 ```bash
 sudo sh -c 'cat << "SYSTEMD" > /etc/systemd/system/kasir-api.service
 [Unit]
-Description=KasirinAja Spring Boot API
+Description=POS Kedai Spring Boot API
 After=syslog.target network.target postgresql.service
 
 [Service]

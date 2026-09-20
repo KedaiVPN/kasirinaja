@@ -15,7 +15,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "KasirinAja"
+rootProject.name = "PosKedai"
 include(":app-store")
 include(":app-admin")
 include(":core")

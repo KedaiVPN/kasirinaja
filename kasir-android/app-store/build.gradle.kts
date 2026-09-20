@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.kasirinaja.store"
+    namespace = "com.poskedai.store"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.kasirinaja.store"
+        applicationId = "com.poskedai.store"
         minSdk = 24
         targetSdk = 34
         versionCode = 1

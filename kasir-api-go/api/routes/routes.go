@@ -25,7 +25,7 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 	// Root route to prevent 404 on base domain
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"message": "Kasir API is running. Access endpoints under /api",
+			"message": "POS Kedai API is running. Access endpoints under /api",
 		})
 	})
 

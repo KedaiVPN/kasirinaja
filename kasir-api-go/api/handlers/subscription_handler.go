@@ -150,7 +150,7 @@ func (h *SubscriptionHandler) Checkout(c *gin.Context) {
 	merchantRef := "SUB-" + strconv.FormatInt(time.Now().UnixNano(), 10)
 
 	userName := "Owner Toko"
-	userEmail := "owner@kasirinaja.com"
+	userEmail := "owner@poskedai.com"
 	userPhone := ""
 
 	userIDVal, exists := c.Get("user_id")

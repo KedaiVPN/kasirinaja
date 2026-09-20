@@ -1,0 +1,257 @@
+package com.poskedai.store.ui.viewmodels
+import android.media.AudioManager
+import android.media.ToneGenerator
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.poskedai.store.data.local.LocalTransactionEntity
+import com.poskedai.store.data.local.LocalTransactionItemEntity
+import java.util.UUID
+import com.poskedai.store.data.local.ProductEntity
+import com.poskedai.store.data.repository.ProductRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import com.poskedai.store.data.repository.TransactionRepository
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import androidx.work.ExistingWorkPolicy
+import androidx.work.WorkManager
+import androidx.work.BackoffPolicy
+import java.util.concurrent.TimeUnit
+import com.poskedai.store.worker.TransactionSyncWorker
+
+
+data class CartItem(
+    val product: ProductEntity,
+    var quantity: Int
+)
+
+
+class ScanViewModel(
+    val repository: ProductRepository,
+    private val transactionRepository: TransactionRepository? = null,
+    private val workManager: WorkManager? = null
+) : ViewModel() {
+
+    val products: Flow<List<ProductEntity>> = repository.allProducts
+
+    private val _cartItems = MutableStateFlow<List<CartItem>>(emptyList())
+    val cartItems: StateFlow<List<CartItem>> = _cartItems.asStateFlow()
+
+    private val _toastMessage = MutableSharedFlow<String>()
+    val toastMessage = _toastMessage.asSharedFlow()
+
+    private val _outOfStockEvent = MutableSharedFlow<String>()
+    val outOfStockEvent = _outOfStockEvent.asSharedFlow()
+
+    private var toneGenerator: ToneGenerator? = null
+
+    // To prevent rapid scanning of the same barcode in a single frame sweep
+    private var lastScannedBarcode: String? = null
+    private var lastScanTime: Long = 0
+
+    init {
+        try {
+            toneGenerator = ToneGenerator(AudioManager.STREAM_ALARM, 100)
+        } catch (e: Exception) {
+            // Handle exception if ToneGenerator fails to initialize
+        }
+    }
+
+    fun onBarcodeScanned(barcode: String) {
+        val trimmedBarcode = barcode.trim()
+        val currentTime = System.currentTimeMillis()
+        if (trimmedBarcode == lastScannedBarcode && (currentTime - lastScanTime) < 2000) {
+            return // Debounce rapid same-barcode scans
+        }
+        lastScannedBarcode = trimmedBarcode
+        lastScanTime = currentTime
+
+        viewModelScope.launch {
+            val product = repository.getProductByBarcode(trimmedBarcode)
+            if (product != null) {
+                addProductToCart(product)
+            } else {
+                playErrorSound()
+                _toastMessage.emit("Produk tidak ditemukan: $trimmedBarcode")
+            }
+        }
+    }
+
+    fun addProductToCart(product: ProductEntity) {
+        val currentCart = _cartItems.value.toMutableList()
+        val existingItemIndex = currentCart.indexOfFirst { it.product.id == product.id }
+
+        val currentQuantityInCart = if (existingItemIndex != -1) currentCart[existingItemIndex].quantity else 0
+
+        // Block if stock is limited and cart already has all available stock
+        if (product.stock == 0) {
+            playErrorSound()
+            viewModelScope.launch {
+                _outOfStockEvent.emit("Stok untuk produk ${product.name} sudah habis dan tidak bisa dimasukkan ke dalam keranjang.")
+            }
+            return
+        } else if (product.stock != -1 && currentQuantityInCart >= product.stock) {
+            playErrorSound()
+            viewModelScope.launch {
+                _outOfStockEvent.emit("Jumlah produk ${product.name} di keranjang sudah mencapai batas maksimal stok yang tersedia.")
+            }
+            return
+        }
+
+        // Play sound
+        playBeepSound()
+
+        // Add to cart or increment
+        if (existingItemIndex != -1) {
+            val existingItem = currentCart[existingItemIndex]
+            currentCart[existingItemIndex] = existingItem.copy(quantity = existingItem.quantity + 1)
+        } else {
+            currentCart.add(CartItem(product, 1))
+        }
+
+        _cartItems.value = currentCart
+    }
+
+    fun incrementQuantity(product: ProductEntity) {
+        val currentCart = _cartItems.value.toMutableList()
+        val index = currentCart.indexOfFirst { it.product.id == product.id }
+        if (index != -1) {
+            val item = currentCart[index]
+            // Block if stock is limited and cart already has all available stock
+            if (product.stock != -1 && item.quantity >= product.stock) {
+                playErrorSound()
+                viewModelScope.launch {
+                    _outOfStockEvent.emit("Jumlah produk ${product.name} di keranjang sudah mencapai batas maksimal stok yang tersedia.")
+                }
+                return
+            }
+            currentCart[index] = item.copy(quantity = item.quantity + 1)
+            _cartItems.value = currentCart
+        }
+    }
+
+    fun decrementQuantity(product: ProductEntity) {
+        val currentCart = _cartItems.value.toMutableList()
+        val index = currentCart.indexOfFirst { it.product.id == product.id }
+        if (index != -1) {
+            val item = currentCart[index]
+            if (item.quantity > 1) {
+                currentCart[index] = item.copy(quantity = item.quantity - 1)
+            } else {
+                currentCart.removeAt(index)
+            }
+            _cartItems.value = currentCart
+        }
+    }
+
+    fun removeProduct(product: ProductEntity) {
+        val currentCart = _cartItems.value.toMutableList()
+        currentCart.removeAll { it.product.id == product.id }
+        _cartItems.value = currentCart
+    }
+
+    fun saveTransaction(paidAmount: Double, changeAmount: Double, storeId: String, cashierId: String, cashierName: String = "", onTransactionSaved: (String) -> Unit = {}) {
+        viewModelScope.launch {
+            val items = _cartItems.value
+            if (items.isEmpty()) return@launch
+
+            val transactionId = UUID.randomUUID().toString()
+            val totalAmount = getTotalAmount()
+
+            val transaction = LocalTransactionEntity(
+                id = transactionId,
+                storeId = storeId,
+                cashierId = cashierId,
+                cashierName = cashierName,
+                invoiceNumber = "INV-${System.currentTimeMillis()}",
+                totalAmount = totalAmount,
+                paidAmount = paidAmount,
+                changeAmount = changeAmount,
+                paymentMethod = "CASH",
+                transactionTime = System.currentTimeMillis(),
+                syncStatus = "pending",
+                deviceId = "device_1"
+            )
+
+            val transactionItems = items.map { cartItem ->
+                LocalTransactionItemEntity(
+                    id = UUID.randomUUID().toString(),
+                    transactionId = transactionId,
+                    storeProductId = cartItem.product.id,
+                    masterProductId = cartItem.product.id, // Fallback if missing
+                    barcode = cartItem.product.barcode ?: "",
+                    productName = cartItem.product.name,
+                    quantity = cartItem.quantity,
+                    buyPrice = cartItem.product.buyPrice.toDoubleOrNull() ?: 0.0,
+                    sellPrice = cartItem.product.sellPrice.toDoubleOrNull() ?: 0.0,
+                    subtotal = (cartItem.product.sellPrice.toDoubleOrNull() ?: 0.0) * cartItem.quantity
+                )
+            }
+
+            _toastMessage.emit("Menyimpan transaksi...")
+            transactionRepository?.saveTransactionLocally(transaction, transactionItems)
+
+            // Reduce stock locally for all items
+            items.forEach { cartItem ->
+                if (cartItem.product.stock != -1) {
+                    repository.reduceStockLocally(cartItem.product.id, cartItem.quantity)
+                }
+            }
+
+            // Enqueue worker to sync immediately with network constraints
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+
+            val syncRequest = OneTimeWorkRequestBuilder<TransactionSyncWorker>()
+                .setConstraints(constraints)
+                .setBackoffCriteria(
+                    BackoffPolicy.EXPONENTIAL,
+                    30, // Mulai dari 30 detik untuk percobaan ulang
+                    TimeUnit.SECONDS
+                )
+                .build()
+
+            workManager?.enqueueUniqueWork(
+                "TransactionSyncWork",
+                ExistingWorkPolicy.REPLACE,
+                syncRequest
+            )
+
+            _toastMessage.emit("Transaksi berhasil disimpan secara lokal. Sinkronisasi berjalan di latar belakang.")
+            clearCart()
+            onTransactionSaved(transactionId)
+        }
+    }
+
+    fun clearCart() {
+        _cartItems.value = emptyList()
+    }
+
+    fun getTotalAmount(): Double {
+        return _cartItems.value.sumOf {
+            val price = it.product.sellPrice.toDoubleOrNull() ?: 0.0
+            price * it.quantity
+        }
+    }
+
+    private fun playBeepSound() {
+        toneGenerator?.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 200)
+    }
+
+    private fun playErrorSound() {
+        toneGenerator?.startTone(ToneGenerator.TONE_SUP_ERROR, 400)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        toneGenerator?.release()
+        toneGenerator = null
+    }
+}
