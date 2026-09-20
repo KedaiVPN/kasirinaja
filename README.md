@@ -1,6 +1,6 @@
-# KASIRINAJA POS System
+# POS KEDAI POS System
 
-KASIRINAJA adalah sistem aplikasi kasir/POS (Point of Sales) untuk toko kecil dan menengah yang dirancang dengan konsep **Offline-first** untuk aplikasi kasir, serta menggunakan arsitektur tersentralisasi untuk katalog produk.
+POS KEDAI adalah sistem aplikasi kasir/POS (Point of Sales) untuk toko kecil dan menengah yang dirancang dengan konsep **Offline-first** untuk aplikasi kasir, serta menggunakan arsitektur tersentralisasi untuk katalog produk.
 
 Proyek ini terdiri dari beberapa komponen utama:
 1. **Aplikasi Toko (Android)**: Digunakan oleh pemilik toko dan kasir. Memiliki fitur transaksi offline menggunakan Room Database.

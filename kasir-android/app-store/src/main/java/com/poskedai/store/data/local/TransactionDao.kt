@@ -1,0 +1,155 @@
+package com.poskedai.store.data.local
+
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+
+
+data class ReportItem(
+    val productName: String,
+    val quantitySold: Int,
+    val buyPrice: Double,
+    val sellPrice: Double,
+    val productTotalRevenue: Double,
+    val productTotalProfit: Double
+)
+
+data class TopProductItem(
+    val storeProductId: String,
+    val productName: String,
+    val totalSold: Int,
+    val isDeleted: Boolean,
+    val stock: Int?,
+    val category: String?
+)
+
+@Dao
+interface TransactionDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTransaction(transaction: LocalTransactionEntity)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertTransactionItems(items: List<LocalTransactionItemEntity>)
+
+    @Query("SELECT * FROM transactions WHERE id = :transactionId")
+    suspend fun getTransactionById(transactionId: String): LocalTransactionEntity?
+
+    @Query("SELECT * FROM transactions WHERE invoiceNumber = :invoiceNumber LIMIT 1")
+    suspend fun getTransactionByInvoiceNumber(invoiceNumber: String): LocalTransactionEntity?
+
+    @Query("DELETE FROM transactions WHERE id = :transactionId")
+    suspend fun deleteTransactionById(transactionId: String)
+
+    @Query("DELETE FROM transaction_items WHERE transactionId = :transactionId")
+    suspend fun deleteTransactionItemsByTransactionId(transactionId: String)
+
+    @Query("SELECT * FROM transaction_items WHERE transactionId = :transactionId")
+    suspend fun getTransactionItems(transactionId: String): List<LocalTransactionItemEntity>
+
+    @Query("SELECT * FROM transactions WHERE syncStatus = 'pending'")
+    suspend fun getPendingTransactions(): List<LocalTransactionEntity>
+
+    @Query("SELECT * FROM transactions WHERE syncStatus = 'pending' ORDER BY transactionTime DESC")
+    fun getPendingTransactionsFlow(): kotlinx.coroutines.flow.Flow<List<LocalTransactionEntity>>
+
+    @Query("SELECT * FROM transactions ORDER BY transactionTime DESC")
+    fun getAllTransactionsFlow(): kotlinx.coroutines.flow.Flow<List<LocalTransactionEntity>>
+
+    @Query("UPDATE transactions SET syncStatus = :status WHERE id = :transactionId")
+    suspend fun updateTransactionSyncStatus(transactionId: String, status: String)
+
+    @Query("SELECT SUM(totalAmount) FROM transactions")
+    suspend fun getTotalRevenue(): Double?
+
+    @Query("SELECT COUNT(id) FROM transactions")
+    suspend fun getTotalTransactions(): Int?
+
+    @Query("SELECT SUM(subtotal - (buyPrice * quantity)) FROM transaction_items")
+    suspend fun getNetProfit(): Double?
+
+    @Query("SELECT SUM(totalAmount) FROM transactions")
+    fun getTotalRevenueFlow(): kotlinx.coroutines.flow.Flow<Double?>
+
+    @Query("SELECT SUM(totalAmount) FROM transactions WHERE transactionTime >= :startOfDay AND transactionTime <= :endOfDay")
+    fun getTodayTotalRevenueFlow(startOfDay: Long, endOfDay: Long): kotlinx.coroutines.flow.Flow<Double?>
+
+    @Query("SELECT COUNT(id) FROM transactions")
+    fun getTotalTransactionsFlow(): kotlinx.coroutines.flow.Flow<Int?>
+
+    @Query("SELECT COUNT(id) FROM transactions WHERE transactionTime >= :startOfDay AND transactionTime <= :endOfDay")
+    fun getTodayTotalTransactionsFlow(startOfDay: Long, endOfDay: Long): kotlinx.coroutines.flow.Flow<Int?>
+
+    @Query("SELECT SUM(subtotal - (buyPrice * quantity)) FROM transaction_items")
+    fun getNetProfitFlow(): kotlinx.coroutines.flow.Flow<Double?>
+
+    @Query("SELECT SUM(ti.quantity) FROM transaction_items ti INNER JOIN transactions t ON ti.transactionId = t.id WHERE t.transactionTime >= :startOfDay AND t.transactionTime <= :endOfDay")
+    fun getTodayTotalProductsSoldFlow(startOfDay: Long, endOfDay: Long): kotlinx.coroutines.flow.Flow<Int?>
+
+    @Query("SELECT SUM(ti.subtotal - (ti.buyPrice * ti.quantity)) FROM transaction_items ti INNER JOIN transactions t ON ti.transactionId = t.id WHERE t.transactionTime >= :startOfDay AND t.transactionTime <= :endOfDay")
+    fun getTodayNetProfitFlow(startOfDay: Long, endOfDay: Long): kotlinx.coroutines.flow.Flow<Double?>
+
+    @Query("SELECT * FROM transactions WHERE (:cashierId IS NULL OR cashierId = :cashierId) ORDER BY transactionTime DESC LIMIT :limit")
+    fun getRecentTransactionsFlow(limit: Int, cashierId: String?): kotlinx.coroutines.flow.Flow<List<LocalTransactionEntity>>
+
+    @Query("SELECT * FROM transactions WHERE invoiceNumber LIKE '%' || :searchQuery || '%' AND (:cashierId IS NULL OR cashierId = :cashierId) ORDER BY transactionTime DESC LIMIT :limit OFFSET :offset")
+    fun getTransactionsPagedFlow(limit: Int, offset: Int, searchQuery: String, cashierId: String?): kotlinx.coroutines.flow.Flow<List<LocalTransactionEntity>>
+
+    @Query("SELECT COUNT(id) FROM transactions WHERE invoiceNumber LIKE '%' || :searchQuery || '%' AND (:cashierId IS NULL OR cashierId = :cashierId)")
+    fun getTotalTransactionsCountFlow(searchQuery: String, cashierId: String?): kotlinx.coroutines.flow.Flow<Int>
+
+    @Query("UPDATE transaction_items SET storeProductId = :newStoreProductId, id = transactionId || '_' || :newStoreProductId WHERE storeProductId = :oldStoreProductId")
+    suspend fun updateTransactionItemProductId(oldStoreProductId: String, newStoreProductId: String)
+
+
+    @Query("SELECT * FROM transactions WHERE transactionTime >= :startDate AND transactionTime <= :endDate ORDER BY transactionTime ASC")
+    fun getTransactionsBetweenDatesFlow(startDate: Long, endDate: Long): kotlinx.coroutines.flow.Flow<List<LocalTransactionEntity>>
+
+    @Query("SELECT SUM(totalAmount) FROM transactions WHERE transactionTime >= :startDate AND transactionTime <= :endDate")
+    fun getTotalRevenueBetweenDatesFlow(startDate: Long, endDate: Long): kotlinx.coroutines.flow.Flow<Double?>
+
+    @Query("SELECT SUM(ti.subtotal - (ti.buyPrice * ti.quantity)) FROM transaction_items ti INNER JOIN transactions t ON ti.transactionId = t.id WHERE t.transactionTime >= :startDate AND t.transactionTime <= :endDate")
+    fun getNetProfitBetweenDatesFlow(startDate: Long, endDate: Long): kotlinx.coroutines.flow.Flow<Double?>
+
+    @Query("""
+        SELECT
+            sp.name AS productName,
+            SUM(ti.quantity) AS quantitySold,
+            ti.buyPrice AS buyPrice,
+            ti.sellPrice AS sellPrice,
+            SUM(ti.subtotal) AS productTotalRevenue,
+            SUM(ti.subtotal - (ti.buyPrice * ti.quantity)) AS productTotalProfit
+        FROM transaction_items ti
+        INNER JOIN transactions t ON ti.transactionId = t.id
+        INNER JOIN local_products sp ON ti.storeProductId = sp.id
+        WHERE t.transactionTime >= :startDate AND t.transactionTime <= :endDate
+        GROUP BY sp.id, ti.buyPrice, ti.sellPrice
+        ORDER BY quantitySold DESC
+    """)
+    suspend fun getReportItemsBetweenDates(startDate: Long, endDate: Long): List<ReportItem>
+
+    @Query("SELECT * FROM transactions WHERE isReported = 0 ORDER BY transactionTime ASC")
+    suspend fun getUnreportedTransactions(): List<LocalTransactionEntity>
+
+    @Query("UPDATE transactions SET isReported = 1 WHERE isReported = 0 AND cashierId = :cashierId")
+    suspend fun markTransactionsAsReported(cashierId: String)
+
+    @Query("""
+        SELECT
+            ti.storeProductId,
+            ti.productName,
+            SUM(ti.quantity) AS totalSold,
+            CASE WHEN p.id IS NULL THEN 1 ELSE 0 END AS isDeleted,
+            p.stock,
+            p.category
+        FROM transaction_items ti
+        INNER JOIN transactions t ON ti.transactionId = t.id
+        LEFT JOIN local_products p ON ti.storeProductId = p.id
+        WHERE t.transactionTime >= :startOfMonth AND t.transactionTime <= :endOfMonth
+        AND (:cashierId IS NULL OR t.cashierId = :cashierId)
+        GROUP BY ti.storeProductId, ti.productName
+        ORDER BY totalSold DESC
+        LIMIT :limit
+    """)
+    fun getTopSellingProductsFlow(startOfMonth: Long, endOfMonth: Long, limit: Int, cashierId: String?): kotlinx.coroutines.flow.Flow<List<TopProductItem>>
+}

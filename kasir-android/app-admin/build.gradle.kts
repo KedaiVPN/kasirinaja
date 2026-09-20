@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.kasirinaja.admin"
+    namespace = "com.poskedai.admin"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.kasirinaja.admin"
+        applicationId = "com.poskedai.admin"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
