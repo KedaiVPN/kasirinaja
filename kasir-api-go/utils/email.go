@@ -45,37 +45,12 @@ func GenerateOTP() string {
 	return strconv.Itoa(otp)
 }
 
-// SendOTPEmail sends a customized OTP email based on OTPEmailOptions
-func SendOTPEmail(opts OTPEmailOptions) error {
-	host := os.Getenv("SMTP_HOST")
-	portStr := os.Getenv("SMTP_PORT")
-	user := os.Getenv("SMTP_USER")
-	pass := strings.Trim(os.Getenv("SMTP_PASS"), `"`)
-	from := strings.Trim(os.Getenv("SMTP_FROM"), `"`)
-
-	port, err := strconv.Atoi(portStr)
-	if err != nil {
-		port = 587 // default SMTP port
-	}
-
-	m := gomail.NewMessage()
-
-	// Safely parse "Name <email>" if provided, or fallback to simple email
-	if strings.Contains(from, "<") && strings.Contains(from, ">") {
-		start := strings.Index(from, "<")
-		end := strings.Index(from, ">")
-		name := strings.TrimSpace(from[:start])
-		emailAddr := from[start+1 : end]
-		m.SetAddressHeader("From", emailAddr, name)
-	} else {
-		m.SetHeader("From", from)
-	}
-
-	m.SetHeader("To", opts.ToEmail)
-
+// BuildOTPEmailContent constructs the subject, HTML body, and checks logo presence for OTPEmailOptions
+func BuildOTPEmailContent(opts OTPEmailOptions) (string, string, bool) {
 	var subject string
 	var headingTitle string
 	var messageContent string
+	securityNotice := "Demi keamanan akun Anda, jangan bagikan kode ini kepada siapa pun."
 
 	recipientName := strings.TrimSpace(opts.RecipientName)
 	if recipientName == "" {
@@ -116,6 +91,10 @@ func SendOTPEmail(opts OTPEmailOptions) error {
 			targetName,
 			targetIdent,
 		)
+		securityNotice = fmt.Sprintf(
+			"Demi keamanan akun kasir anda, jangan bagikan kode ini kepada selain <strong>%s</strong>.",
+			targetName,
+		)
 
 	default:
 		subject = "Kode Verifikasi OTP Anda - POS Kedai"
@@ -126,9 +105,6 @@ func SendOTPEmail(opts OTPEmailOptions) error {
 		)
 	}
 
-	m.SetHeader("Subject", subject)
-
-	// Embed Header Logo as CID attachment checking multiple possible paths
 	logoPaths := []string{
 		"assets/poskedai_logo.png",
 		"kasir-api-go/assets/poskedai_logo.png",
@@ -137,7 +113,6 @@ func SendOTPEmail(opts OTPEmailOptions) error {
 	hasEmbeddedLogo := false
 	for _, lPath := range logoPaths {
 		if _, err := os.Stat(lPath); err == nil {
-			m.Embed(lPath)
 			hasEmbeddedLogo = true
 			break
 		}
@@ -184,7 +159,7 @@ func SendOTPEmail(opts OTPEmailOptions) error {
 								</div>
 
 								<p style="margin: 0 0 20px 0; font-size: 14px; color: #666666; line-height: 1.5;">
-									Kode ini berlaku selama <strong>5 menit</strong>. Demi keamanan akun Anda, jangan bagikan kode ini kepada siapa pun.
+									Kode ini berlaku selama <strong>5 menit</strong>. %s
 								</p>
 
 								<hr style="border: none; border-top: 1px solid #eef2f1; margin: 24px 0;" />
@@ -208,7 +183,56 @@ func SendOTPEmail(opts OTPEmailOptions) error {
 		</table>
 	</body>
 	</html>
-	`, headingTitle, logoImgHtml, headingTitle, messageContent, opts.OTP, 2025)
+	`, headingTitle, logoImgHtml, headingTitle, messageContent, opts.OTP, securityNotice, 2025)
+
+	return subject, htmlBody, hasEmbeddedLogo
+}
+
+// SendOTPEmail sends a customized OTP email based on OTPEmailOptions
+func SendOTPEmail(opts OTPEmailOptions) error {
+	host := os.Getenv("SMTP_HOST")
+	portStr := os.Getenv("SMTP_PORT")
+	user := os.Getenv("SMTP_USER")
+	pass := strings.Trim(os.Getenv("SMTP_PASS"), `"`)
+	from := strings.Trim(os.Getenv("SMTP_FROM"), `"`)
+
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		port = 587 // default SMTP port
+	}
+
+	m := gomail.NewMessage()
+
+	// Safely parse "Name <email>" if provided, or fallback to simple email
+	if strings.Contains(from, "<") && strings.Contains(from, ">") {
+		start := strings.Index(from, "<")
+		end := strings.Index(from, ">")
+		name := strings.TrimSpace(from[:start])
+		emailAddr := from[start+1 : end]
+		m.SetAddressHeader("From", emailAddr, name)
+	} else {
+		m.SetHeader("From", from)
+	}
+
+	m.SetHeader("To", opts.ToEmail)
+
+	subject, htmlBody, hasEmbeddedLogo := BuildOTPEmailContent(opts)
+
+	m.SetHeader("Subject", subject)
+
+	if hasEmbeddedLogo {
+		logoPaths := []string{
+			"assets/poskedai_logo.png",
+			"kasir-api-go/assets/poskedai_logo.png",
+			"../assets/poskedai_logo.png",
+		}
+		for _, lPath := range logoPaths {
+			if _, err := os.Stat(lPath); err == nil {
+				m.Embed(lPath)
+				break
+			}
+		}
+	}
 
 	m.SetBody("text/html", htmlBody)
 
