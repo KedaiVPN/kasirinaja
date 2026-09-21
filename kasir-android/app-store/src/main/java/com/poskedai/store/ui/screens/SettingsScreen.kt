@@ -126,7 +126,7 @@ fun SettingsScreen(
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(users) { user ->
+                    items(users, key = { (it["id"] ?: it.hashCode()).toString() }) { user ->
                         val role = user["role"]?.toString() ?: ""
                         val name = user["full_name"]?.toString() ?: ""
                         val id = user["id"]?.toString() ?: ""

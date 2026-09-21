@@ -171,7 +171,7 @@ fun SubscriptionPackagesScreen(
                             )
                         }
 
-                        items(state.plans) { plan ->
+                        items(state.plans, key = { it.id }) { plan ->
                             val isSelected = selectedPlan?.id == plan.id
                             Card(
                                 modifier = Modifier
