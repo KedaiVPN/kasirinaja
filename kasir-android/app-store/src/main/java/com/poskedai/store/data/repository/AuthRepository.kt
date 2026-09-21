@@ -154,10 +154,26 @@ class AuthRepository(
         }
     }
 
+    suspend fun verifyForgotOtp(role: String, identifier: String, otp: String): Result<String> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val request = mapOf(
+                    "role" to role,
+                    "identifier" to identifier,
+                    "otp" to otp
+                )
+                val response = authApi.verifyForgotOtp(request)
+                val message = response["message"]?.toString() ?: "OTP berhasil diverifikasi"
+                Result.success(message)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
     suspend fun resetPassword(
         role: String,
         identifier: String,
-        otp: String,
         newPassword: String,
         confirmPassword: String
     ): Result<String> {
@@ -166,7 +182,6 @@ class AuthRepository(
                 val request = mapOf(
                     "role" to role,
                     "identifier" to identifier,
-                    "otp" to otp,
                     "newPassword" to newPassword,
                     "confirmPassword" to confirmPassword
                 )

@@ -50,6 +50,7 @@ type PasswordResetData struct {
 	Role       string `json:"role"`
 	OwnerEmail string `json:"owner_email"`
 	OTP        string `json:"otp"`
+	IsVerified bool   `json:"is_verified"`
 }
 
 func SaveRegistrationData(ctx context.Context, email string, data RegistrationData) error {

@@ -36,7 +36,6 @@ fun ResetPasswordScreen(
     identifier: String,
     onNavigateToLogin: () -> Unit
 ) {
-    var otp by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
 
@@ -97,7 +96,7 @@ fun ResetPasswordScreen(
             )
 
             Text(
-                text = "Masukkan kode OTP yang diterima dan buat password baru",
+                text = "Buat password baru untuk akun Anda",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -119,25 +118,6 @@ fun ResetPasswordScreen(
                         .padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    OutlinedTextField(
-                        value = otp,
-                        onValueChange = { if (it.length <= 6) otp = it },
-                        label = { Text("Kode OTP (6 digit)") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Filled.Key,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
                     OutlinedTextField(
                         value = newPassword,
                         onValueChange = { newPassword = it },
@@ -200,14 +180,12 @@ fun ResetPasswordScreen(
 
                     Button(
                         onClick = {
-                            if (otp.length != 6) {
-                                Toast.makeText(context, "Harap masukkan 6 digit kode OTP", Toast.LENGTH_SHORT).show()
-                            } else if (newPassword.isBlank() || confirmPassword.isBlank()) {
+                            if (newPassword.isBlank() || confirmPassword.isBlank()) {
                                 Toast.makeText(context, "Harap isi password baru dan konfirmasi password", Toast.LENGTH_SHORT).show()
                             } else if (newPassword != confirmPassword) {
                                 Toast.makeText(context, "Password baru dan konfirmasi password tidak cocok", Toast.LENGTH_SHORT).show()
                             } else {
-                                viewModel.resetPassword(role, identifier, otp, newPassword, confirmPassword)
+                                viewModel.resetPassword(role, identifier, newPassword, confirmPassword)
                             }
                         },
                         modifier = Modifier
