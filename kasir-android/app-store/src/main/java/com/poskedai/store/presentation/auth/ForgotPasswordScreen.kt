@@ -3,15 +3,16 @@ package com.poskedai.store.presentation.auth
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,9 +23,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.poskedai.store.R
+import kotlinx.coroutines.delay
 
 @Composable
 fun ForgotPasswordScreen(
@@ -32,16 +35,35 @@ fun ForgotPasswordScreen(
     onNavigateToResetPassword: (String, String) -> Unit,
     onNavigateToLogin: () -> Unit
 ) {
-    // Role selection: "owner" or "kasir". Toggle has "kasir" on left, "owner" on right. Default is "owner".
+    // Role selection: "owner" or "kasir". Default is "owner".
     var isOwnerSelected by remember { mutableStateOf(true) }
     var identifier by remember { mutableStateOf("") }
+    var otpCode by remember { mutableStateOf("") }
+    var isOtpSentStep by remember { mutableStateOf(false) }
+
+    // Countdown resend timer stages: 1m (60s), 2m (120s), 5m (300s)
+    val resendIntervals = listOf(60, 120, 300)
+    var intervalIndex by remember { mutableStateOf(0) }
+    var timeLeft by remember { mutableStateOf(60) }
 
     val authState by viewModel.authState.collectAsState()
     val context = LocalContext.current
 
+    LaunchedEffect(isOtpSentStep, timeLeft) {
+        if (isOtpSentStep && timeLeft > 0) {
+            delay(1000L)
+            timeLeft--
+        }
+    }
+
     LaunchedEffect(authState) {
         if (authState is AuthState.ForgotOtpSent) {
             val state = authState as AuthState.ForgotOtpSent
+            Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
+            isOtpSentStep = true
+            viewModel.resetState()
+        } else if (authState is AuthState.ForgotOtpVerified) {
+            val state = authState as AuthState.ForgotOtpVerified
             Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
             viewModel.resetState()
             onNavigateToResetPassword(state.role, state.identifier)
@@ -115,7 +137,7 @@ fun ForgotPasswordScreen(
                             if (!isOwnerSelected) MaterialTheme.colorScheme.primary
                             else Color.Transparent
                         )
-                        .clickable {
+                        .clickable(enabled = !isOtpSentStep) {
                             isOwnerSelected = false
                             identifier = ""
                         },
@@ -138,7 +160,7 @@ fun ForgotPasswordScreen(
                             if (isOwnerSelected) MaterialTheme.colorScheme.primary
                             else Color.Transparent
                         )
-                        .clickable {
+                        .clickable(enabled = !isOtpSentStep) {
                             isOwnerSelected = true
                             identifier = ""
                         },
@@ -170,39 +192,74 @@ fun ForgotPasswordScreen(
                         .padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    val labelText = if (isOwnerSelected) "Email Owner Toko" else "Username Kasir / Karyawan"
-                    val icon = if (isOwnerSelected) Icons.Filled.Email else Icons.Filled.Person
+                    if (!isOtpSentStep) {
+                        val labelText = if (isOwnerSelected) "Email Owner Toko" else "Username Kasir / Karyawan"
+                        val icon = if (isOwnerSelected) Icons.Filled.Email else Icons.Filled.Person
 
-                    OutlinedTextField(
-                        value = identifier,
-                        onValueChange = { identifier = it },
-                        label = { Text(labelText) },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = icon,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        },
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                        OutlinedTextField(
+                            value = identifier,
+                            onValueChange = { identifier = it },
+                            label = { Text(labelText) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            },
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                    val hintText = if (isOwnerSelected) {
-                        "Kode OTP akan dikirimkan ke email Anda."
+                        val hintText = if (isOwnerSelected) {
+                            "Kode OTP akan dikirimkan ke email Anda."
+                        } else {
+                            "Kode OTP akan dikirimkan ke email Owner toko Anda."
+                        }
+
+                        Text(
+                            text = hintText,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     } else {
-                        "Kode OTP akan dikirimkan ke email Owner toko Anda."
-                    }
+                        // OTP Step
+                        OutlinedTextField(
+                            value = otpCode,
+                            onValueChange = { if (it.length <= 6) otpCode = it },
+                            label = { Text("Kode OTP (6 digit)") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Filled.Key,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        )
 
-                    Text(
-                        text = hintText,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        val infoMsg = if (isOwnerSelected) {
+                            "Kode OTP telah dikirimkan ke email: $identifier"
+                        } else {
+                            "Silahkan hubungi owner untuk meminta OTP"
+                        }
+
+                        Text(
+                            text = infoMsg,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
 
                     if (authState is AuthState.Error) {
                         Spacer(modifier = Modifier.height(12.dp))
@@ -218,11 +275,19 @@ fun ForgotPasswordScreen(
 
                     Button(
                         onClick = {
-                            if (identifier.isBlank()) {
-                                Toast.makeText(context, "Harap isi kolom akun terlebih dahulu", Toast.LENGTH_SHORT).show()
+                            val selectedRole = if (isOwnerSelected) "owner" else "kasir"
+                            if (!isOtpSentStep) {
+                                if (identifier.isBlank()) {
+                                    Toast.makeText(context, "Harap isi kolom akun terlebih dahulu", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    viewModel.forgotPassword(selectedRole, identifier.trim())
+                                }
                             } else {
-                                val selectedRole = if (isOwnerSelected) "owner" else "kasir"
-                                viewModel.forgotPassword(selectedRole, identifier.trim())
+                                if (otpCode.length != 6) {
+                                    Toast.makeText(context, "Harap masukkan 6 digit kode OTP", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    viewModel.verifyForgotOtp(selectedRole, identifier.trim(), otpCode.trim())
+                                }
                             }
                         },
                         modifier = Modifier
@@ -239,10 +304,45 @@ fun ForgotPasswordScreen(
                             )
                         } else {
                             Text(
-                                text = "Kirim OTP",
+                                text = if (!isOtpSentStep) "Kirim OTP" else "Verifikasi OTP",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold
                             )
+                        }
+                    }
+
+                    if (isOtpSentStep) {
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        if (timeLeft > 0) {
+                            val minutes = timeLeft / 60
+                            val seconds = timeLeft % 60
+                            val timeString = String.format("%02d:%02d", minutes, seconds)
+                            Text(
+                                text = "Kirim ulang OTP dalam $timeString",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            TextButton(
+                                onClick = {
+                                    val selectedRole = if (isOwnerSelected) "owner" else "kasir"
+                                    viewModel.forgotPassword(selectedRole, identifier.trim())
+                                    if (intervalIndex < resendIntervals.lastIndex) {
+                                        intervalIndex++
+                                    }
+                                    timeLeft = resendIntervals[intervalIndex]
+                                },
+                                enabled = authState !is AuthState.Loading
+                            ) {
+                                Text(
+                                    text = "Kirim Ulang OTP",
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = FontWeight.SemiBold
+                                    ),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
                 }

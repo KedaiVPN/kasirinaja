@@ -14,6 +14,7 @@ sealed class AuthState {
     data class Success(val message: String) : AuthState()
     data class OtpSent(val message: String, val email: String) : AuthState()
     data class ForgotOtpSent(val message: String, val role: String, val identifier: String) : AuthState()
+    data class ForgotOtpVerified(val message: String, val role: String, val identifier: String) : AuthState()
     data class PasswordResetSuccess(val message: String) : AuthState()
     data class Error(val message: String) : AuthState()
 }
@@ -88,10 +89,26 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
         }
     }
 
-    fun resetPassword(role: String, identifier: String, otp: String, newPassword: String, confirmPassword: String) {
+    fun verifyForgotOtp(role: String, identifier: String, otp: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
-            val result = repository.resetPassword(role, identifier, otp, newPassword, confirmPassword)
+            val result = repository.verifyForgotOtp(role, identifier, otp)
+            if (result.isSuccess) {
+                _authState.value = AuthState.ForgotOtpVerified(
+                    message = result.getOrDefault("OTP berhasil diverifikasi"),
+                    role = role,
+                    identifier = identifier
+                )
+            } else {
+                _authState.value = AuthState.Error(result.exceptionOrNull()?.message ?: "Kode OTP tidak valid")
+            }
+        }
+    }
+
+    fun resetPassword(role: String, identifier: String, newPassword: String, confirmPassword: String) {
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            val result = repository.resetPassword(role, identifier, newPassword, confirmPassword)
             if (result.isSuccess) {
                 _authState.value = AuthState.PasswordResetSuccess(result.getOrDefault("Password berhasil diperbarui"))
             } else {

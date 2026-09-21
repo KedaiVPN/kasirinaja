@@ -57,10 +57,15 @@ type ForgotPasswordRequest struct {
 	Identifier string `json:"identifier" binding:"required"` // email (owner) / username (kasir)
 }
 
+type VerifyForgotOTPRequest struct {
+	Role       string `json:"role" binding:"required"`
+	Identifier string `json:"identifier" binding:"required"`
+	OTP        string `json:"otp" binding:"required"`
+}
+
 type ResetPasswordRequest struct {
 	Role            string `json:"role" binding:"required"`       // "owner" atau "kasir"
 	Identifier      string `json:"identifier" binding:"required"` // email / username
-	OTP             string `json:"otp" binding:"required"`
 	NewPassword     string `json:"newPassword" binding:"required"`
 	ConfirmPassword string `json:"confirmPassword" binding:"required"`
 }
@@ -167,6 +172,37 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 	})
 }
 
+func (h *AuthHandler) VerifyForgotOTP(c *gin.Context) {
+	var req VerifyForgotOTPRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Parameter tidak valid"})
+		return
+	}
+
+	req.Role = strings.ToLower(strings.TrimSpace(req.Role))
+	req.Identifier = strings.TrimSpace(req.Identifier)
+
+	redisKey := fmt.Sprintf("%s:%s", req.Role, req.Identifier)
+	resetData, err := utils.GetPasswordResetData(c.Request.Context(), redisKey)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Sesi OTP telah kedaluwarsa atau tidak ditemukan"})
+		return
+	}
+
+	if resetData.OTP != req.OTP {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Kode OTP tidak valid"})
+		return
+	}
+
+	resetData.IsVerified = true
+	if err := utils.SavePasswordResetData(c.Request.Context(), redisKey, *resetData); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memperbarui status verifikasi OTP"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "OTP berhasil diverifikasi"})
+}
+
 func (h *AuthHandler) ResetPassword(c *gin.Context) {
 	var req ResetPasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -189,8 +225,8 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 		return
 	}
 
-	if resetData.OTP != req.OTP {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Kode OTP tidak valid"})
+	if !resetData.IsVerified {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "OTP belum diverifikasi"})
 		return
 	}
 

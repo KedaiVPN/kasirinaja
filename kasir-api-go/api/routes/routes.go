@@ -108,6 +108,7 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 		api.POST("/auth/verify-otp", authHandler.VerifyOTP)
 		api.POST("/auth/resend-otp", authHandler.ResendOTP)
 		api.POST("/auth/forgot-password", authHandler.ForgotPassword)
+		api.POST("/auth/verify-forgot-otp", authHandler.VerifyForgotOTP)
 		api.POST("/auth/reset-password", authHandler.ResetPassword)
 		authGroup := api.Group("/auth")
 		authGroup.Use(authMw)
