@@ -52,6 +52,16 @@ func main() {
 	// Setup Gin router
 	router := gin.Default()
 
+	// Trusted proxy: API berjalan di belakang nginx (127.0.0.1). Tanpa ini,
+	// c.ClientIP() akan selalu mengembalikan 127.0.0.1 sehingga rate limit
+	// per-IP dan lockout login akan collaps ke satu identitas.
+	// X-Forwarded-For dipakai sebagai sumber IP klien asli.
+	if err := router.SetTrustedProxies([]string{"127.0.0.1", "::1"}); err != nil {
+		log.Fatalf("Gagal set trusted proxies: %v", err)
+	}
+	router.ForwardedByClientIP = true
+	router.RemoteIPHeaders = []string{"X-Forwarded-For", "X-Real-IP"}
+
 	// Initialize Redis (dipakai untuk OTP, rate limit, dan lockout login)
 	rdb := utils.InitRedis()
 

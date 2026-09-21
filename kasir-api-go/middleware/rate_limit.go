@@ -9,12 +9,30 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-// RateLimit membatasi jumlah request per IP + path dalam jendela waktu tertentu.
-// Implementasi fixed-window memakai Redis INCR + EXPIRE sehingga tetap benar
-// walau aplikasi dijalankan di beberapa instance sekaligus.
+// rateLimitKey membentuk key unik untuk rate limit.
+// Prioritas: store_id dari JWT (bila sudah login) -> IP klien (bila proxy
+// tepercaya sudah diset) -> fallback "unknown".
 //
-// Jika Redis tidak tersedia, request TIDAK diblokir (fail-open) supaya API tetap
-// hidup, tetapi error dicatat ke header supaya mudah dideteksi saat debugging.
+// Menggunakan store_id membuat tiap toko mendapat kuota sendiri sehingga toko
+// yang ramai tidak merugikan toko lain, dan 5 kasir dalam satu toko tetap
+// berbagi 1 kuota toko (yang wajar, karena merekalah sumber trafik toko itu).
+func rateLimitKey(c *gin.Context) string {
+	if sid, ok := c.Get("store_id"); ok {
+		if s, ok := sid.(string); ok && s != "" {
+			return "store:" + s
+		}
+	}
+	// Auth endpoint (belum ada token) jatuh ke sini.
+	return "ip:" + c.ClientIP()
+}
+
+// RateLimit membatasi jumlah request per identitas (store_id atau IP) + path
+// dalam jendela waktu tertentu. Implementasi fixed-window memakai Redis
+// INCR + EXPIRE sehingga tetap benar walau aplikasi dijalankan di beberapa
+// instance sekaligus.
+//
+// Jika Redis tidak tersedia, request TIDAK diblokir (fail-open) supaya API
+// tetap hidup, tetapi error dicatat ke header agar mudah dideteksi saat debug.
 func RateLimit(rdb *redis.Client, limit int, window time.Duration) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if rdb == nil || limit <= 0 {
@@ -22,9 +40,9 @@ func RateLimit(rdb *redis.Client, limit int, window time.Duration) gin.HandlerFu
 			return
 		}
 
-		// Key per IP + route, bukan per method, supaya tidak bisa dilewati
-		// dengan mengganti method.
-		key := fmt.Sprintf("rl:%s:%s", c.ClientIP(), c.FullPath())
+		// Key per identitas + route, bukan per method, supaya tidak bisa
+		// dilewati dengan mengganti method.
+		key := fmt.Sprintf("rl:%s:%s", rateLimitKey(c), c.FullPath())
 
 		ctx := c.Request.Context()
 
@@ -36,8 +54,8 @@ func RateLimit(rdb *redis.Client, limit int, window time.Duration) gin.HandlerFu
 			return
 		}
 
-		// Set TTL hanya pada increment pertama supaya jendela tidak diperpanjang
-		// terus-menerus oleh request berikutnya.
+		// Set TTL hanya pada increment pertama supaya jendela tidak
+		// diperpanjang terus-menerus oleh request berikutnya.
 		if cnt == 1 {
 			rdb.Expire(ctx, key, window)
 		}
