@@ -182,6 +182,13 @@ func (h *AuthHandler) VerifyForgotOTP(c *gin.Context) {
 	req.Role = strings.ToLower(strings.TrimSpace(req.Role))
 	req.Identifier = strings.TrimSpace(req.Identifier)
 
+	// Brute-force protection OTP lupa password: 5 gagal dalam 15 menit.
+	lockKey := "otp-reset:" + req.Role + ":" + req.Identifier
+	if utils.IsLocked(c.Request.Context(), lockKey, 5) {
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "Terlalu banyak percobaan OTP salah. Coba lagi nanti."})
+		return
+	}
+
 	redisKey := fmt.Sprintf("%s:%s", req.Role, req.Identifier)
 	resetData, err := utils.GetPasswordResetData(c.Request.Context(), redisKey)
 	if err != nil {
@@ -190,9 +197,15 @@ func (h *AuthHandler) VerifyForgotOTP(c *gin.Context) {
 	}
 
 	if resetData.OTP != req.OTP {
+		if _, locked := utils.RecordFailedAttempt(c.Request.Context(), lockKey, 5, 15*time.Minute); locked {
+			c.JSON(http.StatusTooManyRequests, gin.H{"error": "Terlalu banyak percobaan OTP salah. Coba lagi nanti."})
+			return
+		}
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Kode OTP tidak valid"})
 		return
 	}
+
+	utils.ClearFailedAttempts(c.Request.Context(), lockKey)
 
 	resetData.IsVerified = true
 	if err := utils.SavePasswordResetData(c.Request.Context(), redisKey, *resetData); err != nil {
@@ -263,6 +276,12 @@ func (h *AuthHandler) RegisterStore(c *gin.Context) {
 		return
 	}
 
+	// Sanitasi input teks user untuk mencegah XSS tersimpan.
+	req.FullName = SanitizeText(req.FullName)
+	req.StoreName = SanitizeText(req.StoreName)
+	req.Address = SanitizeText(req.Address)
+	req.Phone = SanitizeText(req.Phone)
+
 	// Check if email already exists
 	_, err := h.queries.GetUserByEmail(c.Request.Context(), pgtype.Text{String: req.Email, Valid: true})
 	if err == nil {
@@ -319,16 +338,30 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 		return
 	}
 
-	regData, err := utils.GetRegistrationData(c.Request.Context(), req.Email)
+	email := strings.ToLower(strings.TrimSpace(req.Email))
+	// Brute-force protection OTP: 5 gagal dalam 15 menit.
+	lockKey := "otp-reg:" + email
+	if utils.IsLocked(c.Request.Context(), lockKey, 5) {
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "Terlalu banyak percobaan OTP salah. Coba lagi nanti."})
+		return
+	}
+
+	regData, err := utils.GetRegistrationData(c.Request.Context(), email)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "OTP expired or invalid email"})
 		return
 	}
 
 	if regData.OTP != req.OTP {
+		if _, locked := utils.RecordFailedAttempt(c.Request.Context(), lockKey, 5, 15*time.Minute); locked {
+			c.JSON(http.StatusTooManyRequests, gin.H{"error": "Terlalu banyak percobaan OTP salah. Coba lagi nanti."})
+			return
+		}
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid OTP"})
 		return
 	}
+
+	utils.ClearFailedAttempts(c.Request.Context(), lockKey)
 
 	// Begin Transaction to save user and store
 	tx, err := h.pool.Begin(c.Request.Context())
@@ -386,10 +419,7 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 	// Delete OTP from Redis
 	utils.DeleteRegistrationData(c.Request.Context(), req.Email)
 
-	jwtSecret := os.Getenv("JWT_SECRET")
-	if jwtSecret == "" {
-		jwtSecret = "secret"
-	}
+	jwtSecret := GetJWTSecret()
 
 	parsedID, _ := uuid.FromBytes(user.ID.Bytes[:])
 	storeIDStr := ""
@@ -472,16 +502,35 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	// Brute-force protection: kunci per email setelah 5 gagal dalam 15 menit.
+	lockKey := "login:" + strings.ToLower(strings.TrimSpace(req.Email))
+	if utils.IsLocked(c.Request.Context(), lockKey, 5) {
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "Terlalu banyak percobaan login gagal. Coba lagi nanti."})
+		return
+	}
+
 	user, err := h.queries.GetUserByEmail(c.Request.Context(), pgtype.Text{String: req.Email, Valid: true})
 	if err != nil {
+		// Tetap catat percobaan gagal agar email tidak diketahui ada/tidak.
+		if _, locked := utils.RecordFailedAttempt(c.Request.Context(), lockKey, 5, 15*time.Minute); locked {
+			c.JSON(http.StatusTooManyRequests, gin.H{"error": "Terlalu banyak percobaan login gagal. Coba lagi nanti."})
+			return
+		}
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
+		if _, locked := utils.RecordFailedAttempt(c.Request.Context(), lockKey, 5, 15*time.Minute); locked {
+			c.JSON(http.StatusTooManyRequests, gin.H{"error": "Terlalu banyak percobaan login gagal. Coba lagi nanti."})
+			return
+		}
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
 		return
 	}
+
+	// Sukses: reset counter gagal.
+	utils.ClearFailedAttempts(c.Request.Context(), lockKey)
 
 	if !user.IsActive.Bool {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Account is inactive"})
@@ -497,10 +546,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		}
 	}
 
-	jwtSecret := os.Getenv("JWT_SECRET")
-	if jwtSecret == "" {
-		jwtSecret = "secret"
-	}
+	jwtSecret := GetJWTSecret()
 
 	parsedID, _ := uuid.FromBytes(user.ID.Bytes[:])
 	storeIDStr := ""
@@ -646,10 +692,7 @@ func (h *AuthHandler) SwitchUser(c *gin.Context) {
 	}
 
 	// Generate new token for target user
-	jwtSecret := os.Getenv("JWT_SECRET")
-	if jwtSecret == "" {
-		jwtSecret = "secret"
-	}
+	jwtSecret := GetJWTSecret()
 
 	parsedID, _ := uuid.FromBytes(targetUser.ID.Bytes[:])
 

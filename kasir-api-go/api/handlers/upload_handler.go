@@ -2,13 +2,60 @@ package handlers
 
 import (
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
+
+// ValidateImageFile memeriksa ukuran, ekstensi (whitelist), dan sniff MIME
+// dari 512 byte pertama. Mengembalikan pesan error berbahasa Indonesia bila
+// file tidak lolos validasi, atau nil bila file aman.
+//
+// Catatan: sniff MIME ini bukan pertahanan absolut, tapi efektif mencegah
+// upload file non-gambar (skrip, executable, dll) lewat form image.
+func ValidateImageFile(file *multipart.FileHeader) error {
+	if file == nil {
+		return fmt.Errorf("File tidak ditemukan")
+	}
+
+	if file.Size <= 0 {
+		return fmt.Errorf("File kosong")
+	}
+
+	if file.Size > MaxUploadSize {
+		return fmt.Errorf("File terlalu besar, maksimal %d MB", MaxUploadSize/(1024*1024))
+	}
+
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	if !AllowedImageExt[ext] {
+		return fmt.Errorf("Tipe file tidak diizinkan. Gunakan: png, jpg, jpeg, webp")
+	}
+
+	src, err := file.Open()
+	if err != nil {
+		return fmt.Errorf("Gagal membaca file")
+	}
+	defer src.Close()
+
+	head := make([]byte, 512)
+	n, err := io.ReadFull(src, head)
+	if err != nil && err != io.ErrUnexpectedEOF {
+		return fmt.Errorf("Gagal membaca file")
+	}
+
+	mime := http.DetectContentType(head[:n])
+	if !strings.HasPrefix(mime, "image/") {
+		return fmt.Errorf("File bukan gambar yang valid")
+	}
+
+	return nil
+}
 
 func UploadImage(c *gin.Context) {
 	file, err := c.FormFile("image")
@@ -17,12 +64,19 @@ func UploadImage(c *gin.Context) {
 		return
 	}
 
-	// Generate a unique filename using timestamp and original extension
-	extension := filepath.Ext(file.Filename)
+	// Validasi ukuran, ekstensi, dan MIME sebelum menyimpan apa pun ke disk.
+	if err := ValidateImageFile(file); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Normalisasi ekstensi ke huruf kecil supaya tidak ada file .PNG / .JPG
+	// yang lolos dengan casing aneh lalu dieksekusi sebagai skrip.
+	extension := strings.ToLower(filepath.Ext(file.Filename))
 	filename := fmt.Sprintf("%d%s", time.Now().UnixNano(), extension)
 
 	// Ensure uploads directory exists
-	if err := os.MkdirAll("uploads", os.ModePerm); err != nil {
+	if err := os.MkdirAll("uploads", 0o755); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create upload directory"})
 		return
 	}

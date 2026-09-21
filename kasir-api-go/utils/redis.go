@@ -12,7 +12,7 @@ import (
 
 var RedisClient *redis.Client
 
-func InitRedis() {
+func InitRedis() *redis.Client {
 	redisUrl := os.Getenv("REDIS_URL")
 	if redisUrl == "" {
 		redisUrl = "localhost:6379"
@@ -20,18 +20,21 @@ func InitRedis() {
 
 	redisPassword := os.Getenv("REDIS_PASSWORD")
 
-	RedisClient = redis.NewClient(&redis.Options{
+	client := redis.NewClient(&redis.Options{
 		Addr:     redisUrl,
 		Password: redisPassword,
 		DB:       0,
 	})
 
-	_, err := RedisClient.Ping(context.Background()).Result()
+	_, err := client.Ping(context.Background()).Result()
 	if err != nil {
 		log.Printf("Warning: Failed to connect to Redis at %s: %v", redisUrl, err)
 	} else {
 		log.Printf("Successfully connected to Redis at %s", redisUrl)
 	}
+
+	RedisClient = client
+	return client
 }
 
 type RegistrationData struct {
@@ -106,4 +109,48 @@ func GetPasswordResetData(ctx context.Context, key string) (*PasswordResetData, 
 
 func DeletePasswordResetData(ctx context.Context, key string) error {
 	return RedisClient.Del(ctx, "pwd_reset:"+key).Err()
+}
+
+// ---- Login / OTP brute-force protection ----
+
+// RecordFailedAttempt menambah counter gagal (login/OTP) untuk kunci tertentu
+// dan mengembalikan sisa percobaan sebelum terkunci. Setelah maxAttempts tercapai,
+// kunci akan tertahan selama lockWindow.
+func RecordFailedAttempt(ctx context.Context, key string, maxAttempts int, lockWindow time.Duration) (remaining int, locked bool) {
+	if RedisClient == nil {
+		return maxAttempts, false
+	}
+	fullKey := "lockout:" + key
+	cnt, err := RedisClient.Incr(ctx, fullKey).Result()
+	if err != nil {
+		return maxAttempts, false
+	}
+	if cnt == 1 {
+		RedisClient.Expire(ctx, fullKey, lockWindow)
+	}
+	remaining = maxAttempts - int(cnt)
+	if remaining < 0 {
+		remaining = 0
+	}
+	return remaining, cnt >= int64(maxAttempts)
+}
+
+// IsLocked memeriksa apakah kunci masih dalam masa lockout.
+func IsLocked(ctx context.Context, key string, maxAttempts int) bool {
+	if RedisClient == nil {
+		return false
+	}
+	cnt, err := RedisClient.Get(ctx, "lockout:"+key).Int()
+	if err != nil {
+		return false
+	}
+	return cnt >= maxAttempts
+}
+
+// ClearFailedAttempts menghapus counter (dipanggil saat sukses login/OTP).
+func ClearFailedAttempts(ctx context.Context, key string) {
+	if RedisClient == nil {
+		return
+	}
+	RedisClient.Del(ctx, "lockout:"+key)
 }

@@ -33,6 +33,9 @@ func (h *FeedbackHandler) SendFeedback(c *gin.Context) {
 		return
 	}
 
+	req.Message = SanitizeText(req.Message)
+	req.SenderEmail = SanitizeText(req.SenderEmail)
+
 	if strings.TrimSpace(req.Message) == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Pesan kritik & saran tidak boleh kosong"})
 		return

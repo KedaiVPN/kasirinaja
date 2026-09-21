@@ -3,7 +3,6 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -32,10 +31,7 @@ func AuthMiddleware(queries *db.Queries) gin.HandlerFunc {
 		}
 
 		tokenString := parts[1]
-		jwtSecret := os.Getenv("JWT_SECRET")
-		if jwtSecret == "" {
-			jwtSecret = "secret" // Default fallback
-		}
+		jwtSecret := GetJWTSecret()
 
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

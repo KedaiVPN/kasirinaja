@@ -23,6 +23,11 @@ func main() {
 		log.Println("No .env file found, relying on environment variables")
 	}
 
+	// Fail-fast: pastikan JWT_SECRET kuat sebelum server melayani request.
+	if err := handlers.ValidateJWTSecret(); err != nil {
+		log.Fatalf("Konfigurasi JWT tidak aman: %v", err)
+	}
+
 	// Initialize Firebase Cloud Messaging
 	api.InitFirebase()
 
@@ -47,11 +52,16 @@ func main() {
 	// Setup Gin router
 	router := gin.Default()
 
-	// Setup Routes
-	// Initialize Redis
-	utils.InitRedis()
+	// Initialize Redis (dipakai untuk OTP, rate limit, dan lockout login)
+	rdb := utils.InitRedis()
 
-	routes.SetupRoutes(router, queries, pool)
+	// Mode release: jangan bocorkan detail route/log di produksi.
+	if os.Getenv("APP_ENV") == "production" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	// Setup Routes
+	routes.SetupRoutes(router, queries, pool, rdb)
 
 	port := os.Getenv("PORT")
 	if port == "" {

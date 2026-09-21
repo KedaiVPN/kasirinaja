@@ -1,13 +1,17 @@
 package routes
 
 import (
+	"time"
+
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"kasir-api-go/api/handlers"
 	"kasir-api-go/db"
+	"kasir-api-go/middleware"
 )
 
-func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
+func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool, rdb *redis.Client) {
 	// Initialize handlers
 	wsManager := handlers.NewWebSocketManager()
 	userHandler := handlers.NewUserHandler(queries)
@@ -31,6 +35,12 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 
 	api := router.Group("/api")
 	{
+		// Global security headers (HSTS, nosniff, XSS protect) — murah, defence-in-depth.
+		api.Use(middleware.SecurityHeaders())
+
+		// Rate limit global: 120 req/menit per IP+path.
+		// Auth endpoint punya limit lebih ketat di bawah.
+		api.Use(middleware.RateLimit(rdb, 120, time.Minute))
 		// Health check
 		api.GET("/health", func(c *gin.Context) {
 			c.JSON(200, gin.H{"status": "ok"})
@@ -39,9 +49,10 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 		// User routes
 		users := api.Group("/users")
 		{
-			users.POST("/", userHandler.CreateUser)
+			// Pembuatan user & list semua user = privilege tinggi → hanya admin.
+			users.POST("/", middleware.AdminOnly(), userHandler.CreateUser)
+			users.GET("/", middleware.AdminOnly(), userHandler.ListUsers)
 			users.GET("/:id", userHandler.GetUser)
-			users.GET("/", userHandler.ListUsers)
 			usersAuth := users.Group("/store")
 			usersAuth.Use(authMw)
 			usersAuth.GET("/", userHandler.ListStoreUsers)
@@ -101,15 +112,15 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 		// WebSocket routes
 		api.GET("/ws", wsManager.HandleConnections)
 
-		// Auth
-		api.POST("/login", authHandler.Login) // Used by Admin
-		api.POST("/auth/login", authHandler.Login) // Used by Store
-		api.POST("/auth/register-store", authHandler.RegisterStore)
-		api.POST("/auth/verify-otp", authHandler.VerifyOTP)
-		api.POST("/auth/resend-otp", authHandler.ResendOTP)
-		api.POST("/auth/forgot-password", authHandler.ForgotPassword)
-		api.POST("/auth/verify-forgot-otp", authHandler.VerifyForgotOTP)
-		api.POST("/auth/reset-password", authHandler.ResetPassword)
+		// Auth (public, rawan brute-force) — limit ketat per IP+path.
+		api.POST("/login", middleware.RateLimit(rdb, 10, time.Minute), authHandler.Login) // Used by Admin
+		api.POST("/auth/login", middleware.RateLimit(rdb, 10, time.Minute), authHandler.Login) // Used by Store
+		api.POST("/auth/register-store", middleware.RateLimit(rdb, 5, time.Minute), authHandler.RegisterStore)
+		api.POST("/auth/verify-otp", middleware.RateLimit(rdb, 10, time.Minute), authHandler.VerifyOTP)
+		api.POST("/auth/resend-otp", middleware.RateLimit(rdb, 5, time.Minute), authHandler.ResendOTP)
+		api.POST("/auth/forgot-password", middleware.RateLimit(rdb, 5, time.Minute), authHandler.ForgotPassword)
+		api.POST("/auth/verify-forgot-otp", middleware.RateLimit(rdb, 10, time.Minute), authHandler.VerifyForgotOTP)
+		api.POST("/auth/reset-password", middleware.RateLimit(rdb, 5, time.Minute), authHandler.ResetPassword)
 		authGroup := api.Group("/auth")
 		authGroup.Use(authMw)
 		authGroup.POST("/switch-user", authHandler.SwitchUser)
@@ -129,9 +140,9 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool) {
 		// Tripay Callback Webhook (Public, verified via signature)
 		api.POST("/tripay/callback", subscriptionHandler.TripayCallback)
 
-		// Admin routes
+		// Admin routes — wajib admin + auth.
 		adminRoutes := api.Group("/admin")
-		adminRoutes.Use(authMw)
+		adminRoutes.Use(authMw, middleware.AdminOnly())
 		{
 			adminRoutes.GET("/dashboard", adminHandler.GetDashboardStats)
 			adminRoutes.POST("/products/:id/approve", adminHandler.ApproveProduct)

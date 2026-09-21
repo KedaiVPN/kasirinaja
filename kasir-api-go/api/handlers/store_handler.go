@@ -55,6 +55,10 @@ func (h *StoreHandler) UpdateStore(c *gin.Context) {
 		return
 	}
 
+	req.StoreName = SanitizeText(req.StoreName)
+	req.Address = SanitizeText(req.Address)
+	req.Phone = SanitizeText(req.Phone)
+
 	arg := db.UpdateStoreParams{
 		ID:        pgtype.UUID{Bytes: [16]byte(storeIDBytes), Valid: true},
 		StoreName: req.StoreName,
@@ -107,10 +111,9 @@ func (h *StoreHandler) UploadStoreLogo(c *gin.Context) {
 		return
 	}
 
-	// Restrict file size to 3MB
-	const MaxFileSize = 3 * 1024 * 1024
-	if file.Size > MaxFileSize {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "File terlalu besar, maksimal 3MB"})
+	// Validasi ukuran, ekstensi (whitelist), dan MIME dari isi file.
+	if err := ValidateImageFile(file); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -131,7 +134,8 @@ func (h *StoreHandler) UploadStoreLogo(c *gin.Context) {
 	// Use store ID for folder creation to ensure consistency even if store name changes
 	storeIdString := uid.String()
 
-	extension := filepath.Ext(file.Filename)
+	// Normalisasi ekstensi ke huruf kecil (cegah .PNG / .JPG casing aneh).
+	extension := strings.ToLower(filepath.Ext(file.Filename))
 	filename := "logo" + extension
 
 	dirPath := filepath.Join("uploads", storeIdString)

@@ -1,6 +1,17 @@
+# Binaries & build output
 kasir-api-go
+main
+*.exe
+
+# Env / secrets (jangan pernah commit)
 .env
-main\nkasir-api-app
-main
-kasir-api-app
-main
+.env.*
+!.env.example
+
+# Uploaded files (runtime artifacts)
+uploads/
+
+# Firebase service account keys
+*serviceAccount*.json
+firebase*.json
+google-services.json

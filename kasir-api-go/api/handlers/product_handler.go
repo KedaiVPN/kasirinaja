@@ -51,6 +51,13 @@ func (h *ProductHandler) CreateMasterProduct(c *gin.Context) {
 		return
 	}
 
+	// Sanitasi field teks.
+	req.Barcode = SanitizeText(req.Barcode)
+	req.Name = SanitizeText(req.Name)
+	req.CategoryID = SanitizeText(req.CategoryID)
+	req.Unit = SanitizeText(req.Unit)
+	req.Source = SanitizeText(req.Source)
+
 	arg := db.CreateMasterProductParams{
 		Barcode:            req.Barcode,
 		Name:               req.Name,
@@ -224,6 +231,9 @@ func (h *ProductHandler) CreateStoreProduct(c *gin.Context) {
 		return
 	}
 
+	req.LocalName = SanitizeText(req.LocalName)
+	req.LocalCategory = SanitizeText(req.LocalCategory)
+
 	storeID, err := uuid.Parse(req.StoreID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid store id"})
@@ -375,6 +385,11 @@ func (h *ProductHandler) SubmitPendingProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	req.Name = SanitizeText(req.Name)
+	req.Category = SanitizeText(req.Category)
+	req.Description = SanitizeText(req.Description)
+	req.Barcode = SanitizeText(req.Barcode)
 
 	arg := db.CreatePendingProductParams{
 		Name:        req.Name,

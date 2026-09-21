@@ -37,6 +37,10 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
+	req.FullName = SanitizeText(req.FullName)
+	req.Email = SanitizeText(req.Email)
+	req.Phone = SanitizeText(req.Phone)
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
@@ -135,6 +139,10 @@ func (h *UserHandler) AddStoreEmployee(c *gin.Context) {
 		return
 	}
 
+	req.FullName = SanitizeText(req.FullName)
+	req.Email = SanitizeText(req.Email)
+	req.Phone = SanitizeText(req.Phone)
+
 	// We map the provided username to the database's email column.
 	// If no username (email) is provided, fallback to a dummy one just in case.
 	email := req.Email
@@ -203,7 +211,7 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	}
 
 	if req.FullName != "" {
-		arg.FullName = pgtype.Text{String: req.FullName, Valid: true}
+		arg.FullName = pgtype.Text{String: SanitizeText(req.FullName), Valid: true}
 	}
 
 	file, err := c.FormFile("photo")
@@ -230,7 +238,10 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 				}
 			}
 		// user uploaded a file
-		// Sanitize file path just like in upload_handler
+		if err := ValidateImageFile(file); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 		uploadDir := "./uploads/" + storeIDStr.(string)
 
 		if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {

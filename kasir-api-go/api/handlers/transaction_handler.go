@@ -106,6 +106,8 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 
 	// Create transaction items
 	for _, item := range req.Items {
+		item.ProductName = SanitizeText(item.ProductName)
+		item.Barcode = SanitizeText(item.Barcode)
 		spID, err := uuid.Parse(item.StoreProductID)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid store product id in items"})
