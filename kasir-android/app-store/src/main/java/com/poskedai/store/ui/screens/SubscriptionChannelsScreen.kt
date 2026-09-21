@@ -143,7 +143,7 @@ fun SubscriptionChannelsScreen(
                                 )
                             }
 
-                            items(channelList) { channel ->
+                            items(channelList, key = { it.code }) { channel ->
                                 val isSelected = selectedChannelCode == channel.code
                                 Card(
                                     modifier = Modifier

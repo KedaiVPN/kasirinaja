@@ -33,7 +33,7 @@ fun CatalogScreen(
             is CatalogState.Success -> {
                 val products = (catalogState as CatalogState.Success).products
                 LazyColumn {
-                    items(products) { product ->
+                    items(products, key = { (it["id"] ?: it.hashCode()).toString() }) { product ->
                         Card(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Text(text = product["name"]?.toString() ?: "Unknown", style = MaterialTheme.typography.titleMedium)

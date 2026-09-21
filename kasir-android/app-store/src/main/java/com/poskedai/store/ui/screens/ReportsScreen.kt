@@ -212,7 +212,7 @@ fun ReportsScreen(
                             .padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(cashierReports) { report ->
+                        items(cashierReports, key = { it.id }) { report ->
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = CardDefaults.cardColors(containerColor = Color.White),

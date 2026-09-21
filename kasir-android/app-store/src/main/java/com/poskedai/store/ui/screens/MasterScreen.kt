@@ -270,7 +270,7 @@ fun MasterScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(filteredProducts) { product ->
+                    items(filteredProducts, key = { if (it.has("id")) it.get("id").asString else it.hashCode().toString() }) { product ->
                         MasterProductItem(product = product, currentRole = currentRole, onAddClick = {
                             productToEdit = product
                         })

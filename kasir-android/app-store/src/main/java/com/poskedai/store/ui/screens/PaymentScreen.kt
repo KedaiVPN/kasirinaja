@@ -81,7 +81,7 @@ fun PaymentScreen(
             LazyColumn(
                 modifier = Modifier.weight(1f)
             ) {
-                items(cartItems) { item ->
+                items(cartItems, key = { it.product.id }) { item ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()

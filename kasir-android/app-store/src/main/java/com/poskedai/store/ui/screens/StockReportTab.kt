@@ -32,7 +32,7 @@ fun StockReportTab(
             modifier = Modifier.fillMaxSize().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(stockReports) { report ->
+            items(stockReports, key = { it.id }) { report ->
                 val statusColor = when (report.status) {
                     "Aman" -> Color(0xFF4CAF50)
                     "Hampir Habis" -> Color(0xFFFFA000)

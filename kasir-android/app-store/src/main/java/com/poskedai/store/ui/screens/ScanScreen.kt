@@ -160,7 +160,7 @@ fun ScanScreen(
                             LazyColumn(
                                 modifier = Modifier.weight(1f)
                             ) {
-                                items(cartItems) { item ->
+                                items(cartItems, key = { it.product.id }) { item ->
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -305,7 +305,7 @@ fun ScanScreen(
                             contentPadding = PaddingValues(16.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            items(filteredProducts) { product ->
+                            items(filteredProducts, key = { it.id }) { product ->
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
                                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
