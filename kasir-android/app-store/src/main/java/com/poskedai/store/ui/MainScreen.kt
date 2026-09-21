@@ -898,7 +898,7 @@ fun MainScreen(initialRoute: String? = null) {
                         }
 
                         androidx.compose.foundation.layout.Row(
-                            modifier = Modifier.fillMaxWidth().animateContentSize(animationSpec = androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioLowBouncy, stiffness = androidx.compose.animation.core.Spring.StiffnessLow)),
+                            modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceEvenly,
                             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                         ) {
@@ -953,33 +953,109 @@ fun MainScreen(initialRoute: String? = null) {
             }
         }
     ) { innerPadding ->
+        val bottomNavOrder = remember {
+            mapOf(
+                Screen.Dashboard.route to 0,
+                Screen.History.route to 1,
+                Screen.Scan.route to 2
+            )
+        }
+
         NavHost(
             navController = navController,
             startDestination = startDest,
             modifier = Modifier.padding(innerPadding),
             enterTransition = {
-                androidx.compose.animation.slideInHorizontally(
-                    initialOffsetX = { fullWidth -> fullWidth },
-                    animationSpec = androidx.compose.animation.core.tween(300)
-                ) + androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(300))
+                val fromRoute = initialState.destination.route
+                val targetRoute = targetState.destination.route
+                val initialIndex = bottomNavOrder[fromRoute]
+                val targetIndex = bottomNavOrder[targetRoute]
+
+                if (initialIndex != null && targetIndex != null) {
+                    if (targetIndex > initialIndex) {
+                        // Moving right on bottom bar -> Slide in from right (right to left)
+                        androidx.compose.animation.slideInHorizontally(
+                            initialOffsetX = { fullWidth -> fullWidth },
+                            animationSpec = androidx.compose.animation.core.tween(250, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                        ) + androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(250))
+                    } else {
+                        // Moving left on bottom bar -> Slide in from left (left to right)
+                        androidx.compose.animation.slideInHorizontally(
+                            initialOffsetX = { fullWidth -> -fullWidth },
+                            animationSpec = androidx.compose.animation.core.tween(250, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                        ) + androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(250))
+                    }
+                } else {
+                    // Sidebar or other navigation -> Fade in
+                    androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(220))
+                }
             },
             exitTransition = {
-                androidx.compose.animation.slideOutHorizontally(
-                    targetOffsetX = { fullWidth -> -fullWidth / 3 },
-                    animationSpec = androidx.compose.animation.core.tween(300)
-                ) + androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(300))
+                val fromRoute = initialState.destination.route
+                val targetRoute = targetState.destination.route
+                val initialIndex = bottomNavOrder[fromRoute]
+                val targetIndex = bottomNavOrder[targetRoute]
+
+                if (initialIndex != null && targetIndex != null) {
+                    if (targetIndex > initialIndex) {
+                        androidx.compose.animation.slideOutHorizontally(
+                            targetOffsetX = { fullWidth -> -fullWidth },
+                            animationSpec = androidx.compose.animation.core.tween(250, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                        ) + androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(250))
+                    } else {
+                        androidx.compose.animation.slideOutHorizontally(
+                            targetOffsetX = { fullWidth -> fullWidth },
+                            animationSpec = androidx.compose.animation.core.tween(250, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                        ) + androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(250))
+                    }
+                } else {
+                    // Sidebar or other navigation -> Fade out
+                    androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(220))
+                }
             },
             popEnterTransition = {
-                androidx.compose.animation.slideInHorizontally(
-                    initialOffsetX = { fullWidth -> -fullWidth / 3 },
-                    animationSpec = androidx.compose.animation.core.tween(300)
-                ) + androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(300))
+                val fromRoute = initialState.destination.route
+                val targetRoute = targetState.destination.route
+                val initialIndex = bottomNavOrder[fromRoute]
+                val targetIndex = bottomNavOrder[targetRoute]
+
+                if (initialIndex != null && targetIndex != null) {
+                    if (targetIndex > initialIndex) {
+                        androidx.compose.animation.slideInHorizontally(
+                            initialOffsetX = { fullWidth -> fullWidth },
+                            animationSpec = androidx.compose.animation.core.tween(250, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                        ) + androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(250))
+                    } else {
+                        androidx.compose.animation.slideInHorizontally(
+                            initialOffsetX = { fullWidth -> -fullWidth },
+                            animationSpec = androidx.compose.animation.core.tween(250, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                        ) + androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(250))
+                    }
+                } else {
+                    androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(220))
+                }
             },
             popExitTransition = {
-                androidx.compose.animation.slideOutHorizontally(
-                    targetOffsetX = { fullWidth -> fullWidth },
-                    animationSpec = androidx.compose.animation.core.tween(300)
-                ) + androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(300))
+                val fromRoute = initialState.destination.route
+                val targetRoute = targetState.destination.route
+                val initialIndex = bottomNavOrder[fromRoute]
+                val targetIndex = bottomNavOrder[targetRoute]
+
+                if (initialIndex != null && targetIndex != null) {
+                    if (targetIndex > initialIndex) {
+                        androidx.compose.animation.slideOutHorizontally(
+                            targetOffsetX = { fullWidth -> -fullWidth },
+                            animationSpec = androidx.compose.animation.core.tween(250, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                        ) + androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(250))
+                    } else {
+                        androidx.compose.animation.slideOutHorizontally(
+                            targetOffsetX = { fullWidth -> fullWidth },
+                            animationSpec = androidx.compose.animation.core.tween(250, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                        ) + androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(250))
+                    }
+                } else {
+                    androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(220))
+                }
             }
         ) {
             composable(Screen.Login.route) {
