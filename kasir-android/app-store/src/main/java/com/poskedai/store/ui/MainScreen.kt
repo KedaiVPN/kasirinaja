@@ -113,11 +113,13 @@ fun MainScreen(initialRoute: String? = null) {
     val navController = rememberNavController()
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    val tokenManager = com.poskedai.core.network.TokenManager(context)
-    val authRepository = com.poskedai.store.data.repository.AuthRepository(
-        com.poskedai.core.network.RetrofitClient.authApi,
-        tokenManager
-    )
+    val tokenManager = remember { com.poskedai.core.network.TokenManager(context) }
+    val authRepository = remember(tokenManager) {
+        com.poskedai.store.data.repository.AuthRepository(
+            com.poskedai.core.network.RetrofitClient.authApi,
+            tokenManager
+        )
+    }
 
     val storeSubscriptionViewModel: StoreSubscriptionViewModel = viewModel(
         factory = object : androidx.lifecycle.ViewModelProvider.Factory {
@@ -134,10 +136,10 @@ fun MainScreen(initialRoute: String? = null) {
         factory = AuthViewModelFactory(authRepository)
     )
 
-    val productDao = AppDatabase.getDatabase(context).productDao()
-    val transactionDao = AppDatabase.getDatabase(context).transactionDao()
-    val database = AppDatabase.getDatabase(context)
-    val productRepository = ProductRepository(productDao, transactionDao, context)
+    val database = remember { AppDatabase.getDatabase(context) }
+    val productDao = remember(database) { database.productDao() }
+    val transactionDao = remember(database) { database.transactionDao() }
+    val productRepository = remember(productDao, transactionDao) { ProductRepository(productDao, transactionDao, context) }
 
     val webSocketManager = remember {
         WebSocketManager(
@@ -267,12 +269,14 @@ fun MainScreen(initialRoute: String? = null) {
         }
     }
 
-    val transactionRepository = com.poskedai.store.data.repository.TransactionRepository(
-        database.transactionDao(),
-        com.poskedai.core.network.RetrofitClient.transactionApi,
-        database.productDao()
-    )
-    val workManager = androidx.work.WorkManager.getInstance(context)
+    val transactionRepository = remember(transactionDao, productDao) {
+        com.poskedai.store.data.repository.TransactionRepository(
+            transactionDao,
+            com.poskedai.core.network.RetrofitClient.transactionApi,
+            productDao
+        )
+    }
+    val workManager = remember { androidx.work.WorkManager.getInstance(context) }
 
     val dashboardViewModel: com.poskedai.store.ui.viewmodels.DashboardViewModel = viewModel(
         factory = com.poskedai.store.ui.viewmodels.DashboardViewModel.Factory(
@@ -878,11 +882,11 @@ fun MainScreen(initialRoute: String? = null) {
 
                         val animatedOffsetX by androidx.compose.animation.core.animateFloatAsState(
                             targetValue = indicatorOffsetX,
-                            animationSpec = androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioLowBouncy, stiffness = androidx.compose.animation.core.Spring.StiffnessLow)
+                            animationSpec = androidx.compose.animation.core.tween(220, easing = androidx.compose.animation.core.FastOutSlowInEasing)
                         )
                         val animatedWidth by androidx.compose.animation.core.animateFloatAsState(
                             targetValue = indicatorWidth,
-                            animationSpec = androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioLowBouncy, stiffness = androidx.compose.animation.core.Spring.StiffnessLow)
+                            animationSpec = androidx.compose.animation.core.tween(220, easing = androidx.compose.animation.core.FastOutSlowInEasing)
                         )
 
                         if (indicatorWidth > 0f) {
@@ -972,22 +976,18 @@ fun MainScreen(initialRoute: String? = null) {
                 val targetIndex = bottomNavOrder[targetRoute]
 
                 if (initialIndex != null && targetIndex != null) {
-                    if (targetIndex > initialIndex) {
-                        // Moving right on bottom bar -> Slide in from right (right to left)
-                        androidx.compose.animation.slideInHorizontally(
-                            initialOffsetX = { fullWidth -> fullWidth },
-                            animationSpec = androidx.compose.animation.core.tween(250, easing = androidx.compose.animation.core.FastOutSlowInEasing)
-                        ) + androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(250))
-                    } else {
-                        // Moving left on bottom bar -> Slide in from left (left to right)
-                        androidx.compose.animation.slideInHorizontally(
-                            initialOffsetX = { fullWidth -> -fullWidth },
-                            animationSpec = androidx.compose.animation.core.tween(250, easing = androidx.compose.animation.core.FastOutSlowInEasing)
-                        ) + androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(250))
-                    }
+                    // Subtle tab sliding with smooth crossfade
+                    val direction = if (targetIndex > initialIndex) 1 else -1
+                    androidx.compose.animation.slideInHorizontally(
+                        initialOffsetX = { fullWidth -> (fullWidth * 0.18f * direction).toInt() },
+                        animationSpec = androidx.compose.animation.core.tween(220, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                    ) + androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(220))
                 } else {
-                    // Sidebar or other navigation -> Fade in
-                    androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(220))
+                    // Standard native push: slide in from right + fade in
+                    androidx.compose.animation.slideInHorizontally(
+                        initialOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = androidx.compose.animation.core.tween(280, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                    ) + androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(240))
                 }
             },
             exitTransition = {
@@ -997,20 +997,17 @@ fun MainScreen(initialRoute: String? = null) {
                 val targetIndex = bottomNavOrder[targetRoute]
 
                 if (initialIndex != null && targetIndex != null) {
-                    if (targetIndex > initialIndex) {
-                        androidx.compose.animation.slideOutHorizontally(
-                            targetOffsetX = { fullWidth -> -fullWidth },
-                            animationSpec = androidx.compose.animation.core.tween(250, easing = androidx.compose.animation.core.FastOutSlowInEasing)
-                        ) + androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(250))
-                    } else {
-                        androidx.compose.animation.slideOutHorizontally(
-                            targetOffsetX = { fullWidth -> fullWidth },
-                            animationSpec = androidx.compose.animation.core.tween(250, easing = androidx.compose.animation.core.FastOutSlowInEasing)
-                        ) + androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(250))
-                    }
+                    val direction = if (targetIndex > initialIndex) 1 else -1
+                    androidx.compose.animation.slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> (-fullWidth * 0.18f * direction).toInt() },
+                        animationSpec = androidx.compose.animation.core.tween(220, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                    ) + androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(180))
                 } else {
-                    // Sidebar or other navigation -> Fade out
-                    androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(220))
+                    // Standard native push: current screen slides out with subtle parallax to the left
+                    androidx.compose.animation.slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> -(fullWidth * 0.25f).toInt() },
+                        animationSpec = androidx.compose.animation.core.tween(280, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                    ) + androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(220))
                 }
             },
             popEnterTransition = {
@@ -1020,19 +1017,17 @@ fun MainScreen(initialRoute: String? = null) {
                 val targetIndex = bottomNavOrder[targetRoute]
 
                 if (initialIndex != null && targetIndex != null) {
-                    if (targetIndex > initialIndex) {
-                        androidx.compose.animation.slideInHorizontally(
-                            initialOffsetX = { fullWidth -> fullWidth },
-                            animationSpec = androidx.compose.animation.core.tween(250, easing = androidx.compose.animation.core.FastOutSlowInEasing)
-                        ) + androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(250))
-                    } else {
-                        androidx.compose.animation.slideInHorizontally(
-                            initialOffsetX = { fullWidth -> -fullWidth },
-                            animationSpec = androidx.compose.animation.core.tween(250, easing = androidx.compose.animation.core.FastOutSlowInEasing)
-                        ) + androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(250))
-                    }
+                    val direction = if (targetIndex > initialIndex) 1 else -1
+                    androidx.compose.animation.slideInHorizontally(
+                        initialOffsetX = { fullWidth -> (fullWidth * 0.18f * direction).toInt() },
+                        animationSpec = androidx.compose.animation.core.tween(220, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                    ) + androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(220))
                 } else {
-                    androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(220))
+                    // Standard native pop: previous screen slides back in from left
+                    androidx.compose.animation.slideInHorizontally(
+                        initialOffsetX = { fullWidth -> -(fullWidth * 0.25f).toInt() },
+                        animationSpec = androidx.compose.animation.core.tween(280, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                    ) + androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(240))
                 }
             },
             popExitTransition = {
@@ -1042,19 +1037,17 @@ fun MainScreen(initialRoute: String? = null) {
                 val targetIndex = bottomNavOrder[targetRoute]
 
                 if (initialIndex != null && targetIndex != null) {
-                    if (targetIndex > initialIndex) {
-                        androidx.compose.animation.slideOutHorizontally(
-                            targetOffsetX = { fullWidth -> -fullWidth },
-                            animationSpec = androidx.compose.animation.core.tween(250, easing = androidx.compose.animation.core.FastOutSlowInEasing)
-                        ) + androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(250))
-                    } else {
-                        androidx.compose.animation.slideOutHorizontally(
-                            targetOffsetX = { fullWidth -> fullWidth },
-                            animationSpec = androidx.compose.animation.core.tween(250, easing = androidx.compose.animation.core.FastOutSlowInEasing)
-                        ) + androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(250))
-                    }
+                    val direction = if (targetIndex > initialIndex) 1 else -1
+                    androidx.compose.animation.slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> (-fullWidth * 0.18f * direction).toInt() },
+                        animationSpec = androidx.compose.animation.core.tween(220, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                    ) + androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(180))
                 } else {
-                    androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(220))
+                    // Standard native pop: exiting screen slides out to the right
+                    androidx.compose.animation.slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = androidx.compose.animation.core.tween(280, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                    ) + androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(220))
                 }
             }
         ) {

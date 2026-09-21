@@ -382,180 +382,202 @@ fun StockScreen(
                         .padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                items(products, key = { it.id }) { product ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                        colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color.White)
-                    ) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            if (product.imageUrl.isNullOrEmpty()) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .aspectRatio(1f)
-                                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Image,
-                                        contentDescription = "No Image",
-                                        modifier = Modifier.size(64.dp),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            } else {
-                                val safeImageUrl = product.imageUrl
-                                val fileName = FileUtil.extractFileNameFromUrl(safeImageUrl)
-                                val localFile = FileUtil.getLocalImagePath(context, fileName)
-
-                                val imageModel = remember(fileName) {
-                                    if (product.imageUrl.startsWith("content://") || product.imageUrl.startsWith("file://") || product.imageUrl.startsWith("http")) {
-                                        product.imageUrl
-                                    } else if (FileUtil.isImageExistsLocally(context, fileName)) {
-                                        localFile
-                                    } else {
-                                        "${com.poskedai.core.network.RetrofitClient.IMAGE_BASE_URL}${if(product.imageUrl.startsWith("/")) product.imageUrl else "/${product.imageUrl}"}"
-                                    }
-                                }
-
-                                AsyncImage(
-                                    model = imageModel,
-                                    contentDescription = product.name,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .aspectRatio(1f)
-                                )
+                    items(products, key = { it.id }) { product ->
+                        ProductGridCard(
+                            product = product,
+                            currentRole = currentRole,
+                            onEdit = onNavigateToEditProduct,
+                            onDelete = {
+                                productToDelete = it
+                                showDeleteDialog = true
                             }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
 
-                            Column(
+@Composable
+private fun ProductGridCard(
+    product: com.poskedai.store.data.local.ProductEntity,
+    currentRole: String,
+    onEdit: (String) -> Unit,
+    onDelete: (com.poskedai.store.data.local.ProductEntity) -> Unit
+) {
+    val context = LocalContext.current
+    val imageModel = remember(product.imageUrl) {
+        val url = product.imageUrl
+        if (url.isNullOrEmpty()) null
+        else if (url.startsWith("content://") || url.startsWith("file://") || url.startsWith("http")) url
+        else {
+            val fileName = FileUtil.extractFileNameFromUrl(url)
+            if (FileUtil.isImageExistsLocally(context, fileName)) {
+                FileUtil.getLocalImagePath(context, fileName)
+            } else {
+                "${com.poskedai.core.network.RetrofitClient.IMAGE_BASE_URL}${if (url.startsWith("/")) url else "/$url"}"
+            }
+        }
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color.White)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            if (imageModel == null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Image,
+                        contentDescription = "No Image",
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                AsyncImage(
+                    model = coil.request.ImageRequest.Builder(context)
+                        .data(imageModel)
+                        .crossfade(150)
+                        .build(),
+                    contentDescription = product.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = product.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "Kategori: ${product.category}",
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
+                Text(
+                    text = FormatUtils.formatCurrency(product.sellPrice),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = if (product.stock == -1) "Stok: Unlimited" else "Stok: ${product.stock}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+                if (!product.barcode.isNullOrEmpty()) {
+                    Text(
+                        text = "Barcode: ${product.barcode}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                }
+                if (product.pendingSync) {
+                    Text(
+                        text = "Menunggu Sinkronisasi...",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                if (currentRole != "kasir") {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Edit Button
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onEdit(product.id) },
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                        ) {
+                            Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                                    .padding(vertical = 8.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = product.name,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 2,
-                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                Icon(
+                                    imageVector = Icons.Filled.Edit,
+                                    contentDescription = "Edit",
+                                    tint = androidx.compose.ui.graphics.Color.White,
+                                    modifier = Modifier.size(16.dp)
                                 )
-                                Text(text = "Kategori: ${product.category}", style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = FormatUtils.formatCurrency(product.sellPrice),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.SemiBold
+                                    text = "Edit",
+                                    color = androidx.compose.ui.graphics.Color.White,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold
                                 )
+                            }
+                        }
+
+                        // Delete Button
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onDelete(product) },
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Delete,
+                                    contentDescription = "Delete",
+                                    tint = androidx.compose.ui.graphics.Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = if (product.stock == -1) "Stok: Unlimited" else "Stok: ${product.stock}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.secondary
+                                    text = "Delete",
+                                    color = androidx.compose.ui.graphics.Color.White,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold
                                 )
-                                if (!product.barcode.isNullOrEmpty()) {
-                                    Text(
-                                        text = "Barcode: ${product.barcode}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
-                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                    )
-                                }
-                                if (product.pendingSync) {
-                                    Text(
-                                        text = "Menunggu Sinkronisasi...",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.error
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.height(4.dp))
-
-                                if (currentRole != "kasir") {
-                                    Column(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        // Edit Button
-                                        Card(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clickable { onNavigateToEditProduct(product.id) },
-                                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
-                                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                                            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
-                                        ) {
-                                            Row(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(vertical = 8.dp),
-                                                horizontalArrangement = Arrangement.Center,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Filled.Edit,
-                                                    contentDescription = "Edit",
-                                                    tint = androidx.compose.ui.graphics.Color.White,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Text(
-                                                    text = "Edit",
-                                                    color = androidx.compose.ui.graphics.Color.White,
-                                                    style = MaterialTheme.typography.labelLarge,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                            }
-                                        }
-
-                                        // Delete Button
-                                        Card(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clickable {
-                                                    productToDelete = product
-                                                    showDeleteDialog = true
-                                                },
-                                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error),
-                                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                                            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
-                                        ) {
-                                            Row(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(vertical = 8.dp),
-                                                horizontalArrangement = Arrangement.Center,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Filled.Delete,
-                                                    contentDescription = "Delete",
-                                                    tint = androidx.compose.ui.graphics.Color.White,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Text(
-                                                    text = "Delete",
-                                                    color = androidx.compose.ui.graphics.Color.White,
-                                                    style = MaterialTheme.typography.labelLarge,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
                             }
                         }
                     }
                 }
             }
         }
-
-}
-}
-}
+    }
 }

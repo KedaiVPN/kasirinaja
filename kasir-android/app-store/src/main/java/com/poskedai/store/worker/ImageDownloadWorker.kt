@@ -60,6 +60,7 @@ class ImageDownloadWorker(
 
                     outputStream.close()
                     inputStream.close()
+                    FileUtil.markImageDownloaded(fileName)
                 } else {
                     allSuccess = false
                 }

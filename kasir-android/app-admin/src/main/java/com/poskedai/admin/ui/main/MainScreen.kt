@@ -49,6 +49,10 @@ fun MainScreen(onLogout: () -> Unit) {
     val currentDestination = navBackStackEntry?.destination
     val showBottomBar = items.any { it.route == currentDestination?.route }
 
+    val bottomNavOrder = remember {
+        items.mapIndexed { index, item -> item.route to index }.toMap()
+    }
+
     Scaffold(
         bottomBar = {
             if (showBottomBar) {
@@ -76,7 +80,83 @@ fun MainScreen(onLogout: () -> Unit) {
         NavHost(
             navController = navController,
             startDestination = BottomNavItem.Dashboard.route,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding),
+            enterTransition = {
+                val fromRoute = initialState.destination.route
+                val targetRoute = targetState.destination.route
+                val initialIndex = bottomNavOrder[fromRoute]
+                val targetIndex = bottomNavOrder[targetRoute]
+
+                if (initialIndex != null && targetIndex != null) {
+                    val direction = if (targetIndex > initialIndex) 1 else -1
+                    androidx.compose.animation.slideInHorizontally(
+                        initialOffsetX = { fullWidth -> (fullWidth * 0.18f * direction).toInt() },
+                        animationSpec = androidx.compose.animation.core.tween(220, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                    ) + androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(220))
+                } else {
+                    androidx.compose.animation.slideInHorizontally(
+                        initialOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = androidx.compose.animation.core.tween(280, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                    ) + androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(240))
+                }
+            },
+            exitTransition = {
+                val fromRoute = initialState.destination.route
+                val targetRoute = targetState.destination.route
+                val initialIndex = bottomNavOrder[fromRoute]
+                val targetIndex = bottomNavOrder[targetRoute]
+
+                if (initialIndex != null && targetIndex != null) {
+                    val direction = if (targetIndex > initialIndex) 1 else -1
+                    androidx.compose.animation.slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> (-fullWidth * 0.18f * direction).toInt() },
+                        animationSpec = androidx.compose.animation.core.tween(220, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                    ) + androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(180))
+                } else {
+                    androidx.compose.animation.slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> -(fullWidth * 0.25f).toInt() },
+                        animationSpec = androidx.compose.animation.core.tween(280, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                    ) + androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(220))
+                }
+            },
+            popEnterTransition = {
+                val fromRoute = initialState.destination.route
+                val targetRoute = targetState.destination.route
+                val initialIndex = bottomNavOrder[fromRoute]
+                val targetIndex = bottomNavOrder[targetRoute]
+
+                if (initialIndex != null && targetIndex != null) {
+                    val direction = if (targetIndex > initialIndex) 1 else -1
+                    androidx.compose.animation.slideInHorizontally(
+                        initialOffsetX = { fullWidth -> (fullWidth * 0.18f * direction).toInt() },
+                        animationSpec = androidx.compose.animation.core.tween(220, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                    ) + androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(220))
+                } else {
+                    androidx.compose.animation.slideInHorizontally(
+                        initialOffsetX = { fullWidth -> -(fullWidth * 0.25f).toInt() },
+                        animationSpec = androidx.compose.animation.core.tween(280, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                    ) + androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(240))
+                }
+            },
+            popExitTransition = {
+                val fromRoute = initialState.destination.route
+                val targetRoute = targetState.destination.route
+                val initialIndex = bottomNavOrder[fromRoute]
+                val targetIndex = bottomNavOrder[targetRoute]
+
+                if (initialIndex != null && targetIndex != null) {
+                    val direction = if (targetIndex > initialIndex) 1 else -1
+                    androidx.compose.animation.slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> (-fullWidth * 0.18f * direction).toInt() },
+                        animationSpec = androidx.compose.animation.core.tween(220, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                    ) + androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(180))
+                } else {
+                    androidx.compose.animation.slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = androidx.compose.animation.core.tween(280, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                    ) + androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(220))
+                }
+            }
         ) {
             composable(BottomNavItem.Dashboard.route) {
                 DashboardScreen()

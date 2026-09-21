@@ -266,7 +266,7 @@ fun DashboardScreen(
                     }
                 }
             } else {
-                items(state.topProducts.size, key = { index -> index }) { index ->
+                items(state.topProducts.size, key = { index -> "${state.topProducts[index].productName}_${state.topProducts[index].category}_$index" }) { index ->
                     val product = state.topProducts[index]
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                         TopProductItemView(

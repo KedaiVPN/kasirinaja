@@ -300,104 +300,22 @@ fun ScanScreen(
                             }
                         }
 
+                        val cartQuantities = remember(cartItems) {
+                            cartItems.associate { it.product.id to it.quantity }
+                        }
+
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(16.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             items(filteredProducts, key = { it.id }) { product ->
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                                    colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color.White)
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(16.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        if (product.imageUrl.isNullOrEmpty()) {
-                                            Icon(
-                                                imageVector = Icons.Filled.Image,
-                                                contentDescription = "No Image",
-                                                modifier = Modifier.size(64.dp),
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        } else {
-                                            val safeImageUrl = product.imageUrl
-                                            val fileName = FileUtil.extractFileNameFromUrl(safeImageUrl)
-                                            val localFile = FileUtil.getLocalImagePath(context, fileName)
-
-                                            val imageModel = remember(fileName) {
-                                                if (product.imageUrl.startsWith("content://") || product.imageUrl.startsWith("file://") || product.imageUrl.startsWith("http")) {
-                                                    product.imageUrl
-                                                } else if (FileUtil.isImageExistsLocally(context, fileName)) {
-                                                    localFile
-                                                } else {
-                                                    "${com.poskedai.core.network.RetrofitClient.IMAGE_BASE_URL}${if(product.imageUrl.startsWith("/")) product.imageUrl else "/${product.imageUrl}"}"
-                                                }
-                                            }
-
-                                            AsyncImage(
-                                                model = imageModel,
-                                                contentDescription = product.name,
-                                                contentScale = ContentScale.Crop,
-                                                modifier = Modifier.size(64.dp)
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.width(16.dp))
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = product.name,
-                                                style = MaterialTheme.typography.titleMedium,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                            Text(text = "Kategori: ${product.category}", style = MaterialTheme.typography.bodySmall)
-                                            val stockText = buildAnnotatedString {
-                                                append("Stok: ")
-                                                if (product.stock == -1) {
-                                                    withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
-                                                        append("Unlimited")
-                                                    }
-                                                } else if (product.stock == 0) {
-                                                    withStyle(style = SpanStyle(color = Color.Red)) {
-                                                        append("Habis")
-                                                    }
-                                                } else if (product.stock <= product.minStock) {
-                                                    withStyle(style = SpanStyle(color = Color(0xFFFFA500))) {
-                                                        append(product.stock.toString())
-                                                    }
-                                                } else {
-                                                    withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
-                                                        append(product.stock.toString())
-                                                    }
-                                                }
-                                            }
-                                            Text(text = stockText, style = MaterialTheme.typography.bodySmall)
-                                            Text(
-                                                text = "Harga: ${FormatUtils.formatCurrency(product.sellPrice)}",
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.primary
-                                            )
-                                        }
-                                        val quantityInCart = cartItems.find { it.product.id == product.id }?.quantity ?: 0
-                                        val isStockDepleted = product.stock == 0
-                                        val isStockMaxedOut = product.stock != -1 && quantityInCart >= product.stock
-                                        val isBuyDisabled = isStockDepleted || isStockMaxedOut
-
-                                        Button(
-                                            onClick = { viewModel.addProductToCart(product) },
-                                            enabled = !isBuyDisabled,
-                                            elevation = ButtonDefaults.buttonElevation(
-                                                defaultElevation = 4.dp,
-                                                pressedElevation = 8.dp
-                                            )
-                                        ) {
-                                            Text("Beli")
-                                        }
-                                    }
-                                }
+                                val quantityInCart = cartQuantities[product.id] ?: 0
+                                ScanProductRow(
+                                    product = product,
+                                    quantityInCart = quantityInCart,
+                                    onAddToCart = { viewModel.addProductToCart(product) }
+                                )
                             }
                         }
 
@@ -518,6 +436,108 @@ private class ContinuousBarcodeAnalyzer(private val onBarcodeScanned: (String) -
             imageProxy.close()
         }
     }
+}
 
+@Composable
+private fun ScanProductRow(
+    product: com.poskedai.store.data.local.ProductEntity,
+    quantityInCart: Int,
+    onAddToCart: () -> Unit
+) {
+    val context = LocalContext.current
+    val imageModel = remember(product.imageUrl) {
+        val url = product.imageUrl
+        if (url.isNullOrEmpty()) null
+        else if (url.startsWith("content://") || url.startsWith("file://") || url.startsWith("http")) url
+        else {
+            val fileName = FileUtil.extractFileNameFromUrl(url)
+            if (FileUtil.isImageExistsLocally(context, fileName)) {
+                FileUtil.getLocalImagePath(context, fileName)
+            } else {
+                "${com.poskedai.core.network.RetrofitClient.IMAGE_BASE_URL}${if (url.startsWith("/")) url else "/$url"}"
+            }
+        }
+    }
 
+    val isStockDepleted = product.stock == 0
+    val isStockMaxedOut = product.stock != -1 && quantityInCart >= product.stock
+    val isBuyDisabled = isStockDepleted || isStockMaxedOut
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color.White)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (imageModel == null) {
+                Icon(
+                    imageVector = Icons.Filled.Image,
+                    contentDescription = "No Image",
+                    modifier = Modifier.size(64.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                AsyncImage(
+                    model = coil.request.ImageRequest.Builder(context)
+                        .data(imageModel)
+                        .crossfade(150)
+                        .build(),
+                    contentDescription = product.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(64.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = product.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(text = "Kategori: ${product.category}", style = MaterialTheme.typography.bodySmall)
+                val stockText = remember(product.stock, product.minStock) {
+                    androidx.compose.ui.text.buildAnnotatedString {
+                        append("Stok: ")
+                        if (product.stock == -1) {
+                            append("Unlimited")
+                        } else if (product.stock == 0) {
+                            append("Habis")
+                        } else {
+                            append(product.stock.toString())
+                        }
+                    }
+                }
+                val stockColor = when {
+                    product.stock == 0 -> Color.Red
+                    product.stock != -1 && product.stock <= product.minStock -> Color(0xFFFFA500)
+                    else -> MaterialTheme.colorScheme.primary
+                }
+                Text(
+                    text = stockText,
+                    style = MaterialTheme.typography.bodySmall.copy(color = stockColor)
+                )
+                Text(
+                    text = "Harga: ${FormatUtils.formatCurrency(product.sellPrice)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Button(
+                onClick = onAddToCart,
+                enabled = !isBuyDisabled,
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 4.dp,
+                    pressedElevation = 8.dp
+                )
+            ) {
+                Text("Beli")
+            }
+        }
+    }
 }
