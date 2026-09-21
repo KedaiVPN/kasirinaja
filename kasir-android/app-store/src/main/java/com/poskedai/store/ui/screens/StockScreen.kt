@@ -398,6 +398,7 @@ fun StockScreen(
         }
     }
 }
+}
 
 @Composable
 private fun ProductGridCard(
