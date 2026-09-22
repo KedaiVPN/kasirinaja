@@ -71,7 +71,9 @@ fun ReportsScreen(
     viewModel: ReportsViewModel,
     onNavigateToEditProfile: () -> Unit,
     onLogout: () -> Unit,
-    onOpenDrawer: () -> Unit
+    onOpenDrawer: () -> Unit,
+    isPro: Boolean = false,
+    onProRequired: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -246,6 +248,10 @@ fun ReportsScreen(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clickable(enabled = !isExporting) {
+                                                if (!isPro) {
+                                                    onProRequired()
+                                                    return@clickable
+                                                }
                                                 isExporting = true
                                                 coroutineScope.launch {
                                                     try {
@@ -288,6 +294,21 @@ fun ReportsScreen(
                                             Icon(Icons.Filled.PictureAsPdf, contentDescription = "PDF", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
                                             Spacer(modifier = Modifier.width(8.dp))
                                             Text(text = "Download PDF", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                                            if (!isPro) {
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Surface(
+                                                    color = Color(0xFFFFE082),
+                                                    shape = RoundedCornerShape(4.dp)
+                                                ) {
+                                                    Text(
+                                                        "PRO",
+                                                        fontSize = 10.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color(0xFFE65100),
+                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
 

@@ -16,6 +16,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 
 import android.graphics.Bitmap
 import android.net.Uri
@@ -46,7 +49,9 @@ fun AddProductScreen(
     scannedBarcode: String? = null,
     onNavigateBack: () -> Unit,
     onNavigateToCamera: () -> Unit,
-    onNavigateToScanner: () -> Unit
+    onNavigateToScanner: () -> Unit,
+    isPro: Boolean = false,
+    onProRequired: () -> Unit = {}
 ) {
     val context = LocalContext.current
 
@@ -252,10 +257,35 @@ fun AddProductScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(text = "Aktifkan notifikasi stok", style = MaterialTheme.typography.titleMedium)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(text = "Aktifkan notifikasi stok", style = MaterialTheme.typography.titleMedium)
+                                if (!isPro) {
+                                    Surface(
+                                        color = Color(0xFFFFE082),
+                                        shape = RoundedCornerShape(4.dp)
+                                    ) {
+                                        Text(
+                                            "PRO",
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFFE65100),
+                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                            }
                             Switch(
-                                checked = formState.isStockNotificationEnabled,
-                                onCheckedChange = { v -> viewModel.updateFormState { it.copy(isStockNotificationEnabled = v) } }
+                                checked = if (isPro) formState.isStockNotificationEnabled else false,
+                                onCheckedChange = { v ->
+                                    if (!isPro) {
+                                        onProRequired()
+                                    } else {
+                                        viewModel.updateFormState { it.copy(isStockNotificationEnabled = v) }
+                                    }
+                                }
                             )
                         }
 

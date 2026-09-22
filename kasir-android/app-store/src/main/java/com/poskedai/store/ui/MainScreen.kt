@@ -1342,7 +1342,9 @@ fun MainScreen(initialRoute: String? = null) {
                         viewModel = reportsViewModel,
                         onNavigateToEditProfile = { navController.navigate("edit_profile") },
                         onLogout = { handleLogoutAttempt() },
-                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
+                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } },
+                        isPro = isProStore,
+                        onProRequired = { showProDialog = true }
                     )
                 } else {
                     androidx.compose.runtime.LaunchedEffect(Unit) { navController.popBackStack() }
@@ -1376,7 +1378,9 @@ fun MainScreen(initialRoute: String? = null) {
                     scannedBarcode = scannedBarcode,
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToCamera = { navController.navigate(Screen.CameraCapture.route) },
-                    onNavigateToScanner = { navController.navigate(Screen.BarcodeScannerForm.route) }
+                    onNavigateToScanner = { navController.navigate(Screen.BarcodeScannerForm.route) },
+                    isPro = isProStore,
+                    onProRequired = { showProDialog = true }
                 )
             }
 
