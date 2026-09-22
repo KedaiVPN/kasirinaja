@@ -1,94 +1,113 @@
-# =====================
-# Compose & Kotlin
-# =====================
--keep class kotlin.Metadata { *; }
--dontwarn kotlinx.coroutines.**
+# ============================================
+# POS Kedai - ProGuard / R8 Rules
+# ============================================
 
-# =====================
-# Room
-# =====================
+# Keep line numbers for crash reports
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
+
+# ============================================
+# Android / Jetpack
+# ============================================
+-keep class android.support.** { *; }
+-keep class androidx.** { *; }
+-keep interface androidx.** { *; }
+
+# ViewModels, Composables & Navigation
+-keep class * extends androidx.lifecycle.ViewModel { *; }
+-keep class com.poskedai.store.ui.viewmodels.** { *; }
+-keep class com.poskedai.store.presentation.** { *; }
+
+# Data classes (Room Entity, DTO)
+-keep class com.poskedai.store.data.** { *; }
+-keep class com.poskedai.core.data.** { *; }
+
+# ============================================
+# Room (persistence)
+# ============================================
+-keep @androidx.room.Entity class *
+-keep class * extends androidx.room.RoomDatabase
 -keep class * extends androidx.room.RoomDatabase { *; }
--keep @androidx.room.Entity class * { *; }
--keep @androidx.room.Dao class * { *; }
--dontwarn androidx.room.paging.**
+-keep @androidx.room.Dao class *
+-keep interface * extends androidx.room.** { *; }
+-dontwarn androidx.room.**
 
-# =====================
-# Retrofit & OkHttp
-# =====================
--keepattributes Signature
--keepattributes *Annotation*
+# ============================================
+# Retrofit / OkHttp / Gson
+# ============================================
+# Retrofit does reflection on generic types. InnerClasses is required to use Signature and
+# EnclosingMethod is required to use InnerClasses.
+-keepattributes Signature, InnerClasses, EnclosingMethod
+
 -keep class retrofit2.** { *; }
--keep class okhttp3.** { *; }
--keep class okio.** { *; }
+-keep interface retrofit2.** { *; }
 -dontwarn retrofit2.**
 -dontwarn okhttp3.**
 -dontwarn okio.**
--keepclasseswithmembers class * {
-    @retrofit2.http.* <methods>;
-}
+-dontwarn javax.annotation.**
 
-# =====================
-# Gson
-# =====================
+# Gson / Model classes used in API
+-keepattributes *Annotation*
 -keep class com.google.gson.** { *; }
--keep class * implements com.google.gson.TypeAdapter { *; }
--keep class * implements com.google.gson.TypeAdapterFactory { *; }
--keep class * implements com.google.gson.JsonSerializer { *; }
--keep class * implements com.google.gson.JsonDeserializer { *; }
--keepclassmembers,allowobfuscation class * {
-    @com.google.gson.annotations.SerializedName <fields>;
-}
-# Keep all model/DTO classes used with Gson
--keep class com.poskedai.core.data.dto.** { *; }
--keep class com.poskedai.core.data.model.** { *; }
+-keep class * { @com.google.gson.annotations.* <fields>; }
 -keep class com.poskedai.store.data.model.** { *; }
--keep class com.poskedai.store.data.local.** { *; }
+-keep class com.poskedai.core.data.model.** { *; }
 
-# =====================
-# Firebase
-# =====================
--keep class com.google.firebase.** { *; }
--dontwarn com.google.firebase.**
+# ============================================
+# Compose
+# ============================================
+-dontwarn androidx.compose.**
+-keep class androidx.compose.** { *; }
+-keep interface androidx.compose.** { *; }
+-keep class com.poskedai.store.ui.** { *; }
 
-# =====================
-# Coil
-# =====================
--dontwarn coil.**
-
-# =====================
-# ML Kit Barcode
-# =====================
--keep class com.google.mlkit.** { *; }
--dontwarn com.google.mlkit.**
-
-# =====================
-# Vico Charts
-# =====================
+# ============================================
+# Vico (charts)
+# ============================================
+-keep class com.patrykandpatrick.vico.** { *; }
 -dontwarn com.patrykandpatrick.vico.**
 
-# =====================
-# WorkManager
-# =====================
--keep class androidx.work.** { *; }
--dontwarn androidx.work.**
+# ============================================
+# Coil (image loading)
+# ============================================
+-dontwarn coil.**
+-keep class coil.** { *; }
 
-# =====================
-# ZXing
-# =====================
+# ============================================
+# Firebase / ML Kit
+# ============================================
+-keep class com.google.firebase.** { *; }
+-keep class com.google.android.gms.** { *; }
+-keep class com.google.mlkit.** { *; }
+-dontwarn com.google.firebase.**
+-dontwarn com.google.android.gms.**
+-dontwarn com.google.mlkit.**
+
+# ============================================
+# WorkManager
+# ============================================
+-keep class * extends androidx.work.Worker { *; }
+-keep class * extends androidx.work.ListenableWorker { *; }
+
+# ============================================
+# Kotlin / Coroutines
+# ============================================
+-keep class kotlin.coroutines.** { *; }
+-keep class kotlinx.coroutines.** { *; }
+-dontwarn kotlinx.coroutines.**
+-keep class kotlin.Metadata { *; }
+-keepclassmembers class ** {
+    @kotlinx.coroutines.* <methods>;
+}
+
+# ============================================
+# ZXing (QR / barcode)
+# ============================================
 -keep class com.google.zxing.** { *; }
 -dontwarn com.google.zxing.**
 
-# =====================
-# CameraX
-# =====================
--dontwarn androidx.camera.**
-
-# =====================
-# Navigation Compose
-# =====================
--keep class androidx.navigation.** { *; }
-
-# =====================
-# Keep BuildConfig
-# =====================
--keep class com.poskedai.store.BuildConfig { *; }
+# ============================================
+# Serializable / Parcelable
+# ============================================
+-keep class * implements android.os.Parcelable { *; }
+-keep class * implements java.io.Serializable { *; }
