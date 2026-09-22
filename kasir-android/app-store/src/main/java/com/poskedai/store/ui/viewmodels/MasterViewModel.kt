@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import com.google.gson.JsonObject
 
 class MasterViewModel(private val repository: ProductRepository) : ViewModel() {
     private val _masterProducts = MutableStateFlow<List<JsonObject>>(emptyList())
