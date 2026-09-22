@@ -367,7 +367,7 @@ class ProductRepository(
             val response = RetrofitClient.catalogApi.getProducts()
             Result.success(response)
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception(com.poskedai.core.utils.ApiErrorParser.parse(e)))
         }
     }
 
@@ -384,10 +384,11 @@ class ProductRepository(
             if (response.isSuccessful) {
                 Result.success(response.body() ?: emptyMap())
             } else {
-                Result.failure(Exception("Gagal menambahkan produk ke toko"))
+                val errorMsg = response.errorBody()?.string() ?: "Gagal menambahkan produk ke toko"
+                Result.failure(Exception(errorMsg))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception(com.poskedai.core.utils.ApiErrorParser.parse(e)))
         }
     }
 }

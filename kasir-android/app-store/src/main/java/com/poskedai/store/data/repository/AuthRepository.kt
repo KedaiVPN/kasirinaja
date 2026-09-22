@@ -2,6 +2,7 @@ package com.poskedai.store.data.repository
 
 import com.poskedai.core.network.AuthApi
 import com.poskedai.core.network.TokenManager
+import com.poskedai.core.utils.ApiErrorParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -51,10 +52,10 @@ class AuthRepository(
                     tokenManager.saveUserProfile(fullName, photoUrl)
                     Result.success(token)
                 } else {
-                    Result.failure(Exception("Token not found in response"))
+                    Result.failure(Exception("Token tidak ditemukan dalam respons server"))
                 }
             } catch (e: Exception) {
-                Result.failure(e)
+                Result.failure(Exception(ApiErrorParser.parse(e)))
             }
         }
     }
@@ -77,7 +78,7 @@ class AuthRepository(
                 val message = response["message"] ?: "Success"
                 Result.success(message)
             } catch (e: Exception) {
-                Result.failure(e)
+                Result.failure(Exception(ApiErrorParser.parse(e)))
             }
         }
     }
@@ -123,7 +124,7 @@ class AuthRepository(
                 val message = response["message"]?.toString() ?: "Success"
                 Result.success(message)
             } catch (e: Exception) {
-                Result.failure(e)
+                Result.failure(Exception(ApiErrorParser.parse(e)))
             }
         }
     }
@@ -136,7 +137,7 @@ class AuthRepository(
                 val message = response["message"]?.toString() ?: "Success"
                 Result.success(message)
             } catch (e: Exception) {
-                Result.failure(e)
+                Result.failure(Exception(ApiErrorParser.parse(e)))
             }
         }
     }
@@ -149,7 +150,7 @@ class AuthRepository(
                 val message = response["message"]?.toString() ?: "OTP dikirim"
                 Result.success(message)
             } catch (e: Exception) {
-                Result.failure(e)
+                Result.failure(Exception(ApiErrorParser.parse(e)))
             }
         }
     }
@@ -166,7 +167,7 @@ class AuthRepository(
                 val message = response["message"]?.toString() ?: "OTP berhasil diverifikasi"
                 Result.success(message)
             } catch (e: Exception) {
-                Result.failure(e)
+                Result.failure(Exception(ApiErrorParser.parse(e)))
             }
         }
     }
@@ -189,7 +190,7 @@ class AuthRepository(
                 val message = response["message"]?.toString() ?: "Password berhasil diperbarui"
                 Result.success(message)
             } catch (e: Exception) {
-                Result.failure(e)
+                Result.failure(Exception(ApiErrorParser.parse(e)))
             }
         }
     }
@@ -235,10 +236,10 @@ class AuthRepository(
                     tokenManager.saveUserProfile(fullName, photoUrl)
                     Result.success(token)
                 } else {
-                    Result.failure(Exception("Token not found in response"))
+                    Result.failure(Exception("Token tidak ditemukan dalam respons server"))
                 }
             } catch (e: Exception) {
-                Result.failure(e)
+                Result.failure(Exception(ApiErrorParser.parse(e)))
             }
         }
     }

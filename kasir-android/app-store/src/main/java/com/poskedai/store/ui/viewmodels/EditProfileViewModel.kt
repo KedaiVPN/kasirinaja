@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.poskedai.core.network.RetrofitClient
 import com.poskedai.core.network.TokenManager
+import com.poskedai.core.utils.ApiErrorParser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
@@ -84,11 +85,14 @@ class EditProfileViewModel(private val tokenManager: TokenManager) : ViewModel()
                     }
                     _state.update { it.copy(isLoading = false, isSuccess = true) }
                 } else {
-                    val errorString = response.errorBody()?.string()
-                    _state.update { it.copy(isLoading = false, error = errorString ?: "Failed to update profile") }
+                    val errorString = ApiErrorParser.fromErrorBody(
+                        response.errorBody()?.string(),
+                        "Gagal memperbarui profil"
+                    )
+                    _state.update { it.copy(isLoading = false, error = errorString) }
                 }
             } catch (e: Exception) {
-                _state.update { it.copy(isLoading = false, error = e.message) }
+                _state.update { it.copy(isLoading = false, error = ApiErrorParser.parse(e)) }
             } finally {
                 tempFile?.delete()
             }

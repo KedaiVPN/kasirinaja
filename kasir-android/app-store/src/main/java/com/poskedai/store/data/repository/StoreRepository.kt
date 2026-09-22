@@ -1,6 +1,7 @@
 package com.poskedai.store.data.repository
 
 import com.poskedai.core.network.StoreApi
+import com.poskedai.core.utils.ApiErrorParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MultipartBody
@@ -17,7 +18,7 @@ class StoreRepository(private val storeApi: StoreApi) {
                 val response = storeApi.updateStore(request)
                 Result.success(response)
             } catch (e: Exception) {
-                Result.failure(e)
+                Result.failure(Exception(ApiErrorParser.parse(e)))
             }
         }
     }
@@ -28,7 +29,7 @@ class StoreRepository(private val storeApi: StoreApi) {
                 val response = storeApi.uploadStoreLogo(logoPart)
                 Result.success(response)
             } catch (e: Exception) {
-                Result.failure(e)
+                Result.failure(Exception(ApiErrorParser.parse(e)))
             }
         }
     }

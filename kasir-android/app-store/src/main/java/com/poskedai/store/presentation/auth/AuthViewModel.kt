@@ -3,6 +3,7 @@ package com.poskedai.store.presentation.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.poskedai.core.utils.ApiErrorParser
 import com.poskedai.store.data.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,7 +32,7 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
             if (result.isSuccess) {
                 _authState.value = AuthState.Success("Login successful")
             } else {
-                _authState.value = AuthState.Error(result.exceptionOrNull()?.message ?: "Unknown error")
+                _authState.value = AuthState.Error(result.exceptionOrNull()?.message ?: "Gagal masuk. Periksa email dan password Anda.")
             }
         }
     }
@@ -43,7 +44,7 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
             if (result.isSuccess) {
                 _authState.value = AuthState.OtpSent(result.getOrDefault("OTP Sent"), email)
             } else {
-                _authState.value = AuthState.Error(result.exceptionOrNull()?.message ?: "Unknown error")
+                _authState.value = AuthState.Error(result.exceptionOrNull()?.message ?: "Gagal mendaftarkan toko.")
             }
         }
     }
@@ -55,7 +56,7 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
             if (result.isSuccess) {
                 _authState.value = AuthState.Success("Verification successful")
             } else {
-                _authState.value = AuthState.Error(result.exceptionOrNull()?.message ?: "Unknown error")
+                _authState.value = AuthState.Error(result.exceptionOrNull()?.message ?: "Gagal memverifikasi OTP.")
             }
         }
     }
@@ -68,7 +69,7 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
                 _authState.value = AuthState.Success("OTP resent successfully")
                 _authState.value = AuthState.Idle
             } else {
-                _authState.value = AuthState.Error(result.exceptionOrNull()?.message ?: "Unknown error")
+                _authState.value = AuthState.Error(result.exceptionOrNull()?.message ?: "Gagal mengirim ulang OTP.")
             }
         }
     }

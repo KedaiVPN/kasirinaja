@@ -1,6 +1,7 @@
 package com.poskedai.store.data.repository
 
 import com.poskedai.core.network.UserApi
+import com.poskedai.core.utils.ApiErrorParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -11,7 +12,7 @@ class UserRepository(private val userApi: UserApi) {
                 val response = userApi.getStoreUsers()
                 Result.success(response)
             } catch (e: Exception) {
-                Result.failure(e)
+                Result.failure(Exception(ApiErrorParser.parse(e)))
             }
         }
     }
@@ -29,7 +30,7 @@ class UserRepository(private val userApi: UserApi) {
                 val response = userApi.addStoreEmployee(request)
                 Result.success(response)
             } catch (e: Exception) {
-                Result.failure(e)
+                Result.failure(Exception(ApiErrorParser.parse(e)))
             }
         }
     }
@@ -45,7 +46,7 @@ class UserRepository(private val userApi: UserApi) {
                     Result.failure(Exception(errorMsg))
                 }
             } catch (e: Exception) {
-                Result.failure(e)
+                Result.failure(Exception(ApiErrorParser.parse(e)))
             }
         }
     }
@@ -67,7 +68,7 @@ class UserRepository(private val userApi: UserApi) {
                     Result.failure(Exception(errorBodyStr))
                 }
             } catch (e: Exception) {
-                Result.failure(e)
+                Result.failure(Exception(ApiErrorParser.parse(e)))
             }
         }
     }
