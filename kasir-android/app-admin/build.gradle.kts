@@ -22,10 +22,20 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file(System.getenv("POS_KEDAI_KEYSTORE") ?: "/root/.android/poskedai.jks")
+            storePassword = System.getenv("POS_KEDAI_KEYSTORE_PASSWORD") ?: "Bendakerep123@"
+            keyAlias = System.getenv("POS_KEDAI_KEY_ALIAS") ?: "poskedai"
+            keyPassword = System.getenv("POS_KEDAI_KEY_PASSWORD") ?: "Bendakerep123@"
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
