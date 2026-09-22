@@ -10,7 +10,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
@@ -19,75 +18,70 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
+import com.poskedai.store.ui.theme.GreenPrimary
+import com.poskedai.store.ui.theme.GreenPrimaryDark
+import com.poskedai.store.ui.theme.GreenPrimaryLight
 
 /**
- * Banner sinkronisasi yang tampil di bawah header.
- * Menampilkan animasi 3 dot pulsating hijau saat sinkronisasi berlangsung.
- * User tetap bisa beraktivitas karena bukan dialog/blocking UI.
+ * Banner sinkronisasi yang tampil tepat di bawah header (GlobalTopAppBar).
+ * Menggunakan warna tema POS Kedai (GreenPrimary) dan animasi 3 dot yang jelas terlihat.
  */
 @Composable
 fun SyncBanner(
     isVisible: Boolean,
-    message: String = "Sedang menyinkronkan transaksi...",
+    message: String = "Sedang menyinkronkan data transaksi...",
     modifier: Modifier = Modifier
 ) {
     AnimatedVisibility(
         visible = isVisible,
         enter = expandVertically(
             expandFrom = Alignment.Top,
-            animationSpec = tween(300, easing = EaseOutCubic)
+            animationSpec = tween(250)
         ),
         exit = shrinkVertically(
             shrinkTowards = Alignment.Top,
-            animationSpec = tween(250, easing = EaseInCubic)
+            animationSpec = tween(200)
         ),
         modifier = modifier
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(
-                            Color(0xFFE8F5E9), // hijau sangat muda di kiri
-                            Color(0xFFF1F8E9), // sedikit lebih terang di tengah
-                            Color(0xFFE8F5E9)  // kembali di kanan
-                        )
-                    )
-                )
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .background(Color(0xFFE8F5E9)) // Light green background aksen
+                .padding(horizontal = 20.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.Center
         ) {
             PulsatingDotsLoader()
+            Spacer(modifier = Modifier.width(14.dp))
             Text(
                 text = message,
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Medium,
-                color = Color(0xFF2E7D32), // hijau gelap
-                fontSize = 12.sp
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = GreenPrimaryDark,
+                fontSize = 13.sp
             )
         }
     }
 }
 
 /**
- * Animasi 3 dot pulsating – konversi dari CSS loader.
- * Setiap dot scale dari 1.0 → 0.3 → 1.0 dengan delay berbeda.
+ * Animasi 3 dot pulsating – adaptasi CSS ke Jetpack Compose.
+ * Dot lebih besar (18dp) agar jelas terlihat, dengan warna tema aplikasi.
  */
 @Composable
 fun PulsatingDotsLoader(modifier: Modifier = Modifier) {
     val infiniteTransition = rememberInfiniteTransition(label = "dots_loader")
 
-    // Warna hijau tema aplikasi
+    // Warna dari tema POS Kedai
     val dotColors = listOf(
-        Color(0xFF4CAF50), // hijau medium
-        Color(0xFF388E3C), // hijau lebih gelap
-        Color(0xFF2E7D32)  // hijau paling gelap
+        GreenPrimaryLight, // Dot 1
+        GreenPrimary,      // Dot 2
+        GreenPrimaryDark   // Dot 3
     )
 
-    // Delay per dot: 0ms, 1000ms, 2000ms (sama seperti CSS #one, #two, #three)
-    val delays = listOf(0, 1000, 2000)
+    // Delay per dot: 0ms, 600ms, 1200ms untuk ritme yang pas
+    val delays = listOf(0, 600, 1200)
 
     val scales = delays.map { delay ->
         infiniteTransition.animateFloat(
@@ -95,11 +89,11 @@ fun PulsatingDotsLoader(modifier: Modifier = Modifier) {
             targetValue = 1f,
             animationSpec = infiniteRepeatable(
                 animation = keyframes {
-                    durationMillis = 3000
+                    durationMillis = 1800
                     1f   at 0
-                    0.3f at 1000
-                    1f   at 2000
-                    1f   at 3000
+                    0.35f at 600
+                    1f   at 1200
+                    1f   at 1800
                 },
                 initialStartOffset = StartOffset(delay)
             ),
@@ -109,26 +103,19 @@ fun PulsatingDotsLoader(modifier: Modifier = Modifier) {
 
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         scales.forEachIndexed { index, scale ->
             Box(
                 modifier = Modifier
-                    .size(10.dp)
+                    .size(16.dp)
                     .graphicsLayer {
                         scaleX = scale.value
                         scaleY = scale.value
                     }
                     .clip(CircleShape)
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(
-                                dotColors[index],
-                                dotColors[index].copy(alpha = 0.6f)
-                            )
-                        )
-                    )
+                    .background(dotColors[index])
             )
         }
     }

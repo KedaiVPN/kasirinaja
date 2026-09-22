@@ -41,7 +41,14 @@ import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
+
+data class SyncBannerState(
+    val isVisible: Boolean = false,
+    val message: String = ""
+)
+
+val LocalSyncBannerState = staticCompositionLocalOf { SyncBannerState() }
 import com.poskedai.store.ui.viewmodels.ScanViewModel
 import com.poskedai.store.utils.rememberIsOnline
 import com.poskedai.store.ui.components.SyncBanner
@@ -487,14 +494,15 @@ fun MainScreen(initialRoute: String? = null) {
         )
     }
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        gesturesEnabled = drawerState.isOpen,
-        drawerContent = {
-            ModalDrawerSheet {
-                Column(
-                    modifier = Modifier
-                        .fillMaxHeight()
+    CompositionLocalProvider(LocalSyncBannerState provides SyncBannerState(showSyncBanner, syncBannerMessage)) {
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            gesturesEnabled = drawerState.isOpen,
+            drawerContent = {
+                ModalDrawerSheet {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxHeight()
                         .fillMaxWidth()
                         .padding(24.dp)
                 ) {
@@ -854,12 +862,6 @@ fun MainScreen(initialRoute: String? = null) {
         }
     ) {
     Scaffold(
-        topBar = {
-            SyncBanner(
-                isVisible = showSyncBanner,
-                message = syncBannerMessage
-            )
-        },
         bottomBar = {
             val currentDestination = navBackStackEntry?.destination
             if (bottomBarVisibleScreens.contains(currentRoute)) {
@@ -1412,5 +1414,4 @@ fun MainScreen(initialRoute: String? = null) {
             }
         }
     }
-}
 }
