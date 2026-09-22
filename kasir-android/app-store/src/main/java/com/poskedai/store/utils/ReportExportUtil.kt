@@ -10,16 +10,16 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import com.poskedai.store.data.local.ReportItem
-import jxl.Workbook
-import jxl.write.Label
-import jxl.write.WritableWorkbook
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.OutputStream
+import java.math.BigDecimal
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 object ReportExportUtil {
 
@@ -119,47 +119,141 @@ object ReportExportUtil {
 
     suspend fun exportToXlsx(context: Context, items: List<ReportItem>, startDate: Long, endDate: Long, totalRevenue: Double, totalProfit: Double): Boolean = withContext(Dispatchers.IO) {
         try {
-            val fileName = "Laporan_Penjualan_${System.currentTimeMillis()}.xls"
-            val outputStream = getOutputStream(context, fileName, "application/vnd.ms-excel") ?: return@withContext false
-
-            val workbook: WritableWorkbook = Workbook.createWorkbook(outputStream)
-            val sheet = workbook.createSheet("Laporan Penjualan", 0)
+            val fileName = "Laporan_Penjualan_${System.currentTimeMillis()}.xlsx"
+            val outputStream = getOutputStream(context, fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") ?: return@withContext false
 
             val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
             val startStr = dateFormat.format(Date(startDate))
             val endStr = dateFormat.format(Date(endDate))
 
-            sheet.addCell(Label(0, 0, "Laporan Penjualan POS Kedai"))
-            sheet.addCell(Label(0, 1, "Periode: $startStr - $endStr"))
-            sheet.addCell(Label(0, 2, "Total Pendapatan Kotor"))
-            sheet.addCell(jxl.write.Number(1, 2, totalRevenue))
-            sheet.addCell(Label(0, 3, "Total Pendapatan Bersih"))
-            sheet.addCell(jxl.write.Number(1, 3, totalProfit))
-
-            val headers = listOf("No", "Nama Produk", "Qty", "Harga Beli", "Harga Jual", "Total Kotor", "Total Bersih")
-            headers.forEachIndexed { index, header ->
-                sheet.addCell(Label(index, 5, header))
+            ZipOutputStream(outputStream).use { zip ->
+                putZipEntry(zip, "[Content_Types].xml", buildContentTypesXml())
+                putZipEntry(zip, "_rels/.rels", buildRootRelsXml())
+                putZipEntry(zip, "xl/_rels/workbook.xml.rels", buildWorkbookRelsXml())
+                putZipEntry(zip, "xl/workbook.xml", buildWorkbookXml())
+                putZipEntry(zip, "xl/worksheets/sheet1.xml", buildSheetXml(items, startStr, endStr, totalRevenue, totalProfit))
+                zip.finish()
             }
 
-            items.forEachIndexed { index, item ->
-                val row = index + 6
-                sheet.addCell(jxl.write.Number(0, row, (index + 1).toDouble()))
-                sheet.addCell(Label(1, row, item.productName))
-                sheet.addCell(jxl.write.Number(2, row, item.quantitySold.toDouble()))
-                sheet.addCell(jxl.write.Number(3, row, item.buyPrice))
-                sheet.addCell(jxl.write.Number(4, row, item.sellPrice))
-                sheet.addCell(jxl.write.Number(5, row, item.productTotalRevenue))
-                sheet.addCell(jxl.write.Number(6, row, item.productTotalProfit))
-            }
-
-            workbook.write()
-            workbook.close()
             outputStream.close()
             return@withContext true
         } catch (e: Exception) {
             e.printStackTrace()
             return@withContext false
         }
+    }
+
+    private fun buildContentTypesXml(): String {
+        return """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+</Types>"""
+    }
+
+    private fun buildRootRelsXml(): String {
+        return """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>"""
+    }
+
+    private fun buildWorkbookRelsXml(): String {
+        return """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+</Relationships>"""
+    }
+
+    private fun buildWorkbookXml(): String {
+        return """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets>
+    <sheet name="Laporan Penjualan" sheetId="1" r:id="rId1"/>
+  </sheets>
+</workbook>"""
+    }
+
+    private fun buildSheetXml(
+        items: List<ReportItem>,
+        startStr: String,
+        endStr: String,
+        totalRevenue: Double,
+        totalProfit: Double
+    ): String {
+        val sb = StringBuilder(8192)
+        sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n")
+        sb.append("<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\">\n")
+        sb.append("  <sheetData>\n")
+
+        // Title & summary rows
+        sb.append("    <row r=\"1\"><c r=\"A1\" t=\"inlineStr\"><is><t>Laporan Penjualan POS Kedai</t></is></c></row>\n")
+        sb.append("    <row r=\"2\"><c r=\"A2\" t=\"inlineStr\"><is><t>${escapeXml("Periode: $startStr - $endStr")}</t></is></c></row>\n")
+        sb.append("    <row r=\"3\"><c r=\"A3\" t=\"inlineStr\"><is><t>Total Pendapatan Kotor</t></is></c><c r=\"B3\"><v>${formatNumber(totalRevenue)}</v></c></row>\n")
+        sb.append("    <row r=\"4\"><c r=\"A4\" t=\"inlineStr\"><is><t>Total Pendapatan Bersih</t></is></c><c r=\"B4\"><v>${formatNumber(totalProfit)}</v></c></row>\n")
+
+        // Header row
+        val headers = listOf("No", "Nama Produk", "Qty", "Harga Beli", "Harga Jual", "Total Kotor", "Total Bersih")
+        sb.append("    <row r=\"6\">")
+        headers.forEachIndexed { index, header ->
+            val col = columnLetter(index)
+            sb.append("<c r=\"${col}6\" t=\"inlineStr\"><is><t>${escapeXml(header)}</t></is></c>")
+        }
+        sb.append("</row>\n")
+
+        // Data rows
+        items.forEachIndexed { index, item ->
+            val row = index + 7
+            sb.append("    <row r=\"$row\">")
+            sb.append("<c r=\"A$row\"><v>${index + 1}</v></c>")
+            sb.append("<c r=\"B$row\" t=\"inlineStr\"><is><t>${escapeXml(item.productName)}</t></is></c>")
+            sb.append("<c r=\"C$row\"><v>${item.quantitySold}</v></c>")
+            sb.append("<c r=\"D$row\"><v>${formatNumber(item.buyPrice)}</v></c>")
+            sb.append("<c r=\"E$row\"><v>${formatNumber(item.sellPrice)}</v></c>")
+            sb.append("<c r=\"F$row\"><v>${formatNumber(item.productTotalRevenue)}</v></c>")
+            sb.append("<c r=\"G$row\"><v>${formatNumber(item.productTotalProfit)}</v></c>")
+            sb.append("</row>\n")
+        }
+
+        sb.append("  </sheetData>\n")
+        sb.append("</worksheet>")
+        return sb.toString()
+    }
+
+    private fun columnLetter(index: Int): String {
+        var i = index
+        val sb = StringBuilder()
+        while (i >= 0) {
+            sb.insert(0, ('A'.code + (i % 26)).toChar())
+            i = i / 26 - 1
+        }
+        return sb.toString()
+    }
+
+    private fun escapeXml(value: String): String {
+        return value
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&apos;")
+    }
+
+    private fun formatNumber(value: Double): String {
+        val bd = BigDecimal.valueOf(value)
+        return if (bd.stripTrailingZeros().scale() <= 0) {
+            bd.toBigInteger().toString()
+        } else {
+            bd.stripTrailingZeros().toPlainString()
+        }
+    }
+
+    private fun putZipEntry(zip: ZipOutputStream, name: String, content: String) {
+        zip.putNextEntry(ZipEntry(name))
+        zip.write(content.toByteArray(Charsets.UTF_8))
+        zip.closeEntry()
     }
 
     private fun getOutputStream(context: Context, fileName: String, mimeType: String): OutputStream? {

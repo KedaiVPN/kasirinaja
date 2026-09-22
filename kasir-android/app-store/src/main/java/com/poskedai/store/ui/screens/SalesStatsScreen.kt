@@ -99,7 +99,7 @@ fun SalesStatsScreen(
 
     var isExporting by remember { mutableStateOf(false) }
     var selectedFormat by remember { mutableStateOf("PDF") }
-    val formatOptions = listOf("PDF", "XLS")
+    val formatOptions = listOf("PDF", "XLSX")
     var formatExpanded by remember { mutableStateOf(false) }
 
     val transactionDao = remember { AppDatabase.getDatabase(context).transactionDao() }
