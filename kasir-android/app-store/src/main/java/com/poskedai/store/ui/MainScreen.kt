@@ -44,6 +44,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.compose.runtime.Composable
 import com.poskedai.store.ui.viewmodels.ScanViewModel
 import com.poskedai.store.utils.rememberIsOnline
+import com.poskedai.store.ui.components.SyncBanner
 import com.poskedai.store.ui.screens.BarcodeScannerFormScreen
 import com.poskedai.store.ui.screens.StockScreen
 import androidx.compose.runtime.remember
@@ -290,13 +291,15 @@ fun MainScreen(initialRoute: String? = null) {
 
     var showSyncDialog by remember { mutableStateOf(false) }
     var showInitialSyncDialog by remember { mutableStateOf(false) }
+    var syncBannerMessage by remember { mutableStateOf("Sedang menyinkronkan transaksi...") }
+    val showSyncBanner = showSyncDialog || showInitialSyncDialog
 
     LaunchedEffect(Unit) {
         com.poskedai.store.data.repository.TransactionSyncState.syncStatus.collect { status ->
             when (status) {
                 "sync_started" -> {
+                    syncBannerMessage = "Sedang menyinkronkan transaksi..."
                     showSyncDialog = true
-                    android.widget.Toast.makeText(context, "Sinkronisasi dimulai...", android.widget.Toast.LENGTH_SHORT).show()
                 }
                 "sync_success" -> {
                     showSyncDialog = false
@@ -306,42 +309,6 @@ fun MainScreen(initialRoute: String? = null) {
                 "sync_failed" -> {
                     showSyncDialog = false
                     android.widget.Toast.makeText(context, "Sinkronisasi gagal. Akan mencoba lagi nanti.", android.widget.Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-    }
-
-    if (showSyncDialog) {
-        androidx.compose.ui.window.Dialog(onDismissRequest = { /* Cannot dismiss */ }) {
-            androidx.compose.material3.Surface(
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-                color = androidx.compose.material3.MaterialTheme.colorScheme.surface
-            ) {
-                androidx.compose.foundation.layout.Row(
-                    modifier = androidx.compose.ui.Modifier.padding(16.dp),
-                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-                ) {
-                    androidx.compose.material3.CircularProgressIndicator(modifier = androidx.compose.ui.Modifier.size(24.dp))
-                    androidx.compose.foundation.layout.Spacer(modifier = androidx.compose.ui.Modifier.width(16.dp))
-                    androidx.compose.material3.Text("Sedang menyinkronkan transaksi...")
-                }
-            }
-        }
-    }
-
-    if (showInitialSyncDialog) {
-        androidx.compose.ui.window.Dialog(onDismissRequest = { /* Cannot dismiss */ }) {
-            androidx.compose.material3.Surface(
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-                color = androidx.compose.material3.MaterialTheme.colorScheme.surface
-            ) {
-                androidx.compose.foundation.layout.Row(
-                    modifier = androidx.compose.ui.Modifier.padding(16.dp),
-                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-                ) {
-                    androidx.compose.material3.CircularProgressIndicator(modifier = androidx.compose.ui.Modifier.size(24.dp))
-                    androidx.compose.foundation.layout.Spacer(modifier = androidx.compose.ui.Modifier.width(16.dp))
-                    androidx.compose.material3.Text("Sedang menyinkronkan data, mohon tunggu...")
                 }
             }
         }
@@ -887,6 +854,12 @@ fun MainScreen(initialRoute: String? = null) {
         }
     ) {
     Scaffold(
+        topBar = {
+            SyncBanner(
+                isVisible = showSyncBanner,
+                message = syncBannerMessage
+            )
+        },
         bottomBar = {
             val currentDestination = navBackStackEntry?.destination
             if (bottomBarVisibleScreens.contains(currentRoute)) {
@@ -1087,6 +1060,7 @@ fun MainScreen(initialRoute: String? = null) {
                     onLoginSuccess = {
                         coroutineScope.launch {
                             try {
+                                syncBannerMessage = "Sedang menyinkronkan data, mohon tunggu..."
                                 showInitialSyncDialog = true
                                 productRepository.syncStoreProducts()
                                 transactionRepository.fetchAndSaveAllTransactions()
