@@ -98,7 +98,7 @@ fun SalesStatsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     var isExporting by remember { mutableStateOf(false) }
-    var selectedFormat by remember { mutableStateOf("XLS") }
+    var selectedFormat by remember { mutableStateOf("PDF") }
     val formatOptions = listOf("PDF", "XLS")
     var formatExpanded by remember { mutableStateOf(false) }
 

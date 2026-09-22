@@ -82,11 +82,13 @@ fun ProFeatureDialog(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                TextButton(
+                Button(
                     onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Tutup", color = Color.Gray)
+                    Text("Tutup", fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
         }
