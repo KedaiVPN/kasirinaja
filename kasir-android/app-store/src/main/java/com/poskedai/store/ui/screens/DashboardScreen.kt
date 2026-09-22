@@ -280,21 +280,6 @@ fun DashboardScreen(
                 }
             }
 
-            // App Version
-            item {
-                Spacer(modifier = Modifier.height(32.dp))
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "v1.1.7",
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
         }
     }
 }

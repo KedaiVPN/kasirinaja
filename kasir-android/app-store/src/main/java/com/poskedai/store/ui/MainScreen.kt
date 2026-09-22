@@ -854,6 +854,21 @@ fun MainScreen(initialRoute: String? = null) {
                             }
                         }
                     }
+
+                    // App Version - Bottom Right
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        contentAlignment = androidx.compose.ui.Alignment.CenterEnd
+                    ) {
+                        Text(
+                            text = "v${com.poskedai.store.BuildConfig.VERSION_NAME}",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
         }
