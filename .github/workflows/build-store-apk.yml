@@ -1,16 +1,16 @@
-name: Build Android APKs (Store & Admin)
+name: Build Android Store APK
 
 on:
   push:
-    branches: [ main, "init-kasir-api-and-android-*" ]
+    branches: [ main ]
   workflow_dispatch:
 
 env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
 jobs:
-  build-apks:
-    name: Build APKs (Store & Admin)
+  build-store-apk:
+    name: Build Store APKs (Debug & Release)
     runs-on: ubuntu-latest
 
     steps:
@@ -34,28 +34,19 @@ jobs:
           if [ -n "$POS_KEDAI_KEYSTORE_BASE64" ]; then
             echo "$POS_KEDAI_KEYSTORE_BASE64" | base64 -d > ~/.android/poskedai.jks
           else
-            echo "Keystore secret not set, release APK build will rely on default fallback or debug build."
+            echo "Keystore secret not set, release APK build will rely on debug build."
           fi
 
-      - name: Build Store APKs (Debug & Release)
-        env:
-          POS_KEDAI_KEYSTORE: /home/runner/.android/poskedai.jks
-          POS_KEDAI_KEYSTORE_PASSWORD: ${{ secrets.POS_KEDAI_KEYSTORE_PASSWORD }}
-          POS_KEDAI_KEY_ALIAS: ${{ secrets.POS_KEDAI_KEY_ALIAS }}
-          POS_KEDAI_KEY_PASSWORD: ${{ secrets.POS_KEDAI_KEY_PASSWORD }}
-        run: |
-          cd kasir-android
-          ./gradlew :app-store:assembleDebug :app-store:assembleRelease
+      - name: Build Store APK (Debug)
+        run: cd kasir-android && ./gradlew :app-store:assembleDebug
 
-      - name: Build Admin APKs (Debug & Release)
+      - name: Build Store APK (Release)
         env:
           POS_KEDAI_KEYSTORE: /home/runner/.android/poskedai.jks
           POS_KEDAI_KEYSTORE_PASSWORD: ${{ secrets.POS_KEDAI_KEYSTORE_PASSWORD }}
           POS_KEDAI_KEY_ALIAS: ${{ secrets.POS_KEDAI_KEY_ALIAS }}
           POS_KEDAI_KEY_PASSWORD: ${{ secrets.POS_KEDAI_KEY_PASSWORD }}
-        run: |
-          cd kasir-android
-          ./gradlew :app-admin:assembleDebug :app-admin:assembleRelease
+        run: cd kasir-android && ./gradlew :app-store:assembleRelease
 
       - name: Upload Store APKs Artifact
         uses: actions/upload-artifact@v4
@@ -64,11 +55,3 @@ jobs:
           path: |
             kasir-android/app-store/build/outputs/apk/debug/*.apk
             kasir-android/app-store/build/outputs/apk/release/*.apk
-
-      - name: Upload Admin APKs Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-admin-apks
-          path: |
-            kasir-android/app-admin/build/outputs/apk/debug/*.apk
-            kasir-android/app-admin/build/outputs/apk/release/*.apk
