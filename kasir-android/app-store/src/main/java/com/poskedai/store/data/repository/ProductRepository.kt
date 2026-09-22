@@ -147,7 +147,8 @@ class ProductRepository(
         if (response.isSuccessful) {
             return response.body() ?: emptyList()
         } else {
-            throw Exception("Failed to fetch master products: ${response.message()}")
+            val errorMsg = com.poskedai.core.utils.ApiErrorParser.fromErrorBody(response.errorBody()?.string(), response.message())
+            throw Exception("Gagal memuat master produk: $errorMsg")
         }
     }
 
@@ -349,11 +350,11 @@ class ProductRepository(
                     // Sukses dihapus dari server atau tidak ditemukan di server
                     productDao.deleteProduct(id)
                 } else {
-                    val errorMsg = response.errorBody()?.string() ?: "Unknown error"
-                    throw Exception("Gagal menghapus produk dari server: $errorMsg")
+                    val errorMsg = com.poskedai.core.utils.ApiErrorParser.fromResponse(response.code(), response.errorBody()?.string())
+                    throw Exception("Gagal menghapus produk: $errorMsg")
                 }
             } catch (e: Exception) {
-                throw Exception("Gagal terhubung ke server: ${e.message}")
+                throw Exception(com.poskedai.core.utils.ApiErrorParser.parse(e))
             }
         } else {
             // Jika produk pending (belum sinkron), langsung hapus lokal saja

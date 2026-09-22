@@ -126,10 +126,11 @@ class ReportsViewModel(
                     fetchStockReport() // Refresh remote report
                     onResult(true, "Stok berhasil ditambahkan")
                 } else {
-                    onResult(false, "Gagal menambahkan stok")
+                    val errMsg = ApiErrorParser.fromResponse(response.code(), response.errorBody()?.string())
+                    onResult(false, "Gagal menambahkan stok: $errMsg")
                 }
             } catch (e: Exception) {
-                onResult(false, e.message ?: "Terjadi kesalahan")
+                onResult(false, ApiErrorParser.parse(e))
             }
         }
     }

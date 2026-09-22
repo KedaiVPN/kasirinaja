@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.poskedai.core.network.CashierReportDto
 import com.poskedai.core.network.RetrofitClient
+import com.poskedai.core.utils.ApiErrorParser
 import com.poskedai.store.data.local.AppDatabase
 import com.poskedai.store.ui.components.GlobalTopAppBar
 import com.poskedai.store.ui.viewmodels.ReportsViewModel
@@ -121,7 +122,8 @@ fun ReportsScreen(
                     isLoadingReports = false
                 }
             } else {
-                snackbarHostState.showSnackbar("Gagal menghapus laporan: ${result.exceptionOrNull()?.message}")
+                val errorMsg = ApiErrorParser.parse(result.exceptionOrNull())
+                snackbarHostState.showSnackbar("Gagal menghapus laporan: $errorMsg")
             }
             viewModel.resetDeleteReportStatus()
             showDeleteDialog = null
@@ -137,10 +139,11 @@ fun ReportsScreen(
                 if (response.isSuccessful && response.body() != null) {
                     cashierReports = response.body()!!.reports
                 } else {
-                    snackbarHostState.showSnackbar("Gagal memuat riwayat laporan: ${response.code()}")
+                    val msg = ApiErrorParser.fromResponse(response.code(), response.errorBody()?.string())
+                    snackbarHostState.showSnackbar(msg)
                 }
             } catch (e: Exception) {
-                snackbarHostState.showSnackbar("Terjadi kesalahan: ${e.message}")
+                snackbarHostState.showSnackbar(ApiErrorParser.parse(e))
             } finally {
                 isLoadingReports = false
             }
@@ -278,7 +281,7 @@ fun ReportsScreen(
                                                             snackbarHostState.showSnackbar("Gagal menyimpan PDF.")
                                                         }
                                                     } catch (e: Exception) {
-                                                        snackbarHostState.showSnackbar("Gagal: ${e.message}")
+                                                        snackbarHostState.showSnackbar("Gagal menyimpan PDF: ${ApiErrorParser.parse(e)}")
                                                     } finally {
                                                         isExporting = false
                                                     }

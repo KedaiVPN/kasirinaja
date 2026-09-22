@@ -2,6 +2,7 @@ package com.poskedai.store.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.poskedai.core.utils.ApiErrorParser
 import com.poskedai.store.data.local.ProductEntity
 import com.poskedai.store.data.repository.ProductRepository
 import kotlinx.coroutines.flow.Flow
@@ -96,7 +97,7 @@ class StockViewModel(private val repository: ProductRepository) : ViewModel() {
                 repository.deleteProduct(id, isSynced)
                 _actionState.value = "Produk berhasil dihapus"
             } catch (e: Exception) {
-                _actionState.value = e.message ?: "Gagal menghapus produk"
+                _actionState.value = ApiErrorParser.parse(e)
             }
         }
     }

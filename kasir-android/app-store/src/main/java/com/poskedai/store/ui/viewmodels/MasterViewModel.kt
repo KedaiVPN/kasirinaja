@@ -5,10 +5,12 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.google.gson.JsonObject
 import com.poskedai.store.data.repository.ProductRepository
+import com.poskedai.core.utils.ApiErrorParser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.google.gson.JsonObject
 
 class MasterViewModel(private val repository: ProductRepository) : ViewModel() {
     private val _masterProducts = MutableStateFlow<List<JsonObject>>(emptyList())
@@ -28,7 +30,7 @@ class MasterViewModel(private val repository: ProductRepository) : ViewModel() {
                 val products = repository.getMasterProducts()
                 _masterProducts.value = products
             } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Terjadi kesalahan"
+                _errorMessage.value = ApiErrorParser.parse(e)
             } finally {
                 _isLoading.value = false
             }
@@ -69,7 +71,7 @@ class MasterViewModel(private val repository: ProductRepository) : ViewModel() {
                 )
                 // Optionally refresh or show success message
             } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Gagal menambahkan produk"
+                _errorMessage.value = ApiErrorParser.parse(e)
             } finally {
                 _isLoading.value = false
             }

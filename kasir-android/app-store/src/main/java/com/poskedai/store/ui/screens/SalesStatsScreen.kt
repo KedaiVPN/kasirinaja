@@ -257,7 +257,8 @@ fun SalesStatsScreen(
                                             snackbarHostState.showSnackbar("Gagal menyimpan laporan.")
                                         }
                                     } catch (e: Exception) {
-                                        snackbarHostState.showSnackbar("Gagal menyimpan laporan: ${e.message}")
+                                        val errText = com.poskedai.core.utils.ApiErrorParser.parse(e)
+                                        snackbarHostState.showSnackbar("Gagal menyimpan laporan: $errText")
                                     } finally {
                                         isExporting = false
                                     }

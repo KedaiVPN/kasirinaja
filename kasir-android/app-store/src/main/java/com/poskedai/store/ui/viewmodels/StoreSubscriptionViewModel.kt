@@ -3,6 +3,7 @@ package com.poskedai.store.ui.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.poskedai.core.network.*
+import com.poskedai.core.utils.ApiErrorParser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -110,7 +111,7 @@ class StoreSubscriptionViewModel(
                         proExpiresAt = tokenManager.getProExpiresAt()
                     )
                 } else {
-                    _proState.value = ProSubscriptionState.Error(e.message ?: "Terjadi kesalahan koneksi")
+                    _proState.value = ProSubscriptionState.Error(ApiErrorParser.parse(e))
                 }
             }
         }
@@ -135,12 +136,12 @@ class StoreSubscriptionViewModel(
                         _channelsUiState.value = ChannelsUiState.Success(activeChannels)
                     }
                 } else {
-                    val errText = resp.errorBody()?.string() ?: "Gagal memuat kanal pembayaran"
+                    val errText = ApiErrorParser.fromResponse(resp.code(), resp.errorBody()?.string())
                     _channelsUiState.value = ChannelsUiState.Error(errText)
                     _errorMessage.value = errText
                 }
             } catch (e: Exception) {
-                val errText = e.message ?: "Terjadi kesalahan koneksi"
+                val errText = ApiErrorParser.parse(e)
                 _channelsUiState.value = ChannelsUiState.Error(errText)
                 _errorMessage.value = errText
             }
@@ -158,11 +159,11 @@ class StoreSubscriptionViewModel(
                     val ref = resp.body()!!.transaction.reference
                     onCheckoutSuccess(ref)
                 } else {
-                    val errText = resp.errorBody()?.string() ?: "Gagal memproses transaksi"
+                    val errText = ApiErrorParser.fromResponse(resp.code(), resp.errorBody()?.string())
                     _errorMessage.value = errText
                 }
             } catch (e: Exception) {
-                _errorMessage.value = e.message
+                _errorMessage.value = ApiErrorParser.parse(e)
             } finally {
                 _isProcessing.value = false
             }
@@ -200,7 +201,7 @@ class StoreSubscriptionViewModel(
                     }
                 }
             } catch (e: Exception) {
-                _errorMessage.value = e.message
+                _errorMessage.value = ApiErrorParser.parse(e)
             } finally {
                 _isProcessing.value = false
             }

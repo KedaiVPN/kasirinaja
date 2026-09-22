@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.poskedai.core.network.TokenManager
+import com.poskedai.core.utils.ApiErrorParser
 import com.poskedai.store.data.repository.StoreRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -67,7 +68,7 @@ class EditStoreViewModel(
                     }.onFailure {
                         _state.value = _state.value.copy(
                             isLoading = false,
-                            errorMessage = "Gagal mengupload logo: ${it.message}"
+                            errorMessage = "Gagal mengupload logo: ${ApiErrorParser.parse(it)}"
                         )
                         return@launch
                     }
@@ -84,14 +85,14 @@ class EditStoreViewModel(
                 }.onFailure {
                     _state.value = _state.value.copy(
                         isLoading = false,
-                        errorMessage = "Gagal menyimpan detail toko: ${it.message}"
+                        errorMessage = "Gagal menyimpan detail toko: ${ApiErrorParser.parse(it)}"
                     )
                 }
 
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     isLoading = false,
-                    errorMessage = "Terjadi kesalahan: ${e.message}"
+                    errorMessage = ApiErrorParser.parse(e)
                 )
             }
         }

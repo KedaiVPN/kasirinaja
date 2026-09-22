@@ -489,11 +489,13 @@ fun MainScreen(initialRoute: String? = null) {
                                     if (errorBody.contains("NO_UNREPORTED_TRANSACTIONS")) {
                                         android.widget.Toast.makeText(context, "Semua transaksi sudah dilaporkan!", android.widget.Toast.LENGTH_LONG).show()
                                     } else {
-                                        android.widget.Toast.makeText(context, "Gagal melapor: Server error", android.widget.Toast.LENGTH_SHORT).show()
+                                        val errText = com.poskedai.core.utils.ApiErrorParser.fromResponse(response.code(), errorBody)
+                                        android.widget.Toast.makeText(context, "Gagal melapor: $errText", android.widget.Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             } catch (e: Exception) {
-                                android.widget.Toast.makeText(context, "Gagal melapor: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                                val errText = com.poskedai.core.utils.ApiErrorParser.parse(e)
+                                android.widget.Toast.makeText(context, "Gagal melapor: $errText", android.widget.Toast.LENGTH_SHORT).show()
                             } finally {
                                 isReporting = false
                                 showReportDialog = false
