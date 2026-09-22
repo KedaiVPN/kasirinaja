@@ -83,6 +83,9 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.zIndex
 import com.poskedai.store.ui.screens.MasterScreen
 import com.poskedai.store.ui.navigation.Screen
 import androidx.compose.material3.NavigationBarItem
