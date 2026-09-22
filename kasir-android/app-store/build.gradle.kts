@@ -13,8 +13,8 @@ android {
         applicationId = "com.poskedai.store"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -22,10 +22,20 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file(System.getenv("POS_KEDAI_KEYSTORE") ?: "/root/.android/poskedai.jks")
+            storePassword = System.getenv("POS_KEDAI_KEYSTORE_PASSWORD") ?: "Bendakerep123@"
+            keyAlias = System.getenv("POS_KEDAI_KEY_ALIAS") ?: "poskedai"
+            keyPassword = System.getenv("POS_KEDAI_KEY_PASSWORD") ?: "Bendakerep123@"
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig signingConfigs.release
         }
     }
     compileOptions {
