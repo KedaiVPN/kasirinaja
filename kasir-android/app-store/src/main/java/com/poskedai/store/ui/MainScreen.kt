@@ -845,18 +845,22 @@ fun MainScreen(initialRoute: String? = null) {
                                 )
                                 androidx.compose.material3.Button(
                                     onClick = {
-                                        coroutineScope.launch { drawerState.close() }
-                                        showReportDialog = true
+                                        if (isOnline) {
+                                            coroutineScope.launch { drawerState.close() }
+                                            showReportDialog = true
+                                        }
                                     },
+                                    enabled = isOnline,
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
                                     colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.primary
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        disabledContainerColor = androidx.compose.ui.graphics.Color(0xFFE0E0E0),
+                                        disabledContentColor = androidx.compose.ui.graphics.Color(0xFF9E9E9E)
                                     )
                                 ) {
                                     Text(
-                                        text = "Laporkan Transaksi",
-                                        color = androidx.compose.ui.graphics.Color.White,
+                                        text = if (isOnline) "Laporkan Transaksi" else "Laporkan (Butuh Internet)",
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
@@ -1181,7 +1185,9 @@ fun MainScreen(initialRoute: String? = null) {
                 if (userRole == "owner") {
                     StockScreen(
                         onNavigateToAddProduct = {
-                            navController.navigate(Screen.AddProduct.route)
+                            if (isOnline) {
+                                navController.navigate(Screen.AddProduct.route)
+                            }
                         },
                         onNavigateToEditProduct = { productId ->
                             navController.navigate("${Screen.AddProduct.route}?productId=$productId")

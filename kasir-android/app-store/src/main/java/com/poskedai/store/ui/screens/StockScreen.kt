@@ -38,6 +38,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.material3.TopAppBar
 import com.poskedai.store.ui.components.GlobalTopAppBar
+import com.poskedai.store.utils.rememberIsOnline
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -119,6 +120,7 @@ fun StockScreen(
     val selectedCategory by viewModel.selectedCategory.collectAsState()
     val sortOption by viewModel.sortOption.collectAsState()
     val currentRole = remember { com.poskedai.core.network.TokenManager(context).getRole() ?: "owner" }
+    val isOnline by rememberIsOnline()
     val actionState by viewModel.actionState.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
     var productToDelete by remember { mutableStateOf<com.poskedai.store.data.local.ProductEntity?>(null) }
@@ -187,14 +189,31 @@ fun StockScreen(
                         .padding(start = 32.dp, end = 32.dp, top = 8.dp, bottom = 16.dp),
                     contentAlignment = Alignment.Center
                 ) {
+                    val backgroundColor = if (isOnline) {
+                        androidx.compose.ui.graphics.Color.White
+                    } else {
+                        androidx.compose.ui.graphics.Color(0xFFE0E0E0)
+                    }
+                    val contentColor = if (isOnline) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+                    }
+
                     Surface(
                         shape = RoundedCornerShape(20.dp),
-                        color = androidx.compose.ui.graphics.Color.White,
-                        shadowElevation = 4.dp,
+                        color = backgroundColor,
+                        shadowElevation = if (isOnline) 4.dp else 0.dp,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(44.dp)
-                            .clickable { onNavigateToAddProduct() }
+                            .then(
+                                if (isOnline) {
+                                    Modifier.clickable { onNavigateToAddProduct() }
+                                } else {
+                                    Modifier
+                                }
+                            )
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -205,14 +224,14 @@ fun StockScreen(
                                 Icons.Filled.Add,
                                 contentDescription = "Tambah Produk",
                                 modifier = Modifier.size(18.dp),
-                                tint = MaterialTheme.colorScheme.primary
+                                tint = contentColor
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 "Tambah Produk",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
+                                color = contentColor
                             )
                         }
                     }
