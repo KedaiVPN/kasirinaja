@@ -42,13 +42,6 @@ import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.runtime.staticCompositionLocalOf
-
-data class SyncBannerState(
-    val isVisible: Boolean = false,
-    val message: String = ""
-)
-
-val LocalSyncBannerState = staticCompositionLocalOf { SyncBannerState() }
 import com.poskedai.store.ui.viewmodels.ScanViewModel
 import com.poskedai.store.utils.rememberIsOnline
 import com.poskedai.store.ui.components.SyncBanner
@@ -116,6 +109,13 @@ import com.poskedai.store.ui.screens.ReceiptScreen
 import androidx.navigation.compose.NavHost
 import androidx.compose.runtime.mutableStateOf
 import com.poskedai.store.ui.viewmodels.ReceiptViewModelFactory
+
+data class SyncBannerState(
+    val isVisible: Boolean = false,
+    val message: String = ""
+)
+
+val LocalSyncBannerState = staticCompositionLocalOf { SyncBannerState() }
 
 @Composable
 fun MainScreen(initialRoute: String? = null) {
@@ -1414,4 +1414,6 @@ fun MainScreen(initialRoute: String? = null) {
             }
         }
     }
+}
+}
 }
