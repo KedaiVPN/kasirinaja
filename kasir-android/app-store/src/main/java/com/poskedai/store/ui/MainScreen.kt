@@ -863,8 +863,9 @@ fun MainScreen(initialRoute: String? = null) {
             }
         }
     ) {
-    Scaffold(
-        bottomBar = {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            bottomBar = {
             val currentDestination = navBackStackEntry?.destination
             if (bottomBarVisibleScreens.contains(currentRoute)) {
                 androidx.compose.material3.Surface(
@@ -1416,6 +1417,20 @@ fun MainScreen(initialRoute: String? = null) {
             }
         }
     }
+
+    // Overlay Sync Banner melayang di atas konten (tepat di bawah header)
+    Box(
+        modifier = Modifier
+            .align(Alignment.TopCenter)
+            .padding(top = 64.dp)
+            .zIndex(99f)
+    ) {
+        SyncBanner(
+            isVisible = showSyncBanner,
+            message = syncBannerMessage
+        )
+    }
+}
 }
 }
 }
