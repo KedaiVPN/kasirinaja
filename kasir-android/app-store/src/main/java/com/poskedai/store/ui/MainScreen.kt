@@ -43,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.runtime.Composable
 import com.poskedai.store.ui.viewmodels.ScanViewModel
+import com.poskedai.store.utils.rememberIsOnline
 import com.poskedai.store.ui.screens.BarcodeScannerFormScreen
 import com.poskedai.store.ui.screens.StockScreen
 import androidx.compose.runtime.remember
@@ -460,6 +461,8 @@ fun MainScreen(initialRoute: String? = null) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
+    val isOnline by rememberIsOnline()
+
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val userEmail = tokenManager.getEmail() ?: ""
     val userName = tokenManager.getUserName()
@@ -623,43 +626,45 @@ fun MainScreen(initialRoute: String? = null) {
                             colors = drawerItemColors,
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
-                        NavigationDrawerItem(
-                            label = {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-                                ) {
-                                    Text(Screen.Reports.title)
+                        if (isOnline) {
+                            NavigationDrawerItem(
+                                label = {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                                    ) {
+                                        Text(Screen.Reports.title)
+                                        if (!isProStore) {
+                                            androidx.compose.material3.Surface(
+                                                color = Color(0xFFFFE082),
+                                                shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+                                            ) {
+                                                Text("PRO", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE65100), modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                            }
+                                        }
+                                    }
+                                },
+                                selected = currentRoute == Screen.Reports.route,
+                                onClick = {
+                                    coroutineScope.launch { drawerState.close() }
                                     if (!isProStore) {
-                                        androidx.compose.material3.Surface(
-                                            color = Color(0xFFFFE082),
-                                            shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
-                                        ) {
-                                            Text("PRO", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE65100), modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                        showProDialog = true
+                                    } else {
+                                        navController.navigate(Screen.Reports.route) {
+                                            popUpTo(navController.graph.findStartDestination().id) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
                                         }
                                     }
-                                }
-                            },
-                            selected = currentRoute == Screen.Reports.route,
-                            onClick = {
-                                coroutineScope.launch { drawerState.close() }
-                                if (!isProStore) {
-                                    showProDialog = true
-                                } else {
-                                    navController.navigate(Screen.Reports.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                }
-                            },
-                            icon = { Icon(Screen.Reports.icon, contentDescription = Screen.Reports.title) },
-                            colors = drawerItemColors,
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        )
+                                },
+                                icon = { Icon(Screen.Reports.icon, contentDescription = Screen.Reports.title) },
+                                colors = drawerItemColors,
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                        }
                         NavigationDrawerItem(
                             label = { Text(Screen.Stock.title) },
                             selected = currentRoute == Screen.Stock.route,
@@ -677,80 +682,82 @@ fun MainScreen(initialRoute: String? = null) {
                             colors = drawerItemColors,
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
-                        NavigationDrawerItem(
-                            label = {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-                                ) {
-                                    Text(Screen.Master.title)
+                        if (isOnline) {
+                            NavigationDrawerItem(
+                                label = {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                                    ) {
+                                        Text(Screen.Master.title)
+                                        if (!isProStore) {
+                                            androidx.compose.material3.Surface(
+                                                color = Color(0xFFFFE082),
+                                                shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+                                            ) {
+                                                Text("PRO", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE65100), modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                            }
+                                        }
+                                    }
+                                },
+                                selected = currentRoute == Screen.Master.route,
+                                onClick = {
+                                    coroutineScope.launch { drawerState.close() }
                                     if (!isProStore) {
-                                        androidx.compose.material3.Surface(
-                                            color = Color(0xFFFFE082),
-                                            shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
-                                        ) {
-                                            Text("PRO", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE65100), modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                        showProDialog = true
+                                    } else {
+                                        navController.navigate(Screen.Master.route) {
+                                            popUpTo(navController.graph.findStartDestination().id) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
                                         }
                                     }
-                                }
-                            },
-                            selected = currentRoute == Screen.Master.route,
-                            onClick = {
-                                coroutineScope.launch { drawerState.close() }
-                                if (!isProStore) {
-                                    showProDialog = true
-                                } else {
-                                    navController.navigate(Screen.Master.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
+                                },
+                                icon = { Icon(Screen.Master.icon, contentDescription = Screen.Master.title) },
+                                colors = drawerItemColors,
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                            NavigationDrawerItem(
+                                label = {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                                    ) {
+                                        Text(Screen.Settings.title)
+                                        if (!isProStore) {
+                                            androidx.compose.material3.Surface(
+                                                color = Color(0xFFFFE082),
+                                                shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+                                            ) {
+                                                Text("PRO", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE65100), modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                            }
                                         }
-                                        launchSingleTop = true
-                                        restoreState = true
                                     }
-                                }
-                            },
-                            icon = { Icon(Screen.Master.icon, contentDescription = Screen.Master.title) },
-                            colors = drawerItemColors,
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        )
-                        NavigationDrawerItem(
-                            label = {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-                                ) {
-                                    Text(Screen.Settings.title)
+                                },
+                                selected = currentRoute == Screen.Settings.route,
+                                onClick = {
+                                    coroutineScope.launch { drawerState.close() }
                                     if (!isProStore) {
-                                        androidx.compose.material3.Surface(
-                                            color = Color(0xFFFFE082),
-                                            shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
-                                        ) {
-                                            Text("PRO", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE65100), modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                        showProDialog = true
+                                    } else {
+                                        navController.navigate(Screen.Settings.route) {
+                                            popUpTo(navController.graph.findStartDestination().id) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
                                         }
                                     }
-                                }
-                            },
-                            selected = currentRoute == Screen.Settings.route,
-                            onClick = {
-                                coroutineScope.launch { drawerState.close() }
-                                if (!isProStore) {
-                                    showProDialog = true
-                                } else {
-                                    navController.navigate(Screen.Settings.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                }
-                            },
-                            icon = { Icon(Screen.Settings.icon, contentDescription = Screen.Settings.title) },
-                            colors = drawerItemColors,
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        )
+                                },
+                                icon = { Icon(Screen.Settings.icon, contentDescription = Screen.Settings.title) },
+                                colors = drawerItemColors,
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                        }
                         NavigationDrawerItem(
                             label = { Text("Langganan Pro") },
                             selected = currentRoute == Screen.SubscriptionPackages.route,
@@ -1244,7 +1251,7 @@ fun MainScreen(initialRoute: String? = null) {
                 )
             }
             composable(Screen.Master.route) {
-                if (userRole == "owner") {
+                if (userRole == "owner" && isOnline) {
                     MasterScreen(
                         onNavigateToEditProfile = {
                             navController.navigate("edit_profile")
@@ -1261,7 +1268,7 @@ fun MainScreen(initialRoute: String? = null) {
                 }
             }
             composable(Screen.Settings.route) {
-                if (userRole == "owner") {
+                if (userRole == "owner" && isOnline) {
                     SettingsScreen(
                         onNavigateToEditProfile = {
                             navController.navigate("edit_profile")
@@ -1351,7 +1358,7 @@ fun MainScreen(initialRoute: String? = null) {
             }
 
             composable(Screen.Reports.route) {
-                if (userRole == "owner") {
+                if (userRole == "owner" && isOnline) {
                     val reportsViewModel: ReportsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
                         factory = ReportsViewModel.Factory(database.transactionDao(), productRepository)
                     )
@@ -1364,7 +1371,11 @@ fun MainScreen(initialRoute: String? = null) {
                         onProRequired = { showProDialog = true }
                     )
                 } else {
-                    androidx.compose.runtime.LaunchedEffect(Unit) { navController.popBackStack() }
+                    androidx.compose.runtime.LaunchedEffect(Unit) {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Dashboard.route) { inclusive = true }
+                        }
+                    }
                 }
             }
             composable("edit_profile") {
