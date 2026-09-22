@@ -96,9 +96,9 @@ fun PulsatingDotsLoader(modifier: Modifier = Modifier) {
             animationSpec = infiniteRepeatable(
                 animation = keyframes {
                     durationMillis = 3000
-                    1f   at 0    using FastOutSlowInEasing
-                    0.3f at 1000 using FastOutSlowInEasing
-                    1f   at 2000 using FastOutSlowInEasing
+                    1f   at 0
+                    0.3f at 1000
+                    1f   at 2000
                     1f   at 3000
                 },
                 initialStartOffset = StartOffset(delay)
