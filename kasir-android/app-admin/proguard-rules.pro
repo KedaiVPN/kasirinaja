@@ -32,6 +32,22 @@
 -keep class com.google.gson.** { *; }
 -keep class * { @com.google.gson.annotations.* <fields>; }
 -keep class com.poskedai.core.data.model.** { *; }
+-keep class com.poskedai.core.network.** { *; }
+-keep interface com.poskedai.core.network.** { *; }
+
+# Kotlin data classes & sealed classes
+-keep class kotlin.** { *; }
+-keepclassmembers class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+-keepclassmembers class com.poskedai.core.network.** { *; }
+-keepclassmembers class com.poskedai.admin.data.local.** { *; }
+-keepclassmembers class com.poskedai.core.data.local.** { *; }
+
+# Retrofit interface methods (keep annotations)
+-keepclassmembers,allowobfuscation interface * {
+    @retrofit2.http.* <methods>;
+}
 
 # Compose
 -dontwarn androidx.compose.**
