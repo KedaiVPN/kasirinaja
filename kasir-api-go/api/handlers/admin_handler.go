@@ -307,94 +307,102 @@ func (h *AdminHandler) DeleteStore(c *gin.Context) {
 	}
 	storeUUID := pgtype.UUID{Bytes: id, Valid: true}
 
+	ctx := c.Request.Context()
+
 	// Begin transaction
-	tx, err := h.pool.Begin(c.Request.Context())
+	tx, err := h.pool.Begin(ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start transaction: " + err.Error()})
 		return
 	}
-	defer tx.Rollback(c.Request.Context())
-	
+	defer tx.Rollback(ctx)
+
 	q := h.queries.WithTx(tx)
 
-	// Collect files to delete (photos, pending images, logo)
-	var filesToDelete []string
-
-	// 1) Store logo
-	store, err := q.GetStore(c.Request.Context(), storeUUID)
+	// 1) Fetch store + collect logo file
+	store, err := q.GetStore(ctx, storeUUID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get store: " + err.Error()})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Store not found"})
 		return
 	}
-	if store.LogoUrl.Valid && store.LogoUrl.String != "" {
-		if strings.HasPrefix(store.LogoUrl.String, "/uploads/") {
-			filesToDelete = append(filesToDelete, "."+store.LogoUrl.String)
-		}
+
+	var filesToDelete []string
+	if store.LogoUrl.Valid && strings.HasPrefix(store.LogoUrl.String, "/uploads/") {
+		filesToDelete = append(filesToDelete, "."+store.LogoUrl.String)
 	}
 
-	// 2) Pending product images
-	pending, err := q.ListPendingProductsByStore(c.Request.Context(), storeUUID)
-	if err == nil {
-		for _, p := range pending {
-			if p.ImageUrl.Valid && strings.HasPrefix(p.ImageUrl.String, "/uploads/") {
-				filesToDelete = append(filesToDelete, "."+p.ImageUrl.String)
-			}
-		}
-		_ = q.DeletePendingProductsByStore(c.Request.Context(), storeUUID)
-	}
-
-	// 3) User photos + delete users
-	users, err := q.ListUsersByStore(c.Request.Context(), storeUUID)
-	if err == nil {
-		for _, u := range users {
-			if u.PhotoUrl.Valid && strings.HasPrefix(u.PhotoUrl.String, "/uploads/") {
-				filesToDelete = append(filesToDelete, "."+u.PhotoUrl.String)
-			}
-		}
-		for _, u := range users {
-			_ = q.DeleteUser(c.Request.Context(), u.ID)
-		}
-	}
-
-	// 4) Store owner (owner_id from stores)
+	// 2) Collect user/owner files BEFORE deleting users
+	var userIDsToDelete []pgtype.UUID
 	if store.OwnerID.Valid {
-		ownerUser, err := q.GetUser(c.Request.Context(), store.OwnerID)
-		if err == nil {
-			if ownerUser.PhotoUrl.Valid && strings.HasPrefix(ownerUser.PhotoUrl.String, "/uploads/") {
-				filesToDelete = append(filesToDelete, "."+ownerUser.PhotoUrl.String)
-			}
-			_ = q.DeleteUser(c.Request.Context(), store.OwnerID)
+		owner, err := q.GetUser(ctx, store.OwnerID)
+		if err == nil && owner.PhotoUrl.Valid && strings.HasPrefix(owner.PhotoUrl.String, "/uploads/") {
+			filesToDelete = append(filesToDelete, "."+owner.PhotoUrl.String)
+		}
+		userIDsToDelete = append(userIDsToDelete, store.OwnerID)
+	}
+
+	cashiers, _ := q.ListUsersByStore(ctx, storeUUID)
+	for _, u := range cashiers {
+		if u.PhotoUrl.Valid && strings.HasPrefix(u.PhotoUrl.String, "/uploads/") {
+			filesToDelete = append(filesToDelete, "."+u.PhotoUrl.String)
+		}
+		userIDsToDelete = append(userIDsToDelete, u.ID)
+	}
+
+	// 3) Collect pending product images for this store
+	pending, _ := q.ListPendingProductsByStore(ctx, storeUUID)
+	for _, p := range pending {
+		if p.ImageUrl.Valid && strings.HasPrefix(p.ImageUrl.String, "/uploads/") {
+			filesToDelete = append(filesToDelete, "."+p.ImageUrl.String)
 		}
 	}
 
-	// 5) Delete transaction items (cascade)
-	_ = q.DeleteTransactionItemsByStore(c.Request.Context(), storeUUID)
+	// 4) CASCADE DELETE inside transaction — child rows first, store last
+	//    because stores.owner_id REFERENCES users(id) blocks deleting owner before store.
+	exec := func(query string, args ...interface{}) {
+		_, err := tx.Exec(ctx, query, args...)
+		if err != nil {
+			log.Printf("DeleteStore tx.Exec error (%s): %v", query, err)
+		}
+	}
 
-	// 6) Delete transactions
-	_ = q.DeleteTransactionsByStore(c.Request.Context(), storeUUID)
+	// subscription_transactions has ON DELETE CASCADE on store_id but explicit is safer
+	exec("DELETE FROM subscription_transactions WHERE store_id = $1", storeUUID)
+	// cashier_reports also cascades, but explicit
+	exec("DELETE FROM cashier_reports WHERE store_id = $1", storeUUID)
+	// transaction_items -> transactions
+	exec("DELETE FROM transaction_items WHERE transaction_id IN (SELECT id FROM transactions WHERE store_id = $1)", storeUUID)
+	exec("DELETE FROM transactions WHERE store_id = $1", storeUUID)
+	// stock_movements depend on store and store_products
+	exec("DELETE FROM stock_movements WHERE store_id = $1", storeUUID)
+	// pending_products: delete rows whose image belongs to this store folder as fallback
+	exec("DELETE FROM pending_products WHERE store_id = $1", storeUUID)
+	exec("DELETE FROM pending_products WHERE image_url LIKE '/uploads/' || $1 || '/%'", idParam)
+	// store_products
+	exec("DELETE FROM store_products WHERE store_id = $1", storeUUID)
 
-	// 7) Delete store products (cascade stock movements via existing delete logic)
-	_ = q.DeleteStoreProductsByStore(c.Request.Context(), storeUUID)
+	// 5) Delete the store itself (after all dependent rows are gone)
+	if err := q.DeleteStore(ctx, storeUUID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete store row: " + err.Error()})
+		return
+	}
 
-	// 8) Delete store row (after all dependent rows are gone)
-	_ = q.DeleteStore(c.Request.Context(), storeUUID)
+	// 6) NOW delete users (owner + cashiers) because stores no longer references them
+	for _, uid := range userIDsToDelete {
+		_, _ = tx.Exec(ctx, "DELETE FROM users WHERE id = $1", uid)
+	}
 
-	// Commit transaction
-	if err := tx.Commit(c.Request.Context()); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Transaction commit failed: " + err.Error()})
 		return
 	}
 
-	// Delete collected files from disk
+	// 7) Delete files/folder after successful commit
 	for _, f := range filesToDelete {
 		_ = os.Remove(f)
 	}
-
-	// Delete uploads folder entirely
 	uploadsDir := filepath.Join(".", "uploads", idParam)
 	_ = os.RemoveAll(uploadsDir)
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Store and all related data deleted successfully",
-	})
+	c.JSON(http.StatusOK, gin.H{"message": "Store and all related data deleted successfully"})
 }
