@@ -53,18 +53,58 @@ func AuthMiddleware(queries *db.Queries) gin.HandlerFunc {
 			return
 		}
 
-		c.Set("user_id", claims["user_id"])
+		userIDVal := claims["user_id"]
+		c.Set("user_id", userIDVal)
 		role, _ := claims["role"].(string)
 		c.Set("role", role)
+
+		// Verification: User & Store DB check for auto-logout when store or user is deleted
+		if queries != nil && role != "admin" {
+			userIDStr, ok := userIDVal.(string)
+			if !ok || userIDStr == "" {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID tidak valid dalam token"})
+				c.Abort()
+				return
+			}
+
+			parsedUserID, err := uuid.Parse(userIDStr)
+			if err != nil {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID tidak valid"})
+				c.Abort()
+				return
+			}
+
+			user, err := queries.GetUser(c.Request.Context(), pgtype.UUID{Bytes: parsedUserID, Valid: true})
+			if err != nil {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Akun tidak ditemukan atau telah dihapus. Sesi login berakhir."})
+				c.Abort()
+				return
+			}
+
+			if user.IsActive.Valid && !user.IsActive.Bool {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Akun tidak aktif."})
+				c.Abort()
+				return
+			}
+		}
 
 		if storeIDVal, exists := claims["store_id"]; exists {
 			c.Set("store_id", storeIDVal)
 
-			if role == "kasir" && queries != nil {
-				if storeIDStr, ok := storeIDVal.(string); ok && storeIDStr != "" {
-					parsedUUID, err := uuid.Parse(storeIDStr)
-					if err == nil {
-						storeStatus, err := queries.GetStoreProStatus(c.Request.Context(), pgtype.UUID{Bytes: parsedUUID, Valid: true})
+			if storeIDStr, ok := storeIDVal.(string); ok && storeIDStr != "" {
+				parsedStoreID, err := uuid.Parse(storeIDStr)
+				if err == nil && queries != nil && role != "admin" {
+					// 1. Verify store still exists in database
+					_, err := queries.GetStore(c.Request.Context(), pgtype.UUID{Bytes: parsedStoreID, Valid: true})
+					if err != nil {
+						c.JSON(http.StatusUnauthorized, gin.H{"error": "Toko telah dihapus. Sesi login berakhir."})
+						c.Abort()
+						return
+					}
+
+					// 2. Check cashier Pro status expiration
+					if role == "kasir" {
+						storeStatus, err := queries.GetStoreProStatus(c.Request.Context(), pgtype.UUID{Bytes: parsedStoreID, Valid: true})
 						if err != nil || !storeStatus.ProExpiresAt.Valid || storeStatus.ProExpiresAt.Time.Before(time.Now()) {
 							c.JSON(http.StatusUnauthorized, gin.H{"error": "Masa aktif Pro toko telah berakhir. Sesi login karyawan dikunci."})
 							c.Abort()
@@ -74,6 +114,7 @@ func AuthMiddleware(queries *db.Queries) gin.HandlerFunc {
 				}
 			}
 		}
+
 		c.Next()
 	}
 }
