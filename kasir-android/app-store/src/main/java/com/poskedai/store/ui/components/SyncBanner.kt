@@ -8,32 +8,26 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
-import com.poskedai.store.ui.theme.GreenPrimary
-import com.poskedai.store.ui.theme.GreenPrimaryDark
-import com.poskedai.store.ui.theme.GreenPrimaryLight
+import androidx.compose.ui.draw.shadow
 
 /**
  * Overlay banner sinkronisasi melayang di bawah header.
  * Tidak menggeser konten utama — muncul melayang di atas.
+ * Versi minimalis: Hanya 3 dot hijau gelap dengan bayangan (tanpa background).
  */
 @Composable
 fun SyncBanner(
     isVisible: Boolean,
-    message: String = "Sedang menyinkronkan data...",
+    message: String = "", // Teks dihilangkan sesuai permintaan
     modifier: Modifier = Modifier
 ) {
     AnimatedVisibility(
@@ -42,48 +36,24 @@ fun SyncBanner(
         exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut(),
         modifier = modifier
     ) {
-        Surface(
+        // Container transparan, hanya menampilkan dot-nya saja
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp),
-            shape = RoundedCornerShape(16.dp),
-            color = Color(0xFFE8F5E9),
-            shadowElevation = 6.dp,
-            tonalElevation = 4.dp
+                .padding(vertical = 16.dp),
+            contentAlignment = Alignment.Center
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                PulsatingDotsLoader()
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = message,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = GreenPrimaryDark,
-                    fontSize = 13.sp
-                )
-            }
+            PulsatingDotsLoader()
         }
     }
 }
 
 /**
- * Animasi 3 dot pulsating — warna hijau tema POS Kedai.
+ * Animasi 3 dot pulsating — warna hijau gelap dengan bayangan.
  */
 @Composable
 fun PulsatingDotsLoader(modifier: Modifier = Modifier) {
     val infiniteTransition = rememberInfiniteTransition(label = "dots_loader")
-
-    val dotColors = listOf(
-        GreenPrimaryLight,
-        GreenPrimary,
-        GreenPrimaryDark
-    )
 
     val delays = listOf(0, 600, 1200)
 
@@ -107,19 +77,25 @@ fun PulsatingDotsLoader(modifier: Modifier = Modifier) {
 
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp), // Jarak antar dot sedikit dilebarkan
         verticalAlignment = Alignment.CenterVertically
     ) {
-        scales.forEachIndexed { index, scale ->
+        scales.forEach { scale ->
             Box(
                 modifier = Modifier
-                    .size(14.dp)
+                    .size(24.dp) // Ukuran diperbesar dari 14dp ke 24dp
                     .graphicsLayer {
                         scaleX = scale.value
                         scaleY = scale.value
                     }
+                    .shadow(
+                        elevation = 8.dp, // Shadow hitam bawaan compose
+                        shape = CircleShape,
+                        spotColor = Color.Black,
+                        ambientColor = Color.Black
+                    )
                     .clip(CircleShape)
-                    .background(dotColors[index])
+                    .background(MaterialTheme.colorScheme.primary) // Hijau tua seperti dashboard
             )
         }
     }
