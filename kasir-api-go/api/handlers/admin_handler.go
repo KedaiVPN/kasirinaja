@@ -298,20 +298,32 @@ func (h *AdminHandler) RejectProduct(c *gin.Context) {
 }
 
 // DeleteStore handles the admin action to permanently delete a store and all its cascade dependencies
+// DeleteStore handles the admin action to permanently delete a store and all its cascade dependencies
 func (h *AdminHandler) DeleteStore(c *gin.Context) {
 	idParam := c.Param("id")
+	log.Printf("[DELETE_STORE] === Starting DeleteStore for store_id: %s ===", idParam)
+
 	id, err := uuid.Parse(idParam)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid store ID"})
+		log.Printf("[DELETE_STORE] ERROR: Invalid store UUID parameter '%s': %v", idParam, err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid store ID: " + err.Error()})
 		return
 	}
 	storeUUID := pgtype.UUID{Bytes: id, Valid: true}
 
 	ctx := c.Request.Context()
 
+	if h.pool == nil {
+		log.Printf("[DELETE_STORE] CRITICAL ERROR: h.pool is NIL! Check routes initialization.")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database connection pool is nil"})
+		return
+	}
+
 	// Begin transaction
+	log.Printf("[DELETE_STORE] Step 0: Starting database transaction...")
 	tx, err := h.pool.Begin(ctx)
 	if err != nil {
+		log.Printf("[DELETE_STORE] ERROR starting transaction: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start transaction: " + err.Error()})
 		return
 	}
@@ -320,89 +332,146 @@ func (h *AdminHandler) DeleteStore(c *gin.Context) {
 	q := h.queries.WithTx(tx)
 
 	// 1) Fetch store + collect logo file
+	log.Printf("[DELETE_STORE] Step 1: Fetching store metadata for UUID: %s", idParam)
 	store, err := q.GetStore(ctx, storeUUID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Store not found"})
+		log.Printf("[DELETE_STORE] ERROR fetching store (ID: %s): %v", idParam, err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "Store not found: " + err.Error()})
 		return
 	}
+	log.Printf("[DELETE_STORE] Found store: name='%s', owner_id_valid=%v", store.StoreName, store.OwnerID.Valid)
 
 	var filesToDelete []string
 	if store.LogoUrl.Valid && strings.HasPrefix(store.LogoUrl.String, "/uploads/") {
 		filesToDelete = append(filesToDelete, "."+store.LogoUrl.String)
+		log.Printf("[DELETE_STORE] Will delete logo file: %s", store.LogoUrl.String)
 	}
 
 	// 2) Collect user/owner files BEFORE deleting users
+	log.Printf("[DELETE_STORE] Step 2: Collecting user & owner IDs for store...")
 	var userIDsToDelete []pgtype.UUID
 	if store.OwnerID.Valid {
 		owner, err := q.GetUser(ctx, store.OwnerID)
-		if err == nil && owner.PhotoUrl.Valid && strings.HasPrefix(owner.PhotoUrl.String, "/uploads/") {
-			filesToDelete = append(filesToDelete, "."+owner.PhotoUrl.String)
+		if err == nil {
+			log.Printf("[DELETE_STORE] Found owner user ID: %v", store.OwnerID)
+			if owner.PhotoUrl.Valid && strings.HasPrefix(owner.PhotoUrl.String, "/uploads/") {
+				filesToDelete = append(filesToDelete, "."+owner.PhotoUrl.String)
+			}
+			userIDsToDelete = append(userIDsToDelete, store.OwnerID)
+		} else {
+			log.Printf("[DELETE_STORE] WARNING: GetUser for owner_id failed: %v", err)
 		}
-		userIDsToDelete = append(userIDsToDelete, store.OwnerID)
 	}
 
-	cashiers, _ := q.ListUsersByStore(ctx, storeUUID)
-	for _, u := range cashiers {
-		if u.PhotoUrl.Valid && strings.HasPrefix(u.PhotoUrl.String, "/uploads/") {
-			filesToDelete = append(filesToDelete, "."+u.PhotoUrl.String)
+	cashiers, err := q.ListUsersByStore(ctx, storeUUID)
+	if err != nil {
+		log.Printf("[DELETE_STORE] WARNING: ListUsersByStore failed: %v", err)
+	} else {
+		log.Printf("[DELETE_STORE] Found %d cashiers/employees linked to store", len(cashiers))
+		for _, u := range cashiers {
+			if u.PhotoUrl.Valid && strings.HasPrefix(u.PhotoUrl.String, "/uploads/") {
+				filesToDelete = append(filesToDelete, "."+u.PhotoUrl.String)
+			}
+			userIDsToDelete = append(userIDsToDelete, u.ID)
 		}
-		userIDsToDelete = append(userIDsToDelete, u.ID)
 	}
 
 	// 3) Collect pending product images for this store
-	pending, _ := q.ListPendingProductsByStore(ctx, storeUUID)
-	for _, p := range pending {
-		if p.ImageUrl.Valid && strings.HasPrefix(p.ImageUrl.String, "/uploads/") {
-			filesToDelete = append(filesToDelete, "."+p.ImageUrl.String)
+	log.Printf("[DELETE_STORE] Step 3: Checking pending products...")
+	pending, err := q.ListPendingProductsByStore(ctx, storeUUID)
+	if err != nil {
+		log.Printf("[DELETE_STORE] WARNING: ListPendingProductsByStore failed: %v", err)
+	} else {
+		log.Printf("[DELETE_STORE] Found %d pending products", len(pending))
+		for _, p := range pending {
+			if p.ImageUrl.Valid && strings.HasPrefix(p.ImageUrl.String, "/uploads/") {
+				filesToDelete = append(filesToDelete, "."+p.ImageUrl.String)
+			}
 		}
 	}
 
 	// 4) CASCADE DELETE inside transaction — child rows first, store last
-	//    because stores.owner_id REFERENCES users(id) blocks deleting owner before store.
-	exec := func(query string, args ...interface{}) {
-		_, err := tx.Exec(ctx, query, args...)
-		if err != nil {
-			log.Printf("DeleteStore tx.Exec error (%s): %v", query, err)
+	log.Printf("[DELETE_STORE] Step 4: Running CASCADE SQL deletions for child tables...")
+	execStep := func(stepName string, query string, args ...interface{}) error {
+		tag, execErr := tx.Exec(ctx, query, args...)
+		if execErr != nil {
+			log.Printf("[DELETE_STORE] ERROR at cascade step '%s' (Query: %s): %v", stepName, query, execErr)
+			return execErr
+		}
+		log.Printf("[DELETE_STORE] CASCADE OK [%s]: deleted %d rows", stepName, tag.RowsAffected())
+		return nil
+	}
+
+	cascadeQueries := []struct {
+		name  string
+		query string
+		args  []interface{}
+	}{
+		{"subscription_transactions", "DELETE FROM subscription_transactions WHERE store_id = $1", []interface{}{storeUUID}},
+		{"cashier_reports", "DELETE FROM cashier_reports WHERE store_id = $1", []interface{}{storeUUID}},
+		{"transaction_items", "DELETE FROM transaction_items WHERE transaction_id IN (SELECT id FROM transactions WHERE store_id = $1)", []interface{}{storeUUID}},
+		{"transactions", "DELETE FROM transactions WHERE store_id = $1", []interface{}{storeUUID}},
+		{"stock_movements", "DELETE FROM stock_movements WHERE store_id = $1", []interface{}{storeUUID}},
+		{"pending_products_by_store_id", "DELETE FROM pending_products WHERE store_id = $1", []interface{}{storeUUID}},
+		{"pending_products_by_image_path", "DELETE FROM pending_products WHERE image_url LIKE '/uploads/' || $1 || '/%'", []interface{}{idParam}},
+		{"store_products", "DELETE FROM store_products WHERE store_id = $1", []interface{}{storeUUID}},
+	}
+
+	for _, cq := range cascadeQueries {
+		if err := execStep(cq.name, cq.query, cq.args...); err != nil {
+			log.Printf("[DELETE_STORE] ABORTING: Cascade query '%s' failed: %v", cq.name, err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Failed during cascade delete step '" + cq.name + "': " + err.Error(),
+			})
+			return
 		}
 	}
 
-	// subscription_transactions has ON DELETE CASCADE on store_id but explicit is safer
-	exec("DELETE FROM subscription_transactions WHERE store_id = $1", storeUUID)
-	// cashier_reports also cascades, but explicit
-	exec("DELETE FROM cashier_reports WHERE store_id = $1", storeUUID)
-	// transaction_items -> transactions
-	exec("DELETE FROM transaction_items WHERE transaction_id IN (SELECT id FROM transactions WHERE store_id = $1)", storeUUID)
-	exec("DELETE FROM transactions WHERE store_id = $1", storeUUID)
-	// stock_movements depend on store and store_products
-	exec("DELETE FROM stock_movements WHERE store_id = $1", storeUUID)
-	// pending_products: delete rows whose image belongs to this store folder as fallback
-	exec("DELETE FROM pending_products WHERE store_id = $1", storeUUID)
-	exec("DELETE FROM pending_products WHERE image_url LIKE '/uploads/' || $1 || '/%'", idParam)
-	// store_products
-	exec("DELETE FROM store_products WHERE store_id = $1", storeUUID)
-
-	// 5) Delete the store itself (after all dependent rows are gone)
+	// 5) Delete the store itself
+	log.Printf("[DELETE_STORE] Step 5: Deleting store row from database...")
 	if err := q.DeleteStore(ctx, storeUUID); err != nil {
+		log.Printf("[DELETE_STORE] ERROR deleting store row: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete store row: " + err.Error()})
 		return
 	}
+	log.Printf("[DELETE_STORE] Store row deleted successfully.")
 
-	// 6) NOW delete users (owner + cashiers) because stores no longer references them
-	for _, uid := range userIDsToDelete {
-		_, _ = tx.Exec(ctx, "DELETE FROM users WHERE id = $1", uid)
+	// 6) NOW delete users (owner + cashiers)
+	log.Printf("[DELETE_STORE] Step 6: Deleting %d associated user(s) (owner & cashiers)...", len(userIDsToDelete))
+	for i, uid := range userIDsToDelete {
+		tag, uErr := tx.Exec(ctx, "DELETE FROM users WHERE id = $1", uid)
+		if uErr != nil {
+			log.Printf("[DELETE_STORE] WARNING: Failed to delete user #%d (ID: %v): %v", i+1, uid, uErr)
+		} else {
+			log.Printf("[DELETE_STORE] Deleted user #%d (ID: %v, rows: %d)", i+1, uid, tag.RowsAffected())
+		}
 	}
 
+	// 7) Commit transaction
+	log.Printf("[DELETE_STORE] Step 7: Committing database transaction...")
 	if err := tx.Commit(ctx); err != nil {
+		log.Printf("[DELETE_STORE] ERROR committing transaction: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Transaction commit failed: " + err.Error()})
 		return
 	}
+	log.Printf("[DELETE_STORE] Transaction committed successfully!")
 
-	// 7) Delete files/folder after successful commit
+	// 8) Delete physical files/folders
+	log.Printf("[DELETE_STORE] Step 8: Cleaning up physical upload files...")
 	for _, f := range filesToDelete {
-		_ = os.Remove(f)
+		if err := os.Remove(f); err != nil {
+			log.Printf("[DELETE_STORE] File remove note (%s): %v", f, err)
+		} else {
+			log.Printf("[DELETE_STORE] Removed file: %s", f)
+		}
 	}
 	uploadsDir := filepath.Join(".", "uploads", idParam)
-	_ = os.RemoveAll(uploadsDir)
+	if err := os.RemoveAll(uploadsDir); err != nil {
+		log.Printf("[DELETE_STORE] Folder remove note (%s): %v", uploadsDir, err)
+	} else {
+		log.Printf("[DELETE_STORE] Removed uploads directory: %s", uploadsDir)
+	}
 
+	log.Printf("[DELETE_STORE] === SUCCESS: Store %s and all associated data deleted ===", idParam)
 	c.JSON(http.StatusOK, gin.H{"message": "Store and all related data deleted successfully"})
 }
