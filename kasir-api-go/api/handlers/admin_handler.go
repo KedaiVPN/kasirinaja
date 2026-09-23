@@ -434,15 +434,16 @@ func (h *AdminHandler) DeleteStore(c *gin.Context) {
 
 	// 8) Kirim FCM force-logout push ke owner & kasir BEFORE deleting user files
 	go func(tokens []string, storeName string) {
-		title := "Toko Dihapus"
-		body := fmt.Sprintf("Toko %s telah dihapus oleh Admin. Sesi login Anda berakhir.", storeName)
+		// FCM data-only payload: include title/body inside data map so Android onMessageReceived always fires
 		data := map[string]string{
 			"type":       "force_logout",
 			"store_name": storeName,
+			"title":      "Toko Dihapus",
+			"body":       fmt.Sprintf("Toko %s telah dihapus oleh Admin. Sesi login Anda berakhir.", storeName),
 		}
 		for _, token := range tokens {
 			if token != "" {
-				_ = api.SendPushNotificationWithData(token, title, body, data)
+				_ = api.SendPushDataOnly(token, data)
 			}
 		}
 	}(fcmTokensToSend, store.StoreName)

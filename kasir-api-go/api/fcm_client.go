@@ -39,7 +39,7 @@ func SendPushNotificationWithData(token, title, body string, data map[string]str
 			Title: title,
 			Body:  body,
 		},
-		Data: data,
+		Data:  data,
 		Token: token,
 	}
 
@@ -49,6 +49,25 @@ func SendPushNotificationWithData(token, title, body string, data map[string]str
 	}
 
 	log.Println("Successfully sent message:", response)
+	return nil
+}
+
+func SendPushDataOnly(token string, data map[string]string) error {
+	if fcmClient == nil || token == "" {
+		return fmt.Errorf("FCM client not initialized or token empty")
+	}
+
+	message := &messaging.Message{
+		Data:  data,
+		Token: token,
+	}
+
+	response, err := fcmClient.Send(context.Background(), message)
+	if err != nil {
+		return err
+	}
+
+	log.Println("Successfully sent data-only message:", response)
 	return nil
 }
 

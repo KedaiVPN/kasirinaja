@@ -59,7 +59,8 @@ func AuthMiddleware(queries *db.Queries) gin.HandlerFunc {
 		c.Set("role", role)
 
 		// Verification: User & Store DB check for auto-logout when store or user is deleted
-		if queries != nil && role != "admin" {
+			// Always check user & store regardless of role, so that deleted store/user triggers 401 logout for everyone
+			if queries != nil {
 			userIDStr, ok := userIDVal.(string)
 			if !ok || userIDStr == "" {
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID tidak valid dalam token"})
@@ -93,7 +94,7 @@ func AuthMiddleware(queries *db.Queries) gin.HandlerFunc {
 
 			if storeIDStr, ok := storeIDVal.(string); ok && storeIDStr != "" {
 				parsedStoreID, err := uuid.Parse(storeIDStr)
-				if err == nil && queries != nil && role != "admin" {
+				if err == nil && queries != nil {
 					// 1. Verify store still exists in database
 					_, err := queries.GetStore(c.Request.Context(), pgtype.UUID{Bytes: parsedStoreID, Valid: true})
 					if err != nil {

@@ -52,6 +52,9 @@ class AdminFCMService : FirebaseMessagingService() {
         val forceLogout = remoteMessage.data["type"] == "force_logout"
         if (forceLogout) {
             Log.d("AdminFCMService", "Force‑logout command received – clearing local auth data")
++            val title = remoteMessage.data["title"] ?: "Toko Dihapus"
++            val body = remoteMessage.data["body"] ?: "Sesi login Anda berakhir."
++            showNotification(title, body)
             TokenManager(applicationContext).clearToken()
             // Optional: open Login screen (MainActivity will redirect based on auth state)
             val loginIntent = android.content.Intent(this, com.poskedai.admin.MainActivity::class.java)
