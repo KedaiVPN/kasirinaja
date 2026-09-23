@@ -14,6 +14,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.google.gson.JsonObject
+import com.google.gson.JsonNull
+
+fun JsonObject.getStringSafe(key: String, defaultValue: String = ""): String {
+    return if (this.has(key) && !this.get(key).isJsonNull) this.get(key).asString else defaultValue
+}
 
 @Composable
 fun RequestProductScreen(viewModel: RequestProductViewModel = viewModel()) {
@@ -57,7 +62,7 @@ fun RequestProductScreen(viewModel: RequestProductViewModel = viewModel()) {
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(products.size, key = { products[it].get("id")?.asString ?: it }) { index ->
+                        items(products.size, key = { products[it].getStringSafe("id").ifEmpty { "index-$it" } }) { index ->
                             val product = products[index]
                             var showEditDialog by remember { mutableStateOf(false) }
                             PendingProductItem(
@@ -72,12 +77,13 @@ fun RequestProductScreen(viewModel: RequestProductViewModel = viewModel()) {
                                     product = product,
                                     onDismiss = { showEditDialog = false },
                                     onSave = { name, category, barcode ->
-                                        val id = product.get("id")?.asString ?: return@EditProductDialog
-                                        val buyPrice = if (product.has("buy_price") && !product.get("buy_price").isJsonNull) product.get("buy_price").asString else "0"
-                                        val sellPrice = if (product.has("sell_price") && !product.get("sell_price").isJsonNull) product.get("sell_price").asString else "0"
+                                        val id = product.getStringSafe("id")
+                                        if (id.isEmpty()) return@EditProductDialog
+                                        val buyPrice = product.getStringSafe("buy_price", "0")
+                                        val sellPrice = product.getStringSafe("sell_price", "0")
                                         val stock = if (product.has("stock") && !product.get("stock").isJsonNull) product.get("stock").asInt else 0
-                                        val desc = if (product.has("description") && !product.get("description").isJsonNull) product.get("description").asString else ""
-                                        val imgUrl = if (product.has("image_url") && !product.get("image_url").isJsonNull) product.get("image_url").asString else ""
+                                        val desc = product.getStringSafe("description")
+                                        val imgUrl = product.getStringSafe("image_url")
 
                                         viewModel.updateProduct(id, name, category, barcode, buyPrice, sellPrice, stock, desc, imgUrl)
                                         showEditDialog = false
@@ -113,12 +119,10 @@ fun PendingProductItem(
     onReject: (String) -> Unit,
     onEdit: () -> Unit
 ) {
-    val id = product.get("id")?.asString ?: ""
-    val name = product.get("name")?.asString ?: "Unknown"
-    val barcode = product.get("barcode")?.asString ?: "-"
-    val photoUrl = if (product.has("image_url") && !product.get("image_url").isJsonNull) {
-        product.get("image_url").asString
-    } else ""
+    val id = product.getStringSafe("id")
+    val name = product.getStringSafe("name", "Unknown")
+    val barcode = product.getStringSafe("barcode", "-")
+    val photoUrl = product.getStringSafe("image_url")
 
     val baseUrl = "https://api-go-v1.free-account.my.id"
     val fullImageUrl = if (photoUrl.startsWith("/")) "$baseUrl$photoUrl" else photoUrl
