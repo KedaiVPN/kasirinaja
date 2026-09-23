@@ -83,7 +83,7 @@ fun PulsatingDotsLoader(modifier: Modifier = Modifier) {
         scales.forEach { scale ->
             Box(
                 modifier = Modifier
-                    .size(24.dp) // Ukuran diperbesar dari 14dp ke 24dp
+                    .size(17.dp)
                     .graphicsLayer {
                         scaleX = scale.value
                         scaleY = scale.value
