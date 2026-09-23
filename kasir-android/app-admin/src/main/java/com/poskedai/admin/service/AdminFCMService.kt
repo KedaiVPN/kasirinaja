@@ -48,6 +48,18 @@ class AdminFCMService : FirebaseMessagingService() {
         super.onMessageReceived(remoteMessage)
         Log.d("AdminFCMService", "Message received from: ${remoteMessage.from}")
 
+        // Handle force‑logout push (sent when the store is deleted)
+        val forceLogout = remoteMessage.data["type"] == "force_logout"
+        if (forceLogout) {
+            Log.d("AdminFCMService", "Force‑logout command received – clearing local auth data")
+            TokenManager(applicationContext).clearToken()
+            // Optional: open Login screen (MainActivity will redirect based on auth state)
+            val loginIntent = android.content.Intent(this, com.poskedai.admin.MainActivity::class.java)
+            loginIntent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            startActivity(loginIntent)
+            return
+        }
+
         val title = remoteMessage.notification?.title ?: remoteMessage.data["title"] ?: "Pemberitahuan Admin"
         val body = remoteMessage.notification?.body ?: remoteMessage.data["body"] ?: ""
 

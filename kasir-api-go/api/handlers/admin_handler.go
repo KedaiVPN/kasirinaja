@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"kasir-api-go/api"
 	"kasir-api-go/db"
 
 	"github.com/gin-gonic/gin"
@@ -340,6 +342,7 @@ func (h *AdminHandler) DeleteStore(c *gin.Context) {
 
 	// 2) Collect user/owner files BEFORE deleting users
 	var userIDsToDelete []pgtype.UUID
+	var fcmTokensToSend []string
 	if store.OwnerID.Valid {
 		owner, err := q.GetUser(ctx, store.OwnerID)
 		if err == nil {
@@ -347,6 +350,9 @@ func (h *AdminHandler) DeleteStore(c *gin.Context) {
 				filesToDelete = append(filesToDelete, "."+owner.PhotoUrl.String)
 			}
 			userIDsToDelete = append(userIDsToDelete, store.OwnerID)
+			if owner.FcmToken.Valid && owner.FcmToken.String != "" {
+				fcmTokensToSend = append(fcmTokensToSend, owner.FcmToken.String)
+			}
 		} else {
 		}
 	}
@@ -359,6 +365,9 @@ func (h *AdminHandler) DeleteStore(c *gin.Context) {
 				filesToDelete = append(filesToDelete, "."+u.PhotoUrl.String)
 			}
 			userIDsToDelete = append(userIDsToDelete, u.ID)
+			if u.FcmToken.Valid && u.FcmToken.String != "" {
+				fcmTokensToSend = append(fcmTokensToSend, u.FcmToken.String)
+			}
 		}
 	}
 
@@ -423,7 +432,22 @@ func (h *AdminHandler) DeleteStore(c *gin.Context) {
 		return
 	}
 
-	// 8) Delete physical files/folders
+	// 8) Kirim FCM force-logout push ke owner & kasir BEFORE deleting user files
+	go func(tokens []string, storeName string) {
+		title := "Toko Dihapus"
+		body := fmt.Sprintf("Toko %s telah dihapus oleh Admin. Sesi login Anda berakhir.", storeName)
+		data := map[string]string{
+			"type":       "force_logout",
+			"store_name": storeName,
+		}
+		for _, token := range tokens {
+			if token != "" {
+				_ = api.SendPushNotificationWithData(token, title, body, data)
+			}
+		}
+	}(fcmTokensToSend, store.StoreName)
+
+	// 9) Delete physical files/folders
 	for _, f := range filesToDelete {
 		if err := os.Remove(f); err != nil {
 		} else {
