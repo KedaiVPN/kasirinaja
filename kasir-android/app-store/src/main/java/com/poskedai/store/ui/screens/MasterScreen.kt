@@ -430,10 +430,11 @@ private class MasterContinuousBarcodeAnalyzer(private val onBarcodeScanned: (Str
         BarcodeScannerOptions.Builder().build()
     )
 
-    // Cooldown untuk mencegah spam search query
-    private var lastBarcode = ""
-    private var lastTime = 0L
-    private val COOLDOWN_MS = 1500L
+    // Stability: barcode harus terdeteksi sama di N frame berturut-turut
+    // sebelum dianggap valid (mencegah salah tangkap saat kamera belum fokus)
+    private var lastDetected: String? = null
+    private var stableCount = 0
+    private val MIN_STABLE_FRAMES = 3
 
     @SuppressLint("UnsafeOptInUsageError")
     override fun analyze(imageProxy: ImageProxy) {
@@ -443,15 +444,29 @@ private class MasterContinuousBarcodeAnalyzer(private val onBarcodeScanned: (Str
             scanner.process(image)
                 .addOnSuccessListener { barcodes ->
                     if (barcodes.isNotEmpty()) {
-                        val displayValue = barcodes[0].rawValue
-                        // Debounce: hanya process jika barcode baru atau cooldown habis
-                        if (displayValue != null && (displayValue != lastBarcode || System.currentTimeMillis() - lastTime > COOLDOWN_MS)) {
-                            if (displayValue.isNotEmpty()) {
-                                onBarcodeScanned(displayValue)
+                        val raw = barcodes[0].rawValue
+                        if (!raw.isNullOrEmpty()) {
+                            if (raw == lastDetected) {
+                                stableCount++
+                            } else {
+                                lastDetected = raw
+                                stableCount = 1
                             }
-                            lastBarcode = displayValue
-                            lastTime = System.currentTimeMillis()
+                            if (stableCount >= MIN_STABLE_FRAMES) {
+                                onBarcodeScanned(raw)
+                                // reset agar tidak trigger ulang barcode yang sama
+                                lastDetected = null
+                                stableCount = 0
+                            }
+                        } else {
+                            // frame tanpa barcode: reset stability
+                            lastDetected = null
+                            stableCount = 0
                         }
+                    } else {
+                        // frame tanpa barcode: reset stability
+                        lastDetected = null
+                        stableCount = 0
                     }
                 }
                 .addOnFailureListener {

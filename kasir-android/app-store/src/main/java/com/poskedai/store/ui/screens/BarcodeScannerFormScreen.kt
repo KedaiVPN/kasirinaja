@@ -157,10 +157,10 @@ private class BarcodeAnalyzer(private val onBarcodeScanned: (String) -> Unit) : 
         BarcodeScannerOptions.Builder().build() // Allow all formats
     )
 
-    // Debounce + stability: require same barcode in 2 consecutive frames
+    // Debounce + stability: require same barcode in N consecutive frames
     private var lastDetected: String? = null
     private var stableCount = 0
-    private val MIN_STABLE_FRAMES = 2
+    private val MIN_STABLE_FRAMES = 3
 
     @SuppressLint("UnsafeOptInUsageError")
     override fun analyze(imageProxy: ImageProxy) {
@@ -184,7 +184,13 @@ private class BarcodeAnalyzer(private val onBarcodeScanned: (String) -> Unit) : 
                                 lastDetected = null
                                 stableCount = 0
                             }
+                        } else {
+                            lastDetected = null
+                            stableCount = 0
                         }
+                    } else {
+                        lastDetected = null
+                        stableCount = 0
                     }
                 }
                 .addOnFailureListener {
