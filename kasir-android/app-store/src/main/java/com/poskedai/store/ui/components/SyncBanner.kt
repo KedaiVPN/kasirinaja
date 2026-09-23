@@ -46,13 +46,13 @@ import kotlin.math.sin
 
 /**
  * Overlay banner sinkronisasi melayang di bawah header.
- * Tidak menggeser konten utama — muncul melayang di atas.
- * Icon cloud-sync (awan + panah circular berputar) dengan background putih + teks.
+ * Cloud-sync icon: awan bergaris diagonal + panah circular berputar.
+ * Konversi dari CSS Uiverse.io by andrew-manzyk.
  */
 @Composable
 fun SyncBanner(
     isVisible: Boolean,
-    message: String = "Sinkronisasi dimulai...",
+    message: String = "Sinkronisasi dimulai",
     modifier: Modifier = Modifier
 ) {
     AnimatedVisibility(
@@ -75,12 +75,8 @@ fun SyncBanner(
                     .padding(horizontal = 20.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                CloudSyncIcon(
-                    size = 34.dp,
-                    cloudColor = GreenPrimary,
-                    arrowColor = GreenPrimaryLight
-                )
-                Spacer(modifier = Modifier.width(14.dp))
+                CloudSyncIcon(size = 36.dp)
+                Spacer(modifier = Modifier.width(12.dp))
                 Text(
                     text = message,
                     style = MaterialTheme.typography.bodyMedium,
@@ -93,107 +89,135 @@ fun SyncBanner(
     }
 }
 
-/**
- * Icon awan + panah circular yang berputar.
- * Konversi dari CSS cloud-sync loader (Uiverse.io by andrew-manzyk).
- */
+private fun lerp(a: Float, b: Float, t: Float): Float = a + (b - a) * t.coerceIn(0f, 1f)
+
 @Composable
 fun CloudSyncIcon(
     modifier: Modifier = Modifier,
-    size: Dp = 34.dp,
-    cloudColor: Color,
-    arrowColor: Color
+    size: Dp = 36.dp,
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "cloud_sync")
+    val transition = rememberInfiniteTransition(label = "cloud_sync")
 
-    // Rotasi panah circular — 1 putaran penuh per 1.2 detik
-    val rotation by infiniteTransition.animateFloat(
+    // Animasi 1: panah berputar 0->360 dalam 1s
+    val rotation by transition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1200, easing = LinearEasing),
+            animation = tween(durationMillis = 1000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
-        label = "cloud_rotation"
+        label = "rotation"
+    )
+
+    // Animasi 2: garis diagonal bergerak vertikal -10 -> 8 dalam ~750ms (1/1.33)
+    val lineOffset by transition.animateFloat(
+        initialValue = -10f,
+        targetValue = 8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 750, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "lines"
+    )
+
+    // Animasi 3: titik bergerak (cloud keyframe) 0->1 dalam 2s
+    val cloudT by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "cloud"
     )
 
     Canvas(modifier = modifier.size(size)) {
-        val w = this.size.width
-        val h = this.size.height
-        val cx = w / 2f
-        val cloudCenterY = h * 0.38f
+        val sw = size.toPx() / 100f
 
-        // --- Awan: 3 lingkaran bertumpuk + dasar rounded rect ---
-        val rBig = w * 0.22f
-        val rSmall = w * 0.15f
+        // === 1. BENTUK AWAN (clipped) ===
+        val cloudPath = Path().apply {
+            // Dasar awan — rounded rect di tengah bawah
+            addRoundRect(
+                androidx.compose.ui.geometry.RoundRect(
+                    left = 22f * sw,
+                    top = 40f * sw,
+                    right = 78f * sw,
+                    bottom = 62f * sw,
+                    cornerRadius = CornerRadius(10f * sw, 10f * sw)
+                )
+            )
+            // Bundar kiri
+            addOval(androidx.compose.ui.geometry.Rect(
+                left = 20f * sw, top = 35f * sw,
+                right = 45f * sw, bottom = 60f * sw
+            ))
+            // Bundar tengah (paling besar)
+            addOval(androidx.compose.ui.geometry.Rect(
+                left = 35f * sw, top = 25f * sw,
+                right = 65f * sw, bottom = 55f * sw
+            ))
+            // Bundar kanan
+            addOval(androidx.compose.ui.geometry.Rect(
+                left = 55f * sw, top = 35f * sw,
+                right = 80f * sw, bottom = 60f * sw
+            ))
+        }
 
-        // Lingkaran kiri
-        drawCircle(
-            cloudColor,
-            radius = rSmall,
-            center = Offset(cx - w * 0.22f, cloudCenterY - rSmall * 0.2f)
-        )
-        // Lingkaran tengah (paling besar)
-        drawCircle(
-            cloudColor,
-            radius = rBig,
-            center = Offset(cx, cloudCenterY - rBig * 0.55f)
-        )
-        // Lingkaran kanan
-        drawCircle(
-            cloudColor,
-            radius = rSmall,
-            center = Offset(cx + w * 0.22f, cloudCenterY - rSmall * 0.2f)
-        )
-        // Badan awan (rounded rect)
-        drawRoundRect(
-            color = cloudColor,
-            topLeft = Offset(cx - w * 0.32f, cloudCenterY - rSmall * 0.2f),
-            size = Size(w * 0.64f, rBig * 0.85f),
-            cornerRadius = CornerRadius(rBig * 0.4f, rBig * 0.4f)
-        )
+        // Draw cloud body (fill solid)
+        drawPath(cloudPath, GreenPrimary)
 
-        // --- Panah circular berputar di bawah awan ---
-        val arrowCenterY = h * 0.72f
-        val arrowRadius = w * 0.28f
-        val strokeW = w * 0.075f
+        // === 2. GARIS DIAGONAL bergerak (rotate -65deg, translateY) ===
+        rotate(degrees = -65f, pivot = Offset(50f * sw, 50f * sw)) {
+            val yBase = 50f * sw + lineOffset * sw
+            for (i in -2..3) {
+                val x = (50f + i * 14f) * sw
+                drawLine(
+                    color = GreenPrimaryLight.copy(alpha = 0.85f),
+                    start = Offset(x, yBase - 20f * sw),
+                    end = Offset(x, yBase + 20f * sw),
+                    strokeWidth = 5f * sw,
+                    cap = StrokeCap.Round
+                )
+            }
+        }
 
-        rotate(rotation, pivot = Offset(cx, arrowCenterY)) {
-            // Busur (arc) — hampir penuh (300 derajat)
+        // === 3. PANAH CIRCULAR berputar di bawah awan ===
+        val arrowCY = 70f * sw
+        val arrowR = 18f * sw
+        val strokeW = 3.5f * sw
+
+        rotate(degrees = rotation, pivot = Offset(50f * sw, arrowCY)) {
+            // Busur 300 derajat
             drawArc(
-                color = arrowColor,
+                color = GreenPrimaryLight,
                 startAngle = -40f,
                 sweepAngle = 300f,
                 useCenter = false,
-                topLeft = Offset(cx - arrowRadius, arrowCenterY - arrowRadius),
-                size = Size(arrowRadius * 2f, arrowRadius * 2f),
+                topLeft = Offset((50f - arrowR) * sw, (arrowCY / sw - arrowR) * sw),
+                size = Size(arrowR * 2f * sw, arrowR * 2f * sw),
                 style = Stroke(width = strokeW, cap = StrokeCap.Round)
             )
 
-            // Kepala panah di ujung busur
-            // Sudut akhir: -40 + 300 = 260 derajat
-            val endAngleRad = Math.toRadians(260.0)
-            val endX = cx + arrowRadius * cos(endAngleRad).toFloat()
-            val endY = arrowCenterY + arrowRadius * sin(endAngleRad).toFloat()
+            // Kepala panah
+            val endRad = Math.toRadians(220.0)
+            val ex = (50f + arrowR * cos(endRad)).toFloat() * sw
+            val ey = (arrowCY / sw + arrowR * sin(endRad)).toFloat() * sw
+            val tx = (-sin(endRad)).toFloat()
+            val ty = (cos(endRad)).toFloat()
 
-            // Arah tangen (searah jarum jam pada koordinat layar)
-            val tx = -sin(endAngleRad).toFloat()
-            val ty = cos(endAngleRad).toFloat()
-
-            val headLen = w * 0.10f
-            val headWidth = w * 0.07f
-            val tipX = endX + tx * headLen
-            val tipY = endY + ty * headLen
-            val px = -ty * headWidth
-            val py = tx * headWidth
+            val headLen = 7f * sw
+            val tipX = ex + tx * headLen
+            val tipY = ey + ty * headLen
+            val px = -ty * 4f * sw
+            val py = tx * 4f * sw
 
             val head = Path().apply {
                 moveTo(tipX, tipY)
-                lineTo(endX + px, endY + py)
-                lineTo(endX - px, endY - py)
+                lineTo(ex + px, ey + py)
+                lineTo(ex - px, ey - py)
                 close()
             }
-            drawPath(head, arrowColor)
+            drawPath(head, GreenPrimaryLight)
         }
     }
 }
