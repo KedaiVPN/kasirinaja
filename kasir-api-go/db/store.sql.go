@@ -53,6 +53,15 @@ func (q *Queries) CreateStore(ctx context.Context, arg CreateStoreParams) (Store
 	return i, err
 }
 
+const deleteStore = `-- name: DeleteStore :exec
+DELETE FROM stores WHERE id = $1
+`
+
+func (q *Queries) DeleteStore(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteStore, id)
+	return err
+}
+
 const getStore = `-- name: GetStore :one
 SELECT id, owner_id, store_code, store_name, address, phone, is_active, created_at, updated_at, logo_url, pro_expires_at FROM stores
 WHERE id = $1 LIMIT 1

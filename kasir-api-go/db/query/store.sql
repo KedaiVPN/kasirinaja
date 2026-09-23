@@ -19,3 +19,6 @@ SET store_name = COALESCE($2, store_name),
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
 RETURNING *;
+
+-- name: DeleteStore :exec
+DELETE FROM stores WHERE id = $1;

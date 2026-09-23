@@ -90,3 +90,12 @@ WHERE store_id = $1 AND cashier_id = $2 AND is_reported = FALSE;
 UPDATE transactions
 SET is_reported = $1
 WHERE id = $2;
+
+-- name: DeleteTransactionItemsByStore :exec
+DELETE FROM transaction_items
+WHERE transaction_id IN (
+    SELECT id FROM transactions WHERE store_id = $1
+);
+
+-- name: DeleteTransactionsByStore :exec
+DELETE FROM transactions WHERE store_id = $1;

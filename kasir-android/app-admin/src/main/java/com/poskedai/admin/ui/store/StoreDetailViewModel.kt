@@ -23,6 +23,9 @@ class StoreDetailViewModel : ViewModel() {
     private val _actionMessage = MutableStateFlow<String?>(null)
     val actionMessage: StateFlow<String?> = _actionMessage.asStateFlow()
 
+    private val _storeDeleted = MutableStateFlow(false)
+    val storeDeleted: StateFlow<Boolean> = _storeDeleted.asStateFlow()
+
     fun loadStoreDetail(storeId: String) {
         viewModelScope.launch {
             _uiState.value = StoreDetailUiState.Loading
@@ -57,5 +60,25 @@ class StoreDetailViewModel : ViewModel() {
 
     fun clearActionMessage() {
         _actionMessage.value = null
+    }
+
+    fun deleteStore(storeId: String) {
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.adminApi.deleteStore(storeId)
+                if (response.isSuccessful) {
+                    _actionMessage.value = "Toko berhasil dihapus beserta semua datanya"
+                    _storeDeleted.value = true
+                } else {
+                    _actionMessage.value = "Gagal menghapus toko (Code: ${response.code()})"
+                }
+            } catch (e: Exception) {
+                _actionMessage.value = e.message ?: "Gagal menghapus toko"
+            }
+        }
+    }
+
+    fun clearStoreDeleted() {
+        _storeDeleted.value = false
     }
 }

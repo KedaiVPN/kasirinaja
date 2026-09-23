@@ -38,10 +38,12 @@ fun StoreDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val actionMessage by viewModel.actionMessage.collectAsState()
+    val storeDeleted by viewModel.storeDeleted.collectAsState()
     val context = LocalContext.current
 
     var showUpgradeDialog by remember { mutableStateOf(false) }
     var showDeactivateDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(storeId) {
         viewModel.loadStoreDetail(storeId)
@@ -51,6 +53,13 @@ fun StoreDetailScreen(
         actionMessage?.let {
             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
             viewModel.clearActionMessage()
+        }
+    }
+
+    LaunchedEffect(storeDeleted) {
+        if (storeDeleted) {
+            viewModel.clearStoreDeleted()
+            onBackClick()
         }
     }
 
@@ -201,6 +210,18 @@ fun StoreDetailScreen(
                                     Text("Nonaktifkan Pro", fontWeight = FontWeight.Bold)
                                 }
                             }
+
+                            // Tombol Hapus Toko (destruktif) - di bawah Nonaktifkan Pro
+                            Button(
+                                onClick = { showDeleteDialog = true },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                            ) {
+                                Text("Hapus Toko", fontWeight = FontWeight.Bold, color = Color.White)
+                            }
                         }
                     }
                 }
@@ -236,6 +257,36 @@ fun StoreDetailScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showDeactivateDialog = false }) {
+                    Text("Batal")
+                }
+            }
+        )
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Hapus Toko?") },
+            text = {
+                Text(
+                    "PERINGATAN: Semua data yang berkaitan dengan toko ini akan dihapus permanen, " +
+                        "termasuk produk, riwayat transaksi, foto toko, foto owner, serta akun dan foto " +
+                        "karyawan/kasir. Tindakan ini tidak dapat dibatalkan."
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteStore(storeId)
+                        showDeleteDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Ya, Hapus Permanen")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
                     Text("Batal")
                 }
             }

@@ -3,6 +3,7 @@ package com.poskedai.core.network
 import com.google.gson.JsonObject
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
@@ -58,4 +59,7 @@ interface AdminApi {
         @Path("id") id: String,
         @Body request: UpdateProRequestDto
     ): Response<JsonObject>
+
+    @DELETE("admin/stores/{id}")
+    suspend fun deleteStore(@Path("id") id: String): Response<JsonObject>
 }

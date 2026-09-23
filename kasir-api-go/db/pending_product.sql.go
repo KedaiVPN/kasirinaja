@@ -80,6 +80,15 @@ func (q *Queries) DeletePendingProduct(ctx context.Context, id pgtype.UUID) erro
 	return err
 }
 
+const deletePendingProductsByStore = `-- name: DeletePendingProductsByStore :exec
+DELETE FROM pending_products WHERE store_id = $1
+`
+
+func (q *Queries) DeletePendingProductsByStore(ctx context.Context, storeID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deletePendingProductsByStore, storeID)
+	return err
+}
+
 const getPendingProduct = `-- name: GetPendingProduct :one
 SELECT id, name, buy_price, sell_price, stock, category, description, barcode, image_url, created_at, store_id FROM pending_products WHERE id = $1
 `
@@ -109,6 +118,42 @@ SELECT id, name, buy_price, sell_price, stock, category, description, barcode, i
 
 func (q *Queries) ListPendingProducts(ctx context.Context) ([]PendingProduct, error) {
 	rows, err := q.db.Query(ctx, listPendingProducts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PendingProduct
+	for rows.Next() {
+		var i PendingProduct
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.BuyPrice,
+			&i.SellPrice,
+			&i.Stock,
+			&i.Category,
+			&i.Description,
+			&i.Barcode,
+			&i.ImageUrl,
+			&i.CreatedAt,
+			&i.StoreID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPendingProductsByStore = `-- name: ListPendingProductsByStore :many
+SELECT id, name, buy_price, sell_price, stock, category, description, barcode, image_url, created_at, store_id FROM pending_products WHERE store_id = $1
+`
+
+func (q *Queries) ListPendingProductsByStore(ctx context.Context, storeID pgtype.UUID) ([]PendingProduct, error) {
+	rows, err := q.db.Query(ctx, listPendingProductsByStore, storeID)
 	if err != nil {
 		return nil, err
 	}

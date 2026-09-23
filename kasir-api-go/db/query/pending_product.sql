@@ -21,3 +21,9 @@ WHERE id = $1;
 
 -- name: CountPendingProducts :one
 SELECT COUNT(*) FROM pending_products;
+
+-- name: ListPendingProductsByStore :many
+SELECT * FROM pending_products WHERE store_id = $1;
+
+-- name: DeletePendingProductsByStore :exec
+DELETE FROM pending_products WHERE store_id = $1;

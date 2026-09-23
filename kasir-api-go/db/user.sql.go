@@ -121,8 +121,8 @@ SELECT id, full_name, email, phone, password_hash, role, store_id, is_active, cr
 WHERE (LOWER(email) = LOWER($1) OR LOWER(full_name) = LOWER($1)) LIMIT 1
 `
 
-func (q *Queries) GetUserByIdentifier(ctx context.Context, identifier string) (User, error) {
-	row := q.db.QueryRow(ctx, getUserByIdentifier, identifier)
+func (q *Queries) GetUserByIdentifier(ctx context.Context, lower string) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByIdentifier, lower)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -141,20 +141,28 @@ func (q *Queries) GetUserByIdentifier(ctx context.Context, identifier string) (U
 	return i, err
 }
 
-const updateUserPassword = `-- name: UpdateUserPassword :exec
-UPDATE users
-SET password_hash = $2, updated_at = CURRENT_TIMESTAMP
-WHERE id = $1
+const listAdminFCMTokens = `-- name: ListAdminFCMTokens :many
+SELECT fcm_token FROM users WHERE LOWER(role) = 'admin' AND fcm_token IS NOT NULL AND fcm_token != ''
 `
 
-type UpdateUserPasswordParams struct {
-	ID           pgtype.UUID `json:"id"`
-	PasswordHash string      `json:"password_hash"`
-}
-
-func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
-	_, err := q.db.Exec(ctx, updateUserPassword, arg.ID, arg.PasswordHash)
-	return err
+func (q *Queries) ListAdminFCMTokens(ctx context.Context) ([]pgtype.Text, error) {
+	rows, err := q.db.Query(ctx, listAdminFCMTokens)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []pgtype.Text
+	for rows.Next() {
+		var fcm_token pgtype.Text
+		if err := rows.Scan(&fcm_token); err != nil {
+			return nil, err
+		}
+		items = append(items, fcm_token)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listStoreOwners = `-- name: ListStoreOwners :many
@@ -272,30 +280,6 @@ func (q *Queries) ListUsersByStore(ctx context.Context, storeID pgtype.UUID) ([]
 	return items, nil
 }
 
-const listAdminFCMTokens = `-- name: ListAdminFCMTokens :many
-SELECT fcm_token FROM users WHERE LOWER(role) = 'admin' AND fcm_token IS NOT NULL AND fcm_token != ''
-`
-
-func (q *Queries) ListAdminFCMTokens(ctx context.Context) ([]pgtype.Text, error) {
-	rows, err := q.db.Query(ctx, listAdminFCMTokens)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []pgtype.Text
-	for rows.Next() {
-		var i pgtype.Text
-		if err := rows.Scan(&i); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const updateUserFCMToken = `-- name: UpdateUserFCMToken :exec
 UPDATE users SET fcm_token = $2 WHERE id = $1
 `
@@ -307,6 +291,22 @@ type UpdateUserFCMTokenParams struct {
 
 func (q *Queries) UpdateUserFCMToken(ctx context.Context, arg UpdateUserFCMTokenParams) error {
 	_, err := q.db.Exec(ctx, updateUserFCMToken, arg.ID, arg.FcmToken)
+	return err
+}
+
+const updateUserPassword = `-- name: UpdateUserPassword :exec
+UPDATE users
+SET password_hash = $2, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+`
+
+type UpdateUserPasswordParams struct {
+	ID           pgtype.UUID `json:"id"`
+	PasswordHash string      `json:"password_hash"`
+}
+
+func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
+	_, err := q.db.Exec(ctx, updateUserPassword, arg.ID, arg.PasswordHash)
 	return err
 }
 

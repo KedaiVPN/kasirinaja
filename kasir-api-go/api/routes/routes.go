@@ -18,7 +18,7 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool, rd
 	productHandler := handlers.NewProductHandler(queries, wsManager)
 	transactionHandler := handlers.NewTransactionHandler(queries, pool)
 	authHandler := handlers.NewAuthHandler(queries, pool)
-	adminHandler := handlers.NewAdminHandler(queries)
+	adminHandler := handlers.NewAdminHandler(queries, pool)
 	storeHandler := handlers.NewStoreHandler(queries)
 	reportHandler := handlers.NewReportHandler(queries)
 	feedbackHandler := handlers.NewFeedbackHandler(queries)
@@ -152,6 +152,7 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool, rd
 			adminRoutes.GET("/stores", adminHandler.ListStores)
 			adminRoutes.GET("/stores/:id", adminHandler.GetStoreDetail)
 			adminRoutes.PUT("/stores/:id/pro", adminHandler.UpdateStoreProStatus)
+			adminRoutes.DELETE("/stores/:id", adminHandler.DeleteStore)
 
 			// Admin Subscription Management
 			adminRoutes.GET("/subscription-plans", subscriptionHandler.AdminListPlans)

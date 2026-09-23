@@ -162,6 +162,27 @@ func (q *Queries) CreateTransactionItem(ctx context.Context, arg CreateTransacti
 	return i, err
 }
 
+const deleteTransactionItemsByStore = `-- name: DeleteTransactionItemsByStore :exec
+DELETE FROM transaction_items
+WHERE transaction_id IN (
+    SELECT id FROM transactions WHERE store_id = $1
+)
+`
+
+func (q *Queries) DeleteTransactionItemsByStore(ctx context.Context, storeID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteTransactionItemsByStore, storeID)
+	return err
+}
+
+const deleteTransactionsByStore = `-- name: DeleteTransactionsByStore :exec
+DELETE FROM transactions WHERE store_id = $1
+`
+
+func (q *Queries) DeleteTransactionsByStore(ctx context.Context, storeID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteTransactionsByStore, storeID)
+	return err
+}
+
 const getAllStoreTransactions = `-- name: GetAllStoreTransactions :many
 SELECT id, store_id, cashier_id, invoice_number, total_amount, paid_amount, change_amount, payment_method, transaction_time, sync_status, device_id, is_active, created_at, updated_at, is_reported FROM transactions
 WHERE store_id = $1

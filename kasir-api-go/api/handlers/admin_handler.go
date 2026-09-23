@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -12,14 +13,16 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type AdminHandler struct {
 	queries *db.Queries
+	pool    *pgxpool.Pool
 }
 
-func NewAdminHandler(queries *db.Queries) *AdminHandler {
-	return &AdminHandler{queries: queries}
+func NewAdminHandler(queries *db.Queries, pool *pgxpool.Pool) *AdminHandler {
+	return &AdminHandler{queries: queries, pool: pool}
 }
 
 type UpdateProRequest struct {
@@ -292,4 +295,106 @@ func (h *AdminHandler) RejectProduct(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Product rejected and deleted successfully"})
+}
+
+// DeleteStore handles the admin action to permanently delete a store and all its cascade dependencies
+func (h *AdminHandler) DeleteStore(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid store ID"})
+		return
+	}
+	storeUUID := pgtype.UUID{Bytes: id, Valid: true}
+
+	// Begin transaction
+	tx, err := h.pool.Begin(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start transaction: " + err.Error()})
+		return
+	}
+	defer tx.Rollback(c.Request.Context())
+	
+	q := h.queries.WithTx(tx)
+
+	// Collect files to delete (photos, pending images, logo)
+	var filesToDelete []string
+
+	// 1) Store logo
+	store, err := q.GetStore(c.Request.Context(), storeUUID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get store: " + err.Error()})
+		return
+	}
+	if store.LogoUrl.Valid && store.LogoUrl.String != "" {
+		if strings.HasPrefix(store.LogoUrl.String, "/uploads/") {
+			filesToDelete = append(filesToDelete, "."+store.LogoUrl.String)
+		}
+	}
+
+	// 2) Pending product images
+	pending, err := q.ListPendingProductsByStore(c.Request.Context(), storeUUID)
+	if err == nil {
+		for _, p := range pending {
+			if p.ImageUrl.Valid && strings.HasPrefix(p.ImageUrl.String, "/uploads/") {
+				filesToDelete = append(filesToDelete, "."+p.ImageUrl.String)
+			}
+		}
+		_ = q.DeletePendingProductsByStore(c.Request.Context(), storeUUID)
+	}
+
+	// 3) User photos + delete users
+	users, err := q.ListUsersByStore(c.Request.Context(), storeUUID)
+	if err == nil {
+		for _, u := range users {
+			if u.PhotoUrl.Valid && strings.HasPrefix(u.PhotoUrl.String, "/uploads/") {
+				filesToDelete = append(filesToDelete, "."+u.PhotoUrl.String)
+			}
+		}
+		for _, u := range users {
+			_ = q.DeleteUser(c.Request.Context(), u.ID)
+		}
+	}
+
+	// 4) Store owner (owner_id from stores)
+	if store.OwnerID.Valid {
+		ownerUser, err := q.GetUser(c.Request.Context(), store.OwnerID)
+		if err == nil {
+			if ownerUser.PhotoUrl.Valid && strings.HasPrefix(ownerUser.PhotoUrl.String, "/uploads/") {
+				filesToDelete = append(filesToDelete, "."+ownerUser.PhotoUrl.String)
+			}
+			_ = q.DeleteUser(c.Request.Context(), store.OwnerID)
+		}
+	}
+
+	// 5) Delete transaction items (cascade)
+	_ = q.DeleteTransactionItemsByStore(c.Request.Context(), storeUUID)
+
+	// 6) Delete transactions
+	_ = q.DeleteTransactionsByStore(c.Request.Context(), storeUUID)
+
+	// 7) Delete store products (cascade stock movements via existing delete logic)
+	_ = q.DeleteStoreProductsByStore(c.Request.Context(), storeUUID)
+
+	// 8) Delete store row (after all dependent rows are gone)
+	_ = q.DeleteStore(c.Request.Context(), storeUUID)
+
+	// Commit transaction
+	if err := tx.Commit(c.Request.Context()); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Transaction commit failed: " + err.Error()})
+		return
+	}
+
+	// Delete collected files from disk
+	for _, f := range filesToDelete {
+		_ = os.Remove(f)
+	}
+
+	// Delete uploads folder entirely
+	uploadsDir := filepath.Join(".", "uploads", idParam)
+	_ = os.RemoveAll(uploadsDir)
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Store and all related data deleted successfully",
+	})
 }

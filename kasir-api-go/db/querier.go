@@ -28,11 +28,16 @@ type Querier interface {
 	DeleteCashierReport(ctx context.Context, arg DeleteCashierReportParams) error
 	DeleteMasterProduct(ctx context.Context, id pgtype.UUID) error
 	DeletePendingProduct(ctx context.Context, id pgtype.UUID) error
+	DeletePendingProductsByStore(ctx context.Context, storeID pgtype.UUID) error
 	DeleteStockMovementsByMasterProduct(ctx context.Context, masterProductID pgtype.UUID) error
+	DeleteStore(ctx context.Context, id pgtype.UUID) error
 	DeleteStoreProduct(ctx context.Context, id pgtype.UUID) error
 	DeleteStoreProductsByMasterID(ctx context.Context, masterProductID pgtype.UUID) error
+	DeleteStoreProductsByStore(ctx context.Context, storeID pgtype.UUID) error
 	DeleteSubscriptionPlan(ctx context.Context, id int32) error
 	DeleteTransactionItemsByMasterProduct(ctx context.Context, masterProductID pgtype.UUID) error
+	DeleteTransactionItemsByStore(ctx context.Context, storeID pgtype.UUID) error
+	DeleteTransactionsByStore(ctx context.Context, storeID pgtype.UUID) error
 	DeleteUser(ctx context.Context, id pgtype.UUID) error
 	GetAllStoreTransactions(ctx context.Context, storeID pgtype.UUID) ([]Transaction, error)
 	GetAllStoreTransactionsByCashier(ctx context.Context, arg GetAllStoreTransactionsByCashierParams) ([]Transaction, error)
@@ -56,10 +61,13 @@ type Querier interface {
 	GetUnreportedTransactionsByCashier(ctx context.Context, arg GetUnreportedTransactionsByCashierParams) ([]Transaction, error)
 	GetUser(ctx context.Context, id pgtype.UUID) (User, error)
 	GetUserByEmail(ctx context.Context, email pgtype.Text) (User, error)
+	GetUserByIdentifier(ctx context.Context, lower string) (User, error)
 	ListActiveSubscriptionPlans(ctx context.Context) ([]SubscriptionPlan, error)
+	ListAdminFCMTokens(ctx context.Context) ([]pgtype.Text, error)
 	ListAllSubscriptionPlans(ctx context.Context) ([]SubscriptionPlan, error)
 	ListMasterProducts(ctx context.Context) ([]ListMasterProductsRow, error)
 	ListPendingProducts(ctx context.Context) ([]PendingProduct, error)
+	ListPendingProductsByStore(ctx context.Context, storeID pgtype.UUID) ([]PendingProduct, error)
 	ListStoreOwners(ctx context.Context, storeID pgtype.UUID) ([]User, error)
 	ListStoreProductsByStore(ctx context.Context, storeID pgtype.UUID) ([]ListStoreProductsByStoreRow, error)
 	ListSubscriptionTransactions(ctx context.Context) ([]ListSubscriptionTransactionsRow, error)
@@ -76,6 +84,7 @@ type Querier interface {
 	UpdateSubscriptionTransactionStatus(ctx context.Context, arg UpdateSubscriptionTransactionStatusParams) (SubscriptionTransaction, error)
 	UpdateTransactionReportStatus(ctx context.Context, arg UpdateTransactionReportStatusParams) error
 	UpdateUserFCMToken(ctx context.Context, arg UpdateUserFCMTokenParams) error
+	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
 	UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) (User, error)
 	UpdateUserStoreID(ctx context.Context, arg UpdateUserStoreIDParams) error
 }
