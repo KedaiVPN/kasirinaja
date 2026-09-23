@@ -432,8 +432,8 @@ private class MasterContinuousBarcodeAnalyzer(private val onBarcodeScanned: (Str
 
     // Cooldown untuk mencegah spam search query
     private var lastBarcode = ""
-    private var lastTime = 0f
-    private const val COOLDOWN_MS = 1500f
+    private var lastTime = 0L
+    private val COOLDOWN_MS = 1500L
 
     @SuppressLint("UnsafeOptInUsageError")
     override fun analyze(imageProxy: ImageProxy) {
@@ -445,9 +445,8 @@ private class MasterContinuousBarcodeAnalyzer(private val onBarcodeScanned: (Str
                     if (barcodes.isNotEmpty()) {
                         val displayValue = barcodes[0].rawValue
                         // Debounce: hanya process jika barcode baru atau cooldown habis
-                        if (displayValue != lastBarcode || System.currentTimeMillis() - lastTime > COOLDOWN_MS) {
-                            val displayValue = displayValue
-                            if (!displayValue.isNullOrEmpty()) {
+                        if (displayValue != null && (displayValue != lastBarcode || System.currentTimeMillis() - lastTime > COOLDOWN_MS)) {
+                            if (displayValue.isNotEmpty()) {
                                 onBarcodeScanned(displayValue)
                             }
                             lastBarcode = displayValue
