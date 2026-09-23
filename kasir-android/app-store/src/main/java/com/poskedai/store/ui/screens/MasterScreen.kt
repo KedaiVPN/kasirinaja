@@ -135,6 +135,8 @@ fun MasterScreen(
                     }
                 )
                 Box(modifier = Modifier.fillMaxSize().padding(16.dp).clip(RoundedCornerShape(16.dp))) {
+                    var camera by remember { mutableStateOf<androidx.camera.core.Camera?>(null) }
+                    var isFlashlightOn by remember { mutableStateOf(false) }
                     AndroidView(
                         factory = { ctx ->
                             val previewView = PreviewView(ctx)
@@ -160,7 +162,7 @@ fun MasterScreen(
 
                                 try {
                                     provider.unbindAll()
-                                    provider.bindToLifecycle(
+                                    camera = provider.bindToLifecycle(
                                         lifecycleOwner,
                                         cameraSelector,
                                         preview,
@@ -175,6 +177,23 @@ fun MasterScreen(
                         },
                         modifier = Modifier.fillMaxSize()
                     )
+                    // Flashlight Button
+                    IconButton(
+                        onClick = {
+                            isFlashlightOn = !isFlashlightOn
+                            camera?.cameraControl?.enableTorch(isFlashlightOn)
+                        },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(16.dp)
+                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = if (isFlashlightOn) Icons.Default.FlashOn else Icons.Default.FlashOff,
+                            contentDescription = "Toggle Flashlight",
+                            tint = Color.White
+                        )
+                    }
                     Text(
                         text = "Arahkan barcode ke area ini",
                         modifier = Modifier
