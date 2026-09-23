@@ -157,6 +157,11 @@ private class BarcodeAnalyzer(private val onBarcodeScanned: (String) -> Unit) : 
         BarcodeScannerOptions.Builder().build() // Allow all formats
     )
 
+    // Debounce + stability: require same barcode in 2 consecutive frames
+    private var lastDetected: String? = null
+    private var stableCount = 0
+    private val MIN_STABLE_FRAMES = 2
+
     @SuppressLint("UnsafeOptInUsageError")
     override fun analyze(imageProxy: ImageProxy) {
         val mediaImage = imageProxy.image
@@ -165,18 +170,27 @@ private class BarcodeAnalyzer(private val onBarcodeScanned: (String) -> Unit) : 
             scanner.process(image)
                 .addOnSuccessListener { barcodes ->
                     if (barcodes.isNotEmpty()) {
-                        val displayValue = barcodes[0].rawValue
-                        if (!displayValue.isNullOrEmpty()) {
-                            onBarcodeScanned(displayValue)
+                        val raw = barcodes[0].rawValue
+                        if (!raw.isNullOrEmpty()) {
+                            if (raw == lastDetected) {
+                                stableCount++
+                            } else {
+                                lastDetected = raw
+                                stableCount = 1
+                            }
+                            if (stableCount >= MIN_STABLE_FRAMES) {
+                                onBarcodeScanned(raw)
+                                // reset to avoid double‑trigger
+                                lastDetected = null
+                                stableCount = 0
+                            }
                         }
                     }
                 }
                 .addOnFailureListener {
                     // Handle failure
                 }
-                .addOnCompleteListener {
-                    imageProxy.close()
-                }
+                .addOnCompleteListener { imageProxy.close() }
         } else {
             imageProxy.close()
         }
