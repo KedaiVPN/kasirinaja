@@ -6,10 +6,14 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Share
@@ -90,47 +94,84 @@ fun ReceiptScreen(
                     }
                 }
             )
+        },
+        bottomBar = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 32.dp, end = 32.dp, top = 8.dp, bottom = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    shadowElevation = 4.dp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp)
+                        .clickable { onNavigateBack() }
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Kembali ke Dashboard",
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "Tutup & Kembali ke Dashboard",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
         }
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .background(Color(0xFFF5F5F5)) // Light gray background for contrast
         ) {
-            // This is the container we want to capture
-            AndroidView(
-                factory = { ctx ->
-                    ComposeView(ctx).apply {
-                        setContent {
-                            ReceiptContent(
-                                storeName = storeName,
-                                storeAddress = storeAddress,
-                                storeLogoUrl = storeLogoUrl,
-                                cashierName = cashierName,
-                                transaction = transaction,
-                                items = items
-                            )
-                        }
-                        post {
-                            viewToCapture = this
-                        }
-                    }
-                },
+            // Kita bungkus AndroidView dalam scrollable column
+            val scrollState = rememberScrollState()
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            Button(
-                onClick = onNavigateBack,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
             ) {
-                Text("Tutup & Kembali ke Dashboard")
+                // This is the container we want to capture
+                AndroidView(
+                    factory = { ctx ->
+                        ComposeView(ctx).apply {
+                            setContent {
+                                ReceiptContent(
+                                    storeName = storeName,
+                                    storeAddress = storeAddress,
+                                    storeLogoUrl = storeLogoUrl,
+                                    cashierName = cashierName,
+                                    transaction = transaction,
+                                    items = items
+                                )
+                            }
+                            post {
+                                viewToCapture = this
+                            }
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                )
+
+                Spacer(modifier = Modifier.height(32.dp)) // Extra padding at bottom of scroll
             }
         }
     }
