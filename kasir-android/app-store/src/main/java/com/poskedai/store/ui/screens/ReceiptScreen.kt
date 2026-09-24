@@ -124,7 +124,7 @@ fun ReceiptScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            "Tutup & Kembali ke Dashboard",
+                            "Tutup",
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
