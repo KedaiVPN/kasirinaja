@@ -11,15 +11,15 @@ import (
 
 // SendFeedbackEmail sends user feedback/critique/suggestion to EMAIL_KRITIK_SARAN
 func SendFeedbackEmail(senderName, senderEmail, senderRole, storeName, feedbackText string) error {
-	host := os.Getenv("SMTP_HOST")
-	portStr := os.Getenv("SMTP_PORT")
-	user := os.Getenv("SMTP_USER")
-	pass := strings.Trim(os.Getenv("SMTP_PASS"), `"`)
-	from := strings.Trim(os.Getenv("SMTP_FROM"), `"`)
+	host := os.Getenv("SMTP_FB_HOST")
+	portStr := os.Getenv("SMTP_FB_PORT")
+	user := os.Getenv("SMTP_FB_USER")
+	pass := strings.Trim(os.Getenv("SMTP_FB_PASS"), `"`)
+	from := strings.Trim(os.Getenv("SMTP_FB_FROM"), `"`)
 
 	recipient := os.Getenv("EMAIL_KRITIK_SARAN")
 	if recipient == "" {
-		recipient = "dev.kedaissh@gmail.com"
+		recipient = "kritiksaranposkedai@gmail.com"
 	}
 
 	port, err := strconv.Atoi(portStr)
