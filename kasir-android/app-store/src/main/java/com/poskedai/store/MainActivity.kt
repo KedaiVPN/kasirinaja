@@ -1,11 +1,10 @@
 package com.poskedai.store
 
 import android.os.Bundle
-import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
-import com.google.android.material.snackbar.Snackbar
+import android.widget.Toast
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
@@ -59,11 +58,8 @@ class MainActivity : ComponentActivity() {
 
         currentRoute.value = finalRoute
 
-        if (storeBlockedAlert && storeBlockedTitle != null && storeBlockedMessage != null) {
-            val rootView = findViewById<View>(android.R.id.content)
-            Snackbar.make(rootView, storeBlockedMessage, Snackbar.LENGTH_INDEFINITE)
-                .setAction("Tutup") { }
-                .show()
+        if (storeBlockedAlert && storeBlockedMessage != null) {
+            Toast.makeText(this, storeBlockedMessage, Toast.LENGTH_LONG).show()
         }
     }
 }
