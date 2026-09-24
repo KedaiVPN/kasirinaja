@@ -146,9 +146,22 @@ object ApiErrorParser {
         if (raw.isNullOrBlank()) return null
         return try {
             val json = JsonParser.parseString(raw).asJsonObject
-            val error = json.get("error")?.takeIf { !it.isJsonNull }?.asString
-            val message = json.get("message")?.takeIf { !it.isJsonNull }?.asString
-            (error ?: message)?.takeIf { it.isNotBlank() }
+            val errorElement = json.get("error")?.takeIf { !it.isJsonNull }
+            val messageElement = json.get("message")?.takeIf { !it.isJsonNull }
+            
+            if (errorElement != null && errorElement.isJsonObject) {
+                val errObj = errorElement.asJsonObject
+                val code = errObj.get("code")?.takeIf { !it.isJsonNull }?.asString
+                val msg = errObj.get("message")?.takeIf { !it.isJsonNull }?.asString
+                if (code == "STORE_BLOCKED") {
+                    return msg ?: "Toko ini sedang dikunci/diblokir oleh Admin. Silakan hubungi admin untuk membuka kunci."
+                }
+                return (msg ?: code)?.takeIf { it.isNotBlank() }
+            }
+            
+            val errorStr = errorElement?.takeIf { it.isJsonPrimitive }?.asString
+            val messageStr = messageElement?.takeIf { it.isJsonPrimitive }?.asString
+            (errorStr ?: messageStr)?.takeIf { it.isNotBlank() }
         } catch (_: Exception) {
             raw.takeIf { it.isNotBlank() && !it.trim().startsWith("<") }
         }

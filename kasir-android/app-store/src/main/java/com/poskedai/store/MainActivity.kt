@@ -1,9 +1,11 @@
 package com.poskedai.store
 
 import android.os.Bundle
+import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
+import com.google.android.material.snackbar.Snackbar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
@@ -46,6 +48,9 @@ class MainActivity : ComponentActivity() {
         if (intent == null) return
         val route = intent.getStringExtra("route")
         val transactionId = intent.getStringExtra("transaction_id")
+        val storeBlockedAlert = intent.getBooleanExtra("store_blocked_alert", false)
+        val storeBlockedTitle = intent.getStringExtra("store_blocked_title")
+        val storeBlockedMessage = intent.getStringExtra("store_blocked_message")
 
         var finalRoute = route
         if (route == "receipt" && transactionId != null) {
@@ -53,5 +58,12 @@ class MainActivity : ComponentActivity() {
         }
 
         currentRoute.value = finalRoute
+
+        if (storeBlockedAlert && storeBlockedTitle != null && storeBlockedMessage != null) {
+            val rootView = findViewById<View>(android.R.id.content)
+            Snackbar.make(rootView, storeBlockedMessage, Snackbar.LENGTH_INDEFINITE)
+                .setAction("Tutup") { }
+                .show()
+        }
     }
 }

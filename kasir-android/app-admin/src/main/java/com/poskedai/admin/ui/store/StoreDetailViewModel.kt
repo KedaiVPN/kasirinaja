@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.poskedai.core.network.AdminStoreDetailDto
 import com.poskedai.core.network.RetrofitClient
+import com.poskedai.core.network.ToggleBlockRequestDto
 import com.poskedai.core.network.UpdateProRequestDto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -60,6 +61,26 @@ class StoreDetailViewModel : ViewModel() {
 
     fun clearActionMessage() {
         _actionMessage.value = null
+    }
+
+    fun toggleStoreBlock(storeId: String, isBlocked: Boolean) {
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.adminApi.toggleStoreBlock(storeId, ToggleBlockRequestDto(isBlocked))
+                if (response.isSuccessful) {
+                    _actionMessage.value = if (isBlocked) {
+                        "Toko berhasil diblokir. Semua user toko telah dipaksa logout."
+                    } else {
+                        "Blokir toko berhasil dibuka. User dapat login kembali."
+                    }
+                    loadStoreDetail(storeId)
+                } else {
+                    _actionMessage.value = "Gagal memperbarui status blokir toko (Code: ${response.code()})"
+                }
+            } catch (e: Exception) {
+                _actionMessage.value = e.message ?: "Gagal memperbarui status blokir toko"
+            }
+        }
     }
 
     fun deleteStore(storeId: String) {

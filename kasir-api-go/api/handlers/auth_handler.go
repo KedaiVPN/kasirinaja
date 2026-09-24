@@ -537,6 +537,20 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	// Check if user's store is blocked (for owner and cashier)
+	if user.StoreID.Valid {
+		store, err := h.queries.GetStore(c.Request.Context(), user.StoreID)
+		if err == nil && store.IsBlocked {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error": gin.H{
+					"code":    "STORE_BLOCKED",
+					"message": "Toko ini sedang dikunci. Silakan hubungi admin untuk membuka kunci.",
+				},
+			})
+			return
+		}
+	}
+
 	// Check Pro status if user is a cashier (kasir)
 	if user.Role == "kasir" && user.StoreID.Valid {
 		storeStatus, err := h.queries.GetStoreProStatus(c.Request.Context(), user.StoreID)

@@ -20,7 +20,8 @@ data class AdminDashboardStatsDto(
 data class AdminStoreListItemDto(
     val id: String = "",
     val store_name: String = "",
-    val owner_name: String = ""
+    val owner_name: String = "",
+    val is_blocked: Boolean = false
 )
 
 data class AdminStoreDetailDto(
@@ -31,11 +32,16 @@ data class AdminStoreDetailDto(
     val phone: String = "",
     val cashier_count: Int = 0,
     val is_pro: Boolean = false,
-    val pro_expires_at: String? = null
+    val pro_expires_at: String? = null,
+    val is_blocked: Boolean = false
 )
 
 data class UpdateProRequestDto(
     val days: Int
+)
+
+data class ToggleBlockRequestDto(
+    val is_blocked: Boolean
 )
 
 interface AdminApi {
@@ -58,6 +64,12 @@ interface AdminApi {
     suspend fun updateStoreProStatus(
         @Path("id") id: String,
         @Body request: UpdateProRequestDto
+    ): Response<JsonObject>
+
+    @PUT("admin/stores/{id}/block")
+    suspend fun toggleStoreBlock(
+        @Path("id") id: String,
+        @Body request: ToggleBlockRequestDto
     ): Response<JsonObject>
 
     @DELETE("admin/stores/{id}")

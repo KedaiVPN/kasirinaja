@@ -152,6 +152,7 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool, rd
 			adminRoutes.GET("/stores", adminHandler.ListStores)
 			adminRoutes.GET("/stores/:id", adminHandler.GetStoreDetail)
 			adminRoutes.PUT("/stores/:id/pro", adminHandler.UpdateStoreProStatus)
+			adminRoutes.PUT("/stores/:id/block", adminHandler.ToggleStoreBlock)
 			adminRoutes.DELETE("/stores/:id", adminHandler.DeleteStore)
 
 			// Admin Subscription Management

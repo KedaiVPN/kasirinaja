@@ -462,3 +462,86 @@ func (h *AdminHandler) DeleteStore(c *gin.Context) {
 	log.Printf("[DELETE_STORE] === SUCCESS: Store %s and all associated data deleted ===", idParam)
 	c.JSON(http.StatusOK, gin.H{"message": "Store and all related data deleted successfully"})
 }
+
+type ToggleStoreBlockRequest struct {
+	IsBlocked bool `json:"is_blocked"`
+}
+
+func (h *AdminHandler) ToggleStoreBlock(c *gin.Context) {
+	idParam := c.Param("id")
+	storeUUID, err := uuid.Parse(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid store ID format"})
+		return
+	}
+
+	var req ToggleStoreBlockRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body: " + err.Error()})
+		return
+	}
+
+	ctx := c.Request.Context()
+	q := h.queries
+
+	// Get store details
+	store, err := q.GetStore(ctx, pgtype.UUID{Bytes: storeUUID, Valid: true})
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Store not found: " + err.Error()})
+		return
+	}
+
+	// Update block status
+	err = q.UpdateStoreBlockStatus(ctx, db.UpdateStoreBlockStatusParams{
+		ID:        pgtype.UUID{Bytes: storeUUID, Valid: true},
+		IsBlocked: req.IsBlocked,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update block status: " + err.Error()})
+		return
+	}
+
+	// Fetch users to send FCM
+	users, err := q.ListUsersByStore(ctx, pgtype.UUID{Bytes: storeUUID, Valid: true})
+	var fcmTokens []string
+	if err == nil {
+		for _, u := range users {
+			if u.FcmToken.Valid && u.FcmToken.String != "" {
+				fcmTokens = append(fcmTokens, u.FcmToken.String)
+			}
+		}
+	}
+
+	// Send FCM
+	go func(tokens []string, isBlocked bool, storeName string) {
+		var fcmType, title, body string
+		if isBlocked {
+			fcmType = "store_blocked"
+			title = "Toko Diblokir"
+			body = fmt.Sprintf("Toko %s telah dikunci oleh Admin. Anda akan dikeluarkan.", storeName)
+		} else {
+			fcmType = "store_unblocked"
+			title = "Toko Dibuka"
+			body = fmt.Sprintf("Kunci toko %s telah dibuka. Anda dapat masuk kembali.", storeName)
+		}
+
+		data := map[string]string{
+			"type":       fcmType,
+			"store_name": storeName,
+			"title":      title,
+			"body":       body,
+		}
+		for _, token := range tokens {
+			if token != "" {
+				_ = api.SendPushDataOnly(token, data)
+			}
+		}
+	}(fcmTokens, req.IsBlocked, store.StoreName)
+
+	statusStr := "unblocked"
+	if req.IsBlocked {
+		statusStr = "blocked"
+	}
+	log.Printf("[STORE_BLOCK] === Store %s %s successfully ===", idParam, statusStr)
+	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("Store %s successfully", statusStr)})
+}

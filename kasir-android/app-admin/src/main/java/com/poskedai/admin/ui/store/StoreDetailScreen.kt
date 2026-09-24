@@ -10,6 +10,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Star
@@ -41,6 +43,7 @@ fun StoreDetailScreen(
     val storeDeleted by viewModel.storeDeleted.collectAsState()
     val context = LocalContext.current
 
+    var showBlockDialog by remember { mutableStateOf(false) }
     var showUpgradeDialog by remember { mutableStateOf(false) }
     var showDeactivateDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -178,6 +181,26 @@ fun StoreDetailScreen(
                                     label = "Kadaluarsa Pro",
                                     value = formatProExpiresDate(detail.pro_expires_at)
                                 )
+                                if (detail.is_blocked) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Lock,
+                                            contentDescription = null,
+                                            tint = Color(0xFFFF9800),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Text(
+                                            text = "Toko sedang diblokir",
+                                            fontSize = 12.sp,
+                                            color = Color(0xFFFF9800),
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
                             }
                         }
 
@@ -211,7 +234,29 @@ fun StoreDetailScreen(
                                 }
                             }
 
-                            // Tombol Hapus Toko (destruktif) - di bawah Nonaktifkan Pro
+                            // Tombol Blokir / Buka Blokir
+                            Button(
+                                onClick = { showBlockDialog = true },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = if (detail.is_blocked) Color(0xFF4CAF50) else Color(0xFFFF9800))
+                            ) {
+                                Icon(
+                                    if (detail.is_blocked) Icons.Default.LockOpen else Icons.Default.Lock,
+                                    contentDescription = null,
+                                    tint = Color.White
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    if (detail.is_blocked) "Buka Blokir Toko" else "Blokir Toko",
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+
+                            // Tombol Hapus Toko (destruktif) - di bawah Blokir Toko
                             Button(
                                 onClick = { showDeleteDialog = true },
                                 modifier = Modifier
@@ -235,6 +280,50 @@ fun StoreDetailScreen(
             onConfirm = { days ->
                 viewModel.updateProStatus(storeId, days)
                 showUpgradeDialog = false
+            }
+        )
+    }
+
+    if (showBlockDialog) {
+        val isCurrentlyBlocked = (uiState as? StoreDetailUiState.Success)?.detail?.is_blocked == true
+        AlertDialog(
+            onDismissRequest = { showBlockDialog = false },
+            title = {
+                Text(
+                    if (isCurrentlyBlocked) "Buka Blokir Toko?" else "Blokir Toko?",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    if (isCurrentlyBlocked) {
+                        "Toko akan dibuka kembali. Owner dan kasir dapat login seperti biasa."
+                    } else {
+                        "Semua user (owner & kasir) akan dipaksa logout otomatis dan tidak dapat login kembali sampai blokir dibuka."
+                    }
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.toggleStoreBlock(storeId, !isCurrentlyBlocked)
+                        showBlockDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isCurrentlyBlocked) Color(0xFF4CAF50) else Color(0xFFFF9800)
+                    )
+                ) {
+                    Text(
+                        if (isCurrentlyBlocked) "Ya, Buka Blokir" else "Ya, Blokir Toko",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBlockDialog = false }) {
+                    Text("Batal")
+                }
             }
         )
     }

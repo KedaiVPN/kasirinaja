@@ -20,5 +20,11 @@ SET store_name = COALESCE($2, store_name),
 WHERE id = $1
 RETURNING *;
 
+-- name: UpdateStoreBlockStatus :exec
+UPDATE stores
+SET is_blocked = $2,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1;
+
 -- name: DeleteStore :exec
 DELETE FROM stores WHERE id = $1;

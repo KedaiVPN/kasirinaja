@@ -10,6 +10,7 @@ type AdminStoreListItem struct {
 	ID        pgtype.UUID `json:"id"`
 	StoreName string      `json:"store_name"`
 	OwnerName string      `json:"owner_name"`
+	IsBlocked bool        `json:"is_blocked"`
 }
 
 type AdminStoreDetail struct {
@@ -21,6 +22,7 @@ type AdminStoreDetail struct {
 	CashierCount int64              `json:"cashier_count"`
 	IsPro        bool               `json:"is_pro"`
 	ProExpiresAt pgtype.Timestamptz `json:"pro_expires_at"`
+	IsBlocked    bool               `json:"is_blocked"`
 }
 
 const countTotalStores = `SELECT COUNT(*) FROM stores`
@@ -54,7 +56,8 @@ const listAdminStores = `
 SELECT
 	s.id,
 	s.store_name,
-	COALESCE(u.full_name, '') AS owner_name
+	COALESCE(u.full_name, '') AS owner_name,
+	COALESCE(s.is_blocked, false) AS is_blocked
 FROM stores s
 LEFT JOIN users u ON u.id = s.owner_id
 ORDER BY s.created_at DESC
@@ -70,7 +73,7 @@ func (q *Queries) ListAdminStores(ctx context.Context) ([]AdminStoreListItem, er
 	var items []AdminStoreListItem
 	for rows.Next() {
 		var i AdminStoreListItem
-		if err := rows.Scan(&i.ID, &i.StoreName, &i.OwnerName); err != nil {
+		if err := rows.Scan(&i.ID, &i.StoreName, &i.OwnerName, &i.IsBlocked); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -90,7 +93,8 @@ SELECT
 	COALESCE(s.phone, u.phone, '') AS phone,
 	(SELECT COUNT(*) FROM users WHERE store_id = s.id AND role = 'kasir') AS cashier_count,
 	(s.pro_expires_at IS NOT NULL AND s.pro_expires_at > CURRENT_TIMESTAMP) AS is_pro,
-	s.pro_expires_at
+	s.pro_expires_at,
+	COALESCE(s.is_blocked, false) AS is_blocked
 FROM stores s
 LEFT JOIN users u ON u.id = s.owner_id
 WHERE s.id = $1
@@ -108,6 +112,7 @@ func (q *Queries) GetAdminStoreDetail(ctx context.Context, id pgtype.UUID) (Admi
 		&i.CashierCount,
 		&i.IsPro,
 		&i.ProExpiresAt,
+		&i.IsBlocked,
 	)
 	return i, err
 }

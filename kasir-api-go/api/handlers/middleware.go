@@ -112,6 +112,21 @@ func AuthMiddleware(queries *db.Queries) gin.HandlerFunc {
 							return
 						}
 					}
+
+					// 3. Check if store is blocked (for owner & cashier)
+					if role == "owner" || role == "kasir" {
+						storeDetail, err := queries.GetStore(c.Request.Context(), pgtype.UUID{Bytes: parsedStoreID, Valid: true})
+						if err == nil && storeDetail.IsBlocked {
+							c.JSON(http.StatusForbidden, gin.H{
+								"error": gin.H{
+									"code":    "STORE_BLOCKED",
+									"message": "Toko ini sedang dikunci. Silakan hubungi admin untuk membuka kunci.",
+								},
+							})
+							c.Abort()
+							return
+						}
+					}
 				}
 			}
 		}

@@ -23,6 +23,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextAlign
 import com.poskedai.store.R
 
 @Composable
@@ -177,13 +178,57 @@ fun LoginScreen(
                     }
 
                     if (authState is AuthState.Error) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = (authState as AuthState.Error).message,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        val errorMessage = (authState as AuthState.Error).message
+                        val isBlocked = errorMessage.contains("kunci", ignoreCase = true) ||
+                                errorMessage.contains("blokir", ignoreCase = true) ||
+                                errorMessage.contains("STORE_BLOCKED", ignoreCase = true)
+
+                        if (isBlocked) {
+                            var showBlockedDialog by remember { mutableStateOf(true) }
+                            if (showBlockedDialog) {
+                                AlertDialog(
+                                    onDismissRequest = { showBlockedDialog = false },
+                                    icon = {
+                                        Icon(
+                                            imageVector = Icons.Default.Lock,
+                                            contentDescription = "Toko Dikunci",
+                                            tint = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.size(36.dp)
+                                        )
+                                    },
+                                    title = {
+                                        Text(
+                                            text = "Akses Toko Dikunci",
+                                            fontWeight = FontWeight.Bold,
+                                            textAlign = TextAlign.Center
+                                        )
+                                    },
+                                    text = {
+                                        Text(
+                                            text = errorMessage,
+                                            textAlign = TextAlign.Center,
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                    },
+                                    confirmButton = {
+                                        Button(
+                                            onClick = { showBlockedDialog = false },
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text("Mengerti")
+                                        }
+                                    }
+                                )
+                            }
+                        } else {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = errorMessage,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(20.dp))

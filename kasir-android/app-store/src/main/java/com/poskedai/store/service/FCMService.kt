@@ -54,6 +54,19 @@ class FCMService : FirebaseMessagingService() {
             return
         }
 
+        // NEW: Handle store_blocked push (sent when the store is blocked via admin)
+        val storeBlocked = remoteMessage.data["type"] == "store_blocked"
+        if (storeBlocked) {
+            Log.d("FCMService", "Store‑blocked command received – forcing logout with modal")
+            val title = remoteMessage.data["title"] ?: "Toko Diblokir"
+            val body = remoteMessage.data["body"] ?: "Toko ini telah diblokir oleh Admin. Anda tidak dapat login."
+            showNotification(title, body, "store_blocked", null)
+            TokenManager(applicationContext).clearToken()
+            // Show a permanent alert dialog / modal to the user
+            showStoreBlockedModal(title, body)
+            return
+        }
+
         val route = remoteMessage.data["route"] ?: "reports_stock"
         val transactionId = remoteMessage.data["transaction_id"]
 
@@ -61,6 +74,23 @@ class FCMService : FirebaseMessagingService() {
             Log.d("FCMService", "Message Notification Body: ${it.body}")
             showNotification(it.title ?: "Peringatan", it.body ?: "", route, transactionId)
         }
+    }
+
+    private fun showStoreBlockedModal(title: String, message: String) {
+        // We show a persistent system alert or UI notification
+        // For an Android app, best approach is a foreground Service notification with sticky message
+        // Or if we have a BroadcastReceiver that picks up the intent extras, we can show an in-app alert.
+        // The simplest: post to MainActivity via intent extras that will be handled in onCreate.
+
+        val intent = android.content.Intent(this, com.poskedai.store.MainActivity::class.java).apply {
+            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            putExtra("route", "home") // go home
+            putExtra("store_blocked_alert", true) // flag to show modal
+            putExtra("store_blocked_title", title)
+            putExtra("store_blocked_message", message)
+        }
+        intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        startActivity(intent)
     }
 
     private fun showNotification(title: String, messageBody: String, route: String, transactionId: String?) {
