@@ -786,7 +786,7 @@ fun MainScreen(initialRoute: String? = null) {
                             val displayRole = if (userRole.equals("owner", ignoreCase = true)) "Owner" else if (userRole.equals("kasir", ignoreCase = true)) "Kasir" else userRole.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.ROOT) else it.toString() }
                             val supportMessage = "| Nama: $userName\n| Status: $displayRole\n| Nama toko: $storeName\n-----------------------------\n(Silahkan sampaikan keluhan anda di sini)"
                             val encodedMessage = android.net.Uri.encode(supportMessage)
-                            val whatsappUrl = "https://wa.me/6287777694482?text=$encodedMessage"
+                            val whatsappUrl = "https://wa.me/6285951763638?text=$encodedMessage"
                             val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(whatsappUrl))
                             try {
                                 context.startActivity(intent)
