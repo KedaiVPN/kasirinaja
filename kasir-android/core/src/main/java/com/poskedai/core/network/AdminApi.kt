@@ -86,3 +86,7 @@ interface AdminApi {
     @GET("admin/master-product-status")
     suspend fun getMasterProductStatus(): Response<MasterProductStatusResponse>
 
+    @DELETE("admin/stores/{id}")
+    suspend fun deleteStore(@Path("id") id: String): Response<JsonObject>
+}
+
