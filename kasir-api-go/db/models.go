@@ -192,3 +192,10 @@ type User struct {
 	PhotoUrl     pgtype.Text      `json:"photo_url"`
 	FcmToken     pgtype.Text      `json:"fcm_token"`
 }
+
+type GlobalSetting struct {
+	ID        int32              `json:"id"`
+	Key       string             `json:"key"`
+	Value     string             `json:"value"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}

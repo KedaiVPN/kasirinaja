@@ -32,6 +32,40 @@ class ProductListViewModel : ViewModel() {
     private val _actionState = MutableStateFlow<String?>(null)
     val actionState: StateFlow<String?> = _actionState.asStateFlow()
 
+    private val _isMasterEnabled = MutableStateFlow<Boolean>(true)
+    val isMasterEnabled: StateFlow<Boolean> = _isMasterEnabled.asStateFlow()
+
+    fun loadMasterProductStatus() {
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.adminApi.getMasterProductStatus()
+                if (response.isSuccessful) {
+                    _isMasterEnabled.value = response.body()?.is_enabled ?: true
+                }
+            } catch (e: Exception) {
+                // Keep default
+            }
+        }
+    }
+
+    fun toggleMasterProductStatus(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.adminApi.toggleMasterProductStatus(
+                    com.poskedai.core.network.ToggleMasterProductRequest(enabled)
+                )
+                if (response.isSuccessful) {
+                    _isMasterEnabled.value = enabled
+                    _actionState.value = "Status Halaman Master Produk berhasil diubah"
+                } else {
+                    _actionState.value = "Gagal mengubah status Master Produk"
+                }
+            } catch (e: Exception) {
+                _actionState.value = "Error: ${e.message}"
+            }
+        }
+    }
+
     fun loadProducts() {
         viewModelScope.launch {
             _uiState.value = ProductListState.Loading

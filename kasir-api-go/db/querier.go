@@ -88,6 +88,8 @@ type Querier interface {
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
 	UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) (User, error)
 	UpdateUserStoreID(ctx context.Context, arg UpdateUserStoreIDParams) error
+	GetGlobalSetting(ctx context.Context, key string) (string, error)
+	UpdateGlobalSetting(ctx context.Context, arg UpdateGlobalSettingParams) error
 }
 
 var _ Querier = (*Queries)(nil)

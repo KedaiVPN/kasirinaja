@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 fun ProductListScreen(viewModel: ProductListViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val actionState by viewModel.actionState.collectAsState()
+    val isMasterEnabled by viewModel.isMasterEnabled.collectAsState()
     val context = LocalContext.current
 
     LaunchedEffect(actionState) {
@@ -32,6 +33,7 @@ fun ProductListScreen(viewModel: ProductListViewModel = viewModel()) {
 
     LaunchedEffect(Unit) {
         viewModel.loadProducts()
+        viewModel.loadMasterProductStatus()
     }
 
     var showAddDialog by remember { mutableStateOf(false) }
@@ -59,6 +61,34 @@ fun ProductListScreen(viewModel: ProductListViewModel = viewModel()) {
             )
             Button(onClick = { showAddDialog = true }) {
                 Text("Tambah Produk")
+            }
+        }
+
+        Card(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Status Master Produk Global",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = if (isMasterEnabled) "Aktif (Terlihat di sidebar semua toko)" else "Nonaktif (Sembunyi dari sidebar toko)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isMasterEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                    )
+                }
+                Switch(
+                    checked = isMasterEnabled,
+                    onCheckedChange = { viewModel.toggleMasterProductStatus(it) }
+                )
             }
         }
 

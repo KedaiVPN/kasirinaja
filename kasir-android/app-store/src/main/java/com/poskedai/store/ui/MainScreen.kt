@@ -442,6 +442,22 @@ fun MainScreen(initialRoute: String? = null) {
 
     val isOnline by rememberIsOnline()
 
+    var isMasterProductEnabled by remember { mutableStateOf(true) }
+
+    LaunchedEffect(isOnline) {
+        if (isOnline) {
+            try {
+                val res = com.poskedai.core.network.RetrofitClient.productApi.getMasterProductStatus()
+                if (res.isSuccessful) {
+                    val body = res.body()
+                    isMasterProductEnabled = body?.get("is_enabled") ?: true
+                }
+            } catch (e: Exception) {
+                // Keep default true on failure
+            }
+        }
+    }
+
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val userEmail = tokenManager.getEmail() ?: ""
     val userName = tokenManager.getUserName()
@@ -662,7 +678,7 @@ fun MainScreen(initialRoute: String? = null) {
                             colors = drawerItemColors,
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
-                        if (isOnline) {
+                        if (isOnline && isMasterProductEnabled) {
                             NavigationDrawerItem(
                                 label = {
                                     Row(
@@ -1239,7 +1255,7 @@ fun MainScreen(initialRoute: String? = null) {
                 )
             }
             composable(Screen.Master.route) {
-                if (userRole == "owner" && isOnline) {
+                if (userRole == "owner" && isOnline && isMasterProductEnabled) {
                     MasterScreen(
                         onNavigateToEditProfile = {
                             navController.navigate("edit_profile")

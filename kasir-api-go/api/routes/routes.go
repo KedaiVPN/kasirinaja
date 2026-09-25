@@ -69,6 +69,7 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool, rd
 			products.POST("/master", authMw, productHandler.CreateMasterProduct)
 			products.GET("/master/:id", productHandler.GetMasterProduct)
 			products.GET("/master", productHandler.ListMasterProducts)
+			products.GET("/master-status", adminHandler.GetMasterProductStatus)
 
 			products.POST("/store", authMw, productHandler.CreateStoreProduct)
 			products.GET("/store/:id", productHandler.GetStoreProduct)
@@ -161,6 +162,10 @@ func SetupRoutes(router *gin.Engine, queries *db.Queries, pool *pgxpool.Pool, rd
 			adminRoutes.PUT("/subscription-plans/:id", subscriptionHandler.AdminUpdatePlan)
 			adminRoutes.DELETE("/subscription-plans/:id", subscriptionHandler.AdminDeletePlan)
 			adminRoutes.GET("/subscription-transactions", subscriptionHandler.AdminListTransactions)
+
+			// Master Product Global Toggle
+			adminRoutes.GET("/master-product-status", adminHandler.GetMasterProductStatus)
+			adminRoutes.PUT("/master-product-status", adminHandler.ToggleMasterProduct)
 		}
 
 		// Feedback route

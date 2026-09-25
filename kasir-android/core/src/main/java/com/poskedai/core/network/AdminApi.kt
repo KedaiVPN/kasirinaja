@@ -44,6 +44,14 @@ data class ToggleBlockRequestDto(
     val is_blocked: Boolean
 )
 
+data class MasterProductStatusResponse(
+    val is_enabled: Boolean = true
+)
+
+data class ToggleMasterProductRequest(
+    val is_enabled: Boolean
+)
+
 interface AdminApi {
     @GET("admin/dashboard")
     suspend fun getDashboardStats(): Response<AdminDashboardStatsDto>
@@ -72,6 +80,9 @@ interface AdminApi {
         @Body request: ToggleBlockRequestDto
     ): Response<JsonObject>
 
-    @DELETE("admin/stores/{id}")
-    suspend fun deleteStore(@Path("id") id: String): Response<JsonObject>
-}
+    @PUT("admin/master-product-status")
+    suspend fun toggleMasterProductStatus(@Body request: ToggleMasterProductRequest): Response<JsonObject>
+
+    @GET("admin/master-product-status")
+    suspend fun getMasterProductStatus(): Response<MasterProductStatusResponse>
+

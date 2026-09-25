@@ -1,0 +1,34 @@
+package db
+
+import (
+	"context"
+)
+
+const getGlobalSetting = `-- name: GetGlobalSetting :one
+SELECT value FROM global_settings
+WHERE key = $1 LIMIT 1
+`
+
+func (q *Queries) GetGlobalSetting(ctx context.Context, key string) (string, error) {
+	row := q.db.QueryRow(ctx, getGlobalSetting, key)
+	var value string
+	err := row.Scan(&value)
+	return value, err
+}
+
+const updateGlobalSetting = `-- name: UpdateGlobalSetting :exec
+UPDATE global_settings
+SET value = $2,
+    updated_at = CURRENT_TIMESTAMP
+WHERE key = $1
+`
+
+type UpdateGlobalSettingParams struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+func (q *Queries) UpdateGlobalSetting(ctx context.Context, arg UpdateGlobalSettingParams) error {
+	_, err := q.db.Exec(ctx, updateGlobalSetting, arg.Key, arg.Value)
+	return err
+}

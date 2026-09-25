@@ -545,3 +545,49 @@ func (h *AdminHandler) ToggleStoreBlock(c *gin.Context) {
 	log.Printf("[STORE_BLOCK] === Store %s %s successfully ===", idParam, statusStr)
 	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("Store %s successfully", statusStr)})
 }
+
+type ToggleMasterProductRequest struct {
+	IsEnabled bool `json:"is_enabled"`
+}
+
+// ToggleMasterProduct mengaktifkan / menonaktifkan halaman Master Produk secara global.
+func (h *AdminHandler) ToggleMasterProduct(c *gin.Context) {
+	var req ToggleMasterProductRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body: " + err.Error()})
+		return
+	}
+
+	valStr := "false"
+	if req.IsEnabled {
+		valStr = "true"
+	}
+
+	err := h.queries.UpdateGlobalSetting(c.Request.Context(), db.UpdateGlobalSettingParams{
+		Key:   "is_master_product_enabled",
+		Value: valStr,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update master product setting: " + err.Error()})
+		return
+	}
+
+	log.Printf("[MASTER_PRODUCT] === Master product page enabled=%v ===", req.IsEnabled)
+	c.JSON(http.StatusOK, gin.H{
+		"message":    "Master product setting updated successfully",
+		"is_enabled": req.IsEnabled,
+	})
+}
+
+// GetMasterProductStatus mengembalikan status global halaman Master Produk.
+func (h *AdminHandler) GetMasterProductStatus(c *gin.Context) {
+	val, err := h.queries.GetGlobalSetting(c.Request.Context(), "is_master_product_enabled")
+	if err != nil {
+		// Default aktif jika belum ada setting.
+		c.JSON(http.StatusOK, gin.H{"is_enabled": true})
+		return
+	}
+
+	isEnabled := val != "false"
+	c.JSON(http.StatusOK, gin.H{"is_enabled": isEnabled})
+}
